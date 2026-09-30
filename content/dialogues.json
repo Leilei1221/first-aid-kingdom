@@ -1,0 +1,250 @@
+{
+ "_說明": "劇情與教學對話。say 區塊每個項目就是一個對話框（p=說話者、lines=多句、html=內容、buttons=按鈕）。{名稱} 會在遊戲中替換成數值；{CARDS.xxx.title} 這類會取用知識卡內容。",
+ "say": {
+  "introGrandpa.welcome": [
+   {"p":"grandpa","lines":["你醒啦。坐吧，爺爺有件事一定要告訴你。","百年前，王國有一支救護騎士團。他們不靠魔法，而是靠正確的急救知識，和三件神器守護人民。","騎士團解散後，神器的內容物散落各地。現在東南方的浮空島又出現了災厄之霧……聽說還有個迷霧商人，到處賣奇怪的偏方。"]}
+  ],
+  "introGrandpa.bag": [
+   {"p":"grandpa","html":"<p>這個背包，是當年療癒之箱的外殼。它現在是空的，要靠你自己一件一件裝滿。</p><p>另外這個素材袋給你，砍的木材、挖的礦石都放這裡。</p><p class=\"small\">獲得：急救背包（{kitCap} 格）、素材袋（{matCap} 格）</p>","buttons":[{"label":"收下","primary":true}]}
+  ],
+  "introGrandpa.go": [
+   {"p":"grandpa","html":"<p>先去村子南邊的森林找樵夫阿木，跟他借把斧頭。賺點錢，把包包弄大一點，冒險才走得遠。</p><p class=\"small\">用左下角的{ctrlName}走路，靠近人或東西時按右下角的按鈕互動。做事會消耗體力，累了就回家睡覺。</p>","buttons":[{"label":"出發","primary":true}]}
+  ],
+
+  "accident.opening": [
+   {"p":"wood","html":"<p>嘿，你來啦！看我示範一下正確的砍法——</p>"},
+   {"icon":"！","who":"","html":"<p class=\"bad\">斧頭一滑，阿木的前臂割開一道口子，鮮血直流！</p>"},
+   {"p":"wood","html":"<p>唔……好痛！你、你身上有沒有什麼可以用的東西？</p>"},
+   {"p":"hero","html":"<p>（翻開急救背包……裡面什麼都沒有。）</p>"}
+  ],
+  "accident.merchant": [
+   {"p":"merchant","html":"<p>哎呀呀，真巧。我這裡有上等的雪白棉花球，往傷口裡一塞，血馬上就不流了。一顆只要 5 金幣喔。</p>","buttons":[{"label":"買棉花球塞進傷口"},{"label":"不買。請阿木用他乾淨的手帕直接壓住傷口，我去叫爺爺"}]}
+  ],
+  "accident.buy": [
+   {"p":"grandpa","html":"<p class=\"bad\">住手！</p><p>棉花的纖維會黏在傷口上，也止不了血。手邊沒有用品的時候，先用乾淨的布直接用力壓住傷口，再找人幫忙。</p>"}
+  ],
+  "accident.refuse": [
+   {"p":"grandpa","html":"<p class=\"good\">做得好。</p><p>手邊沒有用品的時候，先用乾淨的布直接用力壓住傷口，再找人幫忙。這是正確的判斷。</p>"}
+  ],
+  "accident.after": [
+   {"p":"merchant","html":"<p>嘖……真是個不懂行情的老頭。我們後會有期。</p>"},
+   {"p":"grandpa","html":"<p>血暫時壓住了，但傷口還需要好好處理。孩子，這就是急救背包空著的代價。</p><p>去雜貨店買<b>拋棄式手套、無菌紗布、彈性繃帶</b>回來幫阿木包紮。書架上那本外出血的書，爺爺也幫你翻出來了。</p>"}
+  ],
+  "accident.newContent": [
+   {"icon":"★","who":"新的內容","html":"<p>雜貨店開始販售急救用品。</p><p class=\"small\">迷霧商人也在村子裡擺起了攤……</p>"}
+  ],
+
+  "hypo.warnHas": [
+   {"p":"hero","html":"<p class=\"warn\">從早上工作到現在都沒吃東西……頭好暈、冒冷汗、手在發抖，心跳也好快，肚子好餓。</p><p>背包裡有方糖。</p>","buttons":[{"label":"吃一顆方糖，休息一下","primary":true},{"label":"不管它，繼續工作"}]}
+  ],
+  "hypo.warnNone": [
+   {"p":"hero","html":"<p class=\"warn\">從早上工作到現在都沒吃東西……頭好暈、冒冷汗、手在發抖，心跳也好快，肚子好餓。</p><p class=\"small\">如果背包裡有方糖就好了……</p>","buttons":[{"label":"知道了","primary":true}]}
+  ],
+  "hypo.ate": [
+   {"p":"hero","html":"<p>吃了方糖、坐下來休息了一會兒，頭暈和發抖慢慢好轉了。</p><p class=\"good\">體力恢復 30</p><div class=\"card\"><b>{CARDS.hypo.title}</b><p>{CARDS.hypo.text}</p></div>{newTag}"}
+  ],
+  "hypo.tip": [
+   {"p":"hero","html":"<p class=\"small\">體力歸零就會昏倒。雜貨店有賣方糖，可以放在急救背包裡備用。</p>"}
+  ],
+
+  "faint.mushroom": [
+   {"icon":"…","who":"","html":"<p class=\"bad\">吃下野生菇後，肚子絞痛、全身冒冷汗，眼前一黑……</p>"}
+  ],
+  "faint.other": [
+   {"icon":"…","who":"","html":"<p class=\"bad\">眼前突然一片黑，雙腳一軟，倒在地上……</p>"}
+  ],
+  "faint.mushroomWake": [
+   {"p":"grandpa","html":"<p>你終於醒了！村人發現你倒在地上，意識不清。大家趕快打電話找醫生，讓你側躺，免得吐出來的東西嗆到，還把剩下的菇拿給醫生看。</p>"},
+   {"p":"grandpa","html":"<p>醫生說你是吃了有毒的野生菇。孩子，野生菇絕對不能隨便吃！</p>"}
+  ],
+  "faint.mushroomCards": [
+   {"p":"grandpa","html":"<div class=\"card\"><b>{CARDS.faint.title}</b><p>{CARDS.faint.text}</p></div><div class=\"card\"><b>{CARDS.mushroom.title}</b><p>{CARDS.mushroom.text}</p></div><p class=\"good\">獲得知識卡</p>"}
+  ],
+  "faint.otherWake": [
+   {"p":"grandpa","html":"<p>你終於醒了！你空著肚子工作過度，昏倒在路邊。醫生來家裡看過了，說是太累又沒吃東西。</p><p>以後頭暈、冒冷汗、發抖的時候就要停下來休息，吃點糖。急救背包裡也可以放幾顆方糖。</p>"}
+  ],
+  "faint.otherCard": [
+   {"p":"grandpa","html":"<div class=\"card\"><b>{CARDS.hypo.title}</b><p>{CARDS.hypo.text}</p></div>"}
+  ],
+
+  "eatMushroom": [
+   {"p":"hero","html":"<p>烤得香噴噴的野生菇，看起來很好吃……吃下去了。</p>"},
+   {"icon":"！","who":"","html":"<p class=\"bad\">過了一會兒，肚子開始絞痛，頭暈、想吐……</p><p class=\"small\">體力歸零了。</p>"},
+   {"p":"grandpa","html":"<p>傻孩子！野生菇怎麼能隨便吃！爺爺馬上帶你去給醫生看，剩下的菇也要一起帶去，讓醫生知道你吃了什麼。</p>"},
+   {"p":"grandpa","html":"<p>{CARDS.mushroom.text}</p><p class=\"good\">獲得知識卡：{CARDS.mushroom.title}</p>"}
+  ],
+
+  "well.first": [
+   {"p":"grandpa","html":"<p>井水要拿回家用爐火煮開再用喔。</p><div class=\"card\"><b>{CARDS.water.title}</b><p>{CARDS.water.text}</p></div><p class=\"good\">獲得知識卡：{CARDS.water.title}</p>"}
+  ],
+  "well.sick": [
+   {"p":"hero","html":"<p class=\"bad\">喝完沒多久，肚子開始咕嚕咕嚕地痛……</p><p class=\"small\">體力 -15</p>"}
+  ],
+  "well.ok": [
+   {"p":"hero","html":"<p>咕嚕咕嚕……好像沒什麼事。不過這次沒事，不代表下次也沒事。</p>"}
+  ],
+  "well.scold": [
+   {"p":"grandpa","html":"<p>傻孩子，井水怎麼能直接喝！</p><div class=\"card\"><b>{CARDS.water.title}</b><p>{CARDS.water.text}</p></div>"}
+  ],
+
+  "tablet": [
+   {"icon":"碑","who":"救護騎士團的石碑","html":"<p>石碑上刻著褪色的文字，還有一幅手臂被三角巾吊起來的圖……</p><div class=\"card\"><b>{CARDS.fracture.title}</b><p>{CARDS.fracture.text}</p></div>{newTag}"}
+  ],
+
+  "hunter.hello": [
+   {"p":"hunt","html":"<p>啊，有人來了……我追兔子時踩空，腳踝扭到了，腫得好厲害。</p>"}
+  ],
+  "hunter.missing": [
+   {"p":"hunt","html":"<p>需要：{need}。</p><p class=\"warn\">你的背包還缺：{missing}</p><p class=\"small\">冰敷袋在雜貨店買得到。</p>"}
+  ],
+  "hunter.thanks": [
+   {"p":"hunt","html":"<p>好多了！我叫阿鹿，是這片草原的獵人。這 30 金幣你收下。</p><p>往北走就是落石之城，最近那裡常常地鳴，你要小心。</p><p class=\"good\">獲得知識卡：{CARDS.sprain.title}</p>"}
+  ],
+
+  "guard.warn": [
+   {"p":"guard","lines":["站住！……原來是團長的孫子。","最近地底常常轟隆作響，城牆都出現裂縫了。城裡的人卻沒幾個懂急救，真讓人擔心。","如果你要進城，最好先把急救背包準備好，也帶上 {RATION_NEED} 包乾糧和 {WATER_NEED} 瓶乾淨的水。萬一被困住，救援可能要好幾天才能進來。"]}
+  ],
+  "guard.wait": [
+   {"p":"guard","html":"<p>等一下，先過來跟我說話。</p>"}
+  ],
+  "quake.rumble": [
+   {"icon":"！","who":"","html":"<p class=\"bad\">轟隆隆隆——！</p><p>大地劇烈搖晃，城牆崩落，塵土漫天！</p>"}
+  ],
+  "quake.after": [
+   {"p":"hero","html":"<p>（先趴下、掩護、穩住……搖晃停了。）</p><p>確認周圍環境安全後，發現有三個人受傷倒在廣場上！</p>"}
+  ],
+
+  "rations.intro": [
+   {"p":"guard","lines":["大家的傷都處理過了……但是城門被落石完全堵住了。","外面的救援隊說，要三天後才能挖通。這三天，大家需要食物撐下去。"]}
+  ],
+  "rations.ok": [
+   {"p":"hero","html":"<p>你從背包拿出 {RATION_NEED} 包乾糧分給大家。</p><p class=\"good\">三天份的食物，足夠撐到救援隊進來！</p>"}
+  ],
+  "rations.short": [
+   {"p":"hero","html":"<p>你翻遍背包，只找到 {valid} 包還能吃的乾糧{expiredNote}。</p><p class=\"bad\">食物不夠三天份，大家只能餓著肚子等待……</p>"}
+  ],
+  "water.intro": [
+   {"p":"guard","html":"<p>還有……城裡的水井被震垮了，井水混濁得不能用。大家這三天也需要喝水。</p>"}
+  ],
+  "water.ok": [
+   {"p":"hero","html":"<p>你拿出 {WATER_NEED} 瓶煮過的開水。</p><p class=\"good\">三天份的飲用水準備充足！</p>"}
+  ],
+  "water.short": [
+   {"p":"hero","html":"<p>你的背包裡只有 {w} 瓶開水。</p><p class=\"bad\">水不夠三天份，大家只能省著喝……</p>"}
+  ],
+
+  "grandpa.fake": [
+   {"p":"grandpa","html":"<p>等等，你背包裡怎麼有「{name}」？</p><p>{truth}</p>","buttons":[{"label":"把它丟掉","primary":true},{"label":"先留著"}]}
+  ],
+  "grandpa.expired": [
+   {"p":"grandpa","html":"<p>你背包裡有 {n} 包乾糧已經過期了。過期的食物不能吃，防災包裡的食物要定期檢查、換新。</p>","buttons":[{"label":"把過期乾糧丟掉","primary":true},{"label":"先留著"}]}
+  ],
+  "grandpa.castleBack": [
+   {"p":"grandpa","lines":["你回來了！聽說你在落石之城救了人，拿到了 {stars} 顆星。","急救不是魔法。是你平常就把背包準備好、把知識記在心裡，災難來的時候才救得了人。","療癒之箱和守護之囊都亮起來了。孩子，你已經是一名真正的救護見習騎士了。"]},
+   {"icon":"★","who":"序章完成","html":"<p>恭喜完成序章「綠葉谷」！</p><p>你可以繼續在綠葉谷生活、接委託、幫助村民，也可以再挑戰一次落石之城，爭取更多星星。</p><p class=\"small\">世界地圖上的其他區域，將隨課程單元陸續開放。</p>"}
+  ],
+  "grandpa.p3": [
+   {"p":"grandpa","lines":["最近地底常常傳來轟隆聲……落石之城那邊的地鳴越來越頻繁了。","阿木幫忙把往河谷的落石清開了。從村子往東走，經過河谷和東方草原，就能到落石之城。","河谷有一塊騎士團留下的石碑，記得去看看。還有，災難不會等你準備好，背包要隨時備妥。"]},
+   {"icon":"★","who":"新的區域","html":"<p>綠葉村往東的道路開放了：河谷、東方草原、落石之城。</p><p class=\"small\">進城前，準備好急救背包、{RATION_NEED} 包還在保存期限內的乾糧，以及 {WATER_NEED} 瓶開水。</p>"}
+  ],
+  "grandpa.step6": [
+   {"p":"grandpa","lines":["阿木和小芽都跟我說了，你做得很好。療癒之箱開始發出微光了。","不過，災難來的時候，光有急救用品還不夠。人要活下去，還需要食物和水。","穿過南方森林，再往南走，有爺爺年輕時的農田。去種些小麥，再用木材做一台乾糧製造機。那附近還有一座舊礦坑，挖到金礦可以換不少錢。"]},
+   {"icon":"★","who":"新的區域","html":"<p>南方森林往南的小路開放了：爺爺的農田、礦坑。</p><p class=\"small\">做事會消耗體力，回家睡覺就能恢復並進入下一天。</p>"}
+  ],
+  "grandpa.step9a": [
+   {"p":"grandpa","lines":["這就是你親手做的乾糧啊。","記住，防災包裡的食物要選免烹煮、耐保存的，還要定期檢查保存期限。我把這本書放在書架上了，有空讀一讀。"]}
+  ],
+  "grandpa.step9b": [
+   {"icon":"★","who":"第二階段完成","html":"<p>你學會了種田、挖礦，還做出了第一包乾糧。</p><p>背包裡的「療癒之箱」和「守護之囊」都開始發出微光……</p><p class=\"small\">下一階段將開放：河谷、東方草原、落石之城。</p>"}
+  ],
+
+  "wood.axe": [
+   {"p":"wood","html":"<p>喔！團長的孫子啊，要借斧頭？拿去吧，這把是我年輕時用的。</p><p>砍樹的時候靠近樹，連按三下就能砍倒。木材可以拿去雜貨店賣錢。</p><p class=\"good\">獲得：斧頭</p>"}
+  ],
+  "wood.missing": [
+   {"p":"wood","html":"<p>手臂還隱隱作痛……需要：{need}。</p><p class=\"warn\">你的背包還缺：{missing}</p>"}
+  ],
+  "wood.bring": [
+   {"p":"wood","html":"<p>你把用品都帶來了！麻煩你幫我好好包紮。</p>"}
+  ],
+  "wood.thanks": [
+   {"p":"wood","html":"<p>包得真好，一點都不鬆！這 40 金幣你收下。以後砍樹我會小心的。</p>"}
+  ],
+  "kid.hurt": [
+   {"p":"kid","html":"<p>嗚嗚……我剛剛跑太快跌倒了，膝蓋磨破皮，上面都是沙子……</p>"}
+  ],
+  "kid.missing": [
+   {"p":"kid","html":"<p class=\"warn\">你的背包還缺：{missing}</p><p class=\"small\">需要：{need}</p>"}
+  ],
+  "kid.thanks": [
+   {"p":"kid","html":"<p>不痛了！謝謝大哥哥！這是我存的零用錢，給你！</p><p class=\"good\">獲得 20 金幣</p>"}
+  ],
+
+  "prologueDone": [
+   {"icon":"★","who":"序章完成","html":"<p>你幫助了阿木和小芽，綠葉村的人開始信任你了。</p><p>回家告訴爺爺吧。</p>"}
+  ],
+
+  "shop.firstSell": [
+   {"p":"shopkeeper","html":"<p>哎呀，是團長家的孫子！要賣木材嗎？一份 3 金幣。</p><p>賺了錢記得來擴充包包喔，我這裡的背包可是全村最耐用的。對了，村口的委託板也常有人需要木材，報酬更好。</p>"}
+  ],
+  "shop.welcome": [
+   {"p":"shopkeeper","html":"<p>歡迎光臨！今天想買點什麼？</p>","buttons":[{"label":"購物","primary":true},{"label":"送禮"},{"label":"離開"}]}
+  ],
+  "shop.noMushroom": [
+   {"p":"shopkeeper","html":"<p>野生菇？不行不行，我不收來路不明的野生菇。萬一有毒，吃了會出人命的！</p>"}
+  ],
+  "merchant.early": [
+   {"p":"merchant","html":"<p>呵呵……時候還沒到。我們很快就會再見面的，小勇者。</p>"}
+  ]
+ },
+
+ "quizzes": {
+  "hunt": {"q":"扭傷初期，哪一種處理正確？","opts":["立刻熱敷，促進血液循環","用力按摩，把瘀血揉開","冰敷，用彈性繃帶適度壓迫，並把腳抬高"],"ans":2,
+   "explain":"急性扭傷初期應冰敷、壓迫、抬高，減輕腫脹。熱敷和按摩可能讓腫脹更嚴重。冰敷袋外面要包一層布。"},
+  "wood": {"q":"打開手帕，傷口又開始滲血。你已經戴上手套，接下來應該？","opts":["用無菌紗布覆蓋傷口，直接加壓止血，再用彈性繃帶固定","先把傷口旁邊的血跡擦乾淨，看清楚傷口多深","塗一點清涼薄荷牙膏，減輕疼痛"],"ans":0,
+   "explain":"出血時以直接加壓止血為優先，止住後再用繃帶固定敷料。偏方不能處理傷口。"},
+  "kid": {"q":"傷口上有沙土，該怎麼處理？","opts":["用生理食鹽水沖乾淨，再貼上 OK 繃","塗一點清涼薄荷牙膏，涼涼的比較不痛","吹一吹，直接貼上 OK 繃"],"ans":0,
+   "explain":"擦傷要先把砂土沖洗乾淨，可用生理食鹽水或乾淨的清水。不要塗牙膏等偏方，也不要用嘴吹傷口。"}
+ },
+
+ "text": {
+  "goal.0": "和爺爺說話。",
+  "goal.1": "到村子南邊的森林找樵夫阿木，向他借斧頭。",
+  "goal.2": "砍樹收集木材，拿到雜貨店賣掉。",
+  "goal.3": "接委託板的工作賺金幣，到雜貨店擴充包包。",
+  "goal.4": "回南方森林看看阿木。",
+  "goal.5": "到雜貨店買急救用品，幫助受傷的村民。{a} 阿木　{b} 小芽",
+  "goal.6": "回家告訴爺爺這個好消息。",
+  "goal.7": "穿過南方森林，到爺爺的農田拿工具、種小麥。",
+  "goal.8": "建造乾糧製造機（木材 {MACHINE_WOOD} 份＋{MACHINE_COIN} 金幣）。",
+  "goal.9": "收成小麥，用乾糧製造機做出第一包乾糧（小麥 {RATION_WHEAT} 份）。",
+  "goal.debt": "你還欠醫療費 {debt} 金幣，賺錢還清之前不能買東西。",
+  "goal.castleDone": "回綠葉村，把救援的經過告訴爺爺。",
+  "goal.tablet": "往東走，到河谷看看那塊古老的石碑。",
+  "goal.hunter": "到東方草原找獵人阿鹿。",
+  "goal.guard": "往北走到落石之城，和守衛說話。",
+  "goal.prepare": "準備好急救背包、{RATION_NEED} 包有效的乾糧和 {WATER_NEED} 瓶開水，再進入落石之城。",
+  "goal.p3": "回家和爺爺說說話，好像有新的消息。",
+  "goal.bench": "在農田蓋一座工作台（木材 {BENCH_WOOD} 份），之後就能做自動化機器。",
+  "goal.auto": "用工作台製作自動灑水器和自動收割機；記得每天送禮給村民。",
+  "goal.done": "農場自動化完成！繼續送禮、接委託，準備好你的背包。",
+
+  "tip.autoDone": "自動化機器能幫你省下很多時間。有空就多陪村裡的人聊聊天吧。",
+  "tip.bench": "農田那邊可以蓋一座工作台，用材料做些省力的機器。",
+  "tip.7": "先去工具棚拿農具，翻土、澆水、播種。每天都要澆水，小麥才會長大。",
+  "tip.8": "乾糧製造機需要木材 {MACHINE_WOOD} 份和 {MACHINE_COIN} 金幣，多砍點樹、挖點礦吧。",
+  "tip.9": "小麥收成後放進乾糧製造機，做好了拿給爺爺看看。",
+  "tip.5": "阿木和小芽都需要幫忙，記得先確認背包裡的用品夠不夠。",
+  "tip.default": "多砍點木材、接委託賺錢，把包包擴充起來吧。累了就回來睡一覺。",
+
+  "chat.hunt": "草原上的風真舒服。要去落石之城的話，往北走就到了。",
+  "chat.guard": "城門隨時為你開著。進城前，再確認一次背包吧。",
+  "chat.wood7": "聽說你在種田？森林南邊那條路我幫你清乾淨了。",
+  "chat.wood": "多砍點樹，素材袋滿了就拿去賣！",
+  "chat.kid6": "大哥哥好厲害，我長大也要當救護騎士！",
+  "chat.kid": "大哥哥要去冒險嗎？好好喔！",
+
+  "gate.first": "城堡深處傳來低沉的轟隆聲。進去之後，災難可能隨時發生。",
+  "gate.again": "城堡已經修好了。要再進行一次地震救援挑戰嗎？"
+ }
+}

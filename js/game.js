@@ -1,185 +1,58 @@
-<script>
-(function(){
-const A=__ASSETS__;
-const WALKS=__WALKS__;
+(async function(){
+/* ================= 載入內容與圖片 ================= */
+const startBtn=document.getElementById('btnStart'),startLabel=startBtn.textContent;
+startBtn.disabled=true;startBtn.textContent='載入中…';
+const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(u+' '+r.status);return r.json();};
+let C,A={};
+try{
+  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,walks,manifest]=await Promise.all(
+    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues'].map(n=>getJSON(`content/${n}.json`))
+    .concat([getJSON('data/walks.json'),getJSON('assets/manifest.json')]));
+  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,walks};
+  manifest.forEach(n=>A[n]=`assets/${n}.webp`);
+  let done=0;
+  await Promise.all(manifest.map(n=>new Promise(r=>{const im=new Image();
+    im.onload=im.onerror=()=>{startBtn.textContent=`載入中… ${++done}/${manifest.length}`;r();};im.src=A[n];})));
+}catch(err){
+  console.error(err);startBtn.textContent='載入失敗，請重新整理（不能直接雙擊檔案開啟）';return;
+}
+startBtn.disabled=false;startBtn.textContent=startLabel;
+const WALKS=C.walks;
 const KEY='fa-kingdom-p1-v1',MW=1672,MH=941,CELL=8;
 const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 document.documentElement.style.setProperty('--world',`url(${A.world})`);
 document.getElementById('titleHero').src=A.hero;
 
-/* ================= 內容資料（審核時改這裡） ================= */
-const ITEMS={
- glove:{name:'拋棄式手套',ch:'套',color:'#4F8FD6',text:'#fff',price:20,w:1,desc:'處理傷口、接觸血液前先戴上，保護自己也保護傷者。'},
- gauze:{name:'無菌紗布',ch:'紗',color:'#F4F4F0',text:'#333',price:15,w:1,desc:'覆蓋傷口、直接加壓止血。'},
- elastic:{name:'彈性繃帶',ch:'繃',color:'#D9B38C',price:25,w:2,desc:'固定敷料，也能對扭傷處適度壓迫。'},
- saline:{name:'生理食鹽水',ch:'鹽',color:'#CDE7E3',price:20,w:3,desc:'沖洗傷口上的砂土髒污。'},
- bandaid:{name:'OK繃',ch:'OK',color:'#E8B87A',price:10,w:1,desc:'小傷口清潔後貼上保護。'},
- ice:{name:'冰敷袋',ch:'冰',color:'#8FD3F0',price:25,w:2,desc:'扭傷、挫傷、蜂螫腫痛時冰敷用。使用時外面要包一層布。'},
- water:{name:'開水',ch:'水',color:'#BFE3F5',w:2,desc:'煮沸放涼的乾淨開水，可以喝，也可以代替生理食鹽水沖洗傷口。'},
- sugar:{name:'方糖',ch:'糖',color:'#FFF3DC',text:'#8A5A2B',price:10,w:1,desc:'體力快用完、頭暈冒冷汗時可以吃，快速補充糖分。'},
- sling:{name:'三角巾',ch:'巾',color:'#E07A5F',text:'#fff',price:30,w:2,desc:'可做成懸臂帶支撐受傷的手臂，也能包紮固定。'},
- ration:{name:'乾糧',ch:'糧',color:'#D9B26B',w:2,desc:'用小麥做成、免烹煮的乾糧，是防災避難包的食物。要注意保存期限。'},
- cotton:{name:'雪白棉花球',ch:'棉',color:'#FFFFFF',text:'#666',price:5,w:1,fake:true,desc:'迷霧商人說：「傷口塞一團棉花，血馬上就不流了！」',
-   truth:'棉花纖維容易黏在開放性傷口上，也不能有效止血。傷口要用無菌紗布覆蓋，直接加壓。'},
- toothpaste:{name:'清涼薄荷牙膏',ch:'膏',color:'#9BE0C6',price:5,w:2,fake:true,desc:'迷霧商人說：「燙傷、擦傷塗一點，涼涼的馬上不痛！」',
-   truth:'牙膏不能處理燙傷或擦傷：它會把熱悶在皮膚裡，也可能增加感染風險。燙傷要先用流動的冷水沖，擦傷要先沖洗乾淨。'},
- soy:{name:'祖傳醬油',ch:'醬',color:'#6B3A22',text:'#fff',price:5,w:3,fake:true,desc:'迷霧商人說：「燙傷塗醬油，保證不留疤！」',
-   truth:'燙傷不可以塗醬油等偏方：會污染傷口、增加感染風險，也可能妨礙醫護人員判斷傷勢。'}
-};
-const MATS={wood:{name:'木材',sell:3,icon:'i_twig'},stone:{name:'石頭',sell:2,icon:'i_pebble'},gold:{name:'金礦',sell:25,icon:'rock_gold'},wheat:{name:'小麥',sell:4,icon:'ripe'},seed:{name:'小麥種子',buy:5},
- flower:{name:'野花',sell:3,icon:'i_flower'},scrap:{name:'廢鐵片',sell:1,icon:'i_scrap'},mushroom:{name:'野生菇',icon:'i_mushroom'},rawwater:{name:'井水（未煮沸）'},pipe:{name:'銅管',buy:30,icon:'i_pipe'},gear:{name:'齒輪',buy:60,icon:'i_gear'}};
-const GIFTABLE=['flower','wheat','wood','stone','gold','mushroom'];
-const LIKES={grandpa:{love:'wood',hate:'mushroom',loveTxt:'木柴！爺爺年紀大了怕冷，這個最實用了。',normTxt:'謝謝你記得爺爺。',hateTxt:''},
- kid:{love:'flower',hate:'stone',loveTxt:'哇！好漂亮的花！我要插在窗邊！',normTxt:'謝謝大哥哥！',hateTxt:'……石頭？這個我不要啦。'},
- wood:{love:'wheat',loveTxt:'新鮮小麥！今晚可以烤麵包了，謝啦！',normTxt:'喔，謝謝你啊。',hateTxt:''},
- shopkeeper:{love:'gold',loveTxt:'天啊，是金礦！你真是太貼心了！',normTxt:'哎呀，謝謝你！',hateTxt:''}};
-const RECIPES={
- sprinkler:{name:'自動灑水器',need:{stone:5,scrap:2,pipe:1},max:3,desc:'每天早上自動幫周圍的田澆水。'},
- harvester:{name:'自動收割機',need:{wood:15,gold:3,scrap:3,gear:1},max:1,desc:'每天早上把成熟的小麥收進農田旁的收納箱。'}};
-const BENCH_WOOD=10;
-const MED_FEE=100,HYPO_AT=20;
-const EVENTS=[
- {id:'bee',who:'kid',intro:'嗚哇！我在花叢邊被蜜蜂叮了，手臂又紅又腫，好痛……',needs:{ice:1},
-  qs:[{q:'蜂螫的針還留在皮膚上，該怎麼做？',opts:['儘快移除螫針，可以用卡片邊緣刮掉，再清洗、冰敷','塗一點醬油消腫','不用管它，等它自己掉下來'],ans:0,
-  explain:'螫針留在皮膚上會持續釋放毒液，要儘快移除，再清洗、冰敷減輕腫痛。如果出現呼吸困難、臉或嘴唇腫起來，要立刻求救。'}],thanks:'不那麼痛了，謝謝大哥哥！'},
- {id:'allergy',who:'kid',after:'bee',intro:'大、大哥哥……我剛剛又被蜜蜂叮了，嘴唇好腫，喉嚨好緊，喘不過氣……',needs:{},
-  qs:[{q:'小芽被叮後嘴唇腫起來、呼吸困難，你該怎麼做？',opts:['先冰敷看看，等一下就會好','立刻打 119，讓她保持舒服的姿勢；如果有醫師開的腎上腺素注射筆，協助她使用','讓她喝點水，躺下睡一覺'],ans:1,
-  explain:'呼吸困難、嘴唇腫起來可能是嚴重過敏反應，會危及生命，不能等。要立刻打 119；呼吸困難時可以讓她坐起來；有醫師開立的腎上腺素注射筆就協助使用。'}],thanks:'（救護人員趕到，把小芽送去醫院。隔天她就活蹦亂跳地回來了。）'},
- {id:'nose',who:'wood',intro:'哎呀！彈回來的樹枝打到我的鼻子，鼻血一直流……',needs:{gauze:1},
-  qs:[{q:'流鼻血時，正確的做法是？',opts:['頭往後仰，讓血不要流出來','身體稍微前傾，捏住鼻翼（鼻子柔軟的部分），用嘴巴呼吸','平躺下來休息'],ans:1,
-  explain:'頭往後仰會讓血流進喉嚨，可能嗆到或想吐。應身體前傾、捏住鼻翼約 10 分鐘，可以用紗布接住流出的血。'}],thanks:'血止住了，還是你靠得住！'},
- {id:'tetanus',who:'wood',intro:'可惡，這把舊斧頭生鏽了，一滑就砍到我的小腿……傷口又深又髒！',needs:{glove:1,gauze:1},
-  qs:[{q:'傷口還在流血，第一步該怎麼做？',opts:['戴上手套，用無菌紗布直接加壓止血','先塗醬油消毒','用泥土把傷口蓋住'],ans:0,explain:'出血時先直接加壓止血。'},
-      {q:'血止住了，但傷口又深又髒，斧頭還生鏽。接下來呢？',opts:['貼上 OK 繃就好，不用管它','清洗傷口後就醫，讓醫師評估是否需要追加破傷風疫苗','再塗一點薄荷牙膏'],ans:1,
-  explain:'被生鏽的工具、泥土弄髒的深傷口有感染破傷風的風險，清洗後要就醫，讓醫師評估是否需要追加破傷風疫苗。'}],thanks:'好，我這就去給醫生看看。多虧你提醒！'},
- {id:'snake',who:'wood',intro:'啊！草叢裡有蛇，我的腳踝被咬了！',needs:{},
-  qs:[{q:'阿木被蛇咬了，下列哪個做法正確？',opts:['用嘴把毒液吸出來','用繩子把腿綁緊，阻止毒液流動','讓他保持冷靜少動，固定被咬的部位，取下束縛物，記下蛇的特徵，儘速送醫'],ans:2,
-  explain:'用嘴吸毒、切開傷口、綁緊止血帶、冰敷都不正確。應讓傷者保持冷靜、少動，被咬的部位固定、約與心臟同高或略低，取下戒指手錶，記下蛇的特徵，儘速送醫。'}],thanks:'（阿木被送去醫院打了血清，兩天後就回來砍樹了。）'},
- {id:'cut',who:'shopkeeper',intro:'唉呀，剛剛切菜切到手指了，流了一些血……',needs:{glove:1,bandaid:1},
-  qs:[{q:'小傷口在流血，第一步該怎麼做？',opts:['撒一點麵粉上去止血','用嘴巴吸傷口','戴上手套，用乾淨的布直接按壓止血'],ans:2,
-  explain:'小傷口一樣以直接加壓止血為優先，止血後用清水沖洗，再貼上 OK 繃。撒麵粉等偏方會污染傷口，用嘴吸也可能造成感染。'}],thanks:'謝謝你，下次切菜我會小心的！'}];
-const STORIES={
- shopkeeper:{card:'burn',text:['跟你說個祕密。我年輕時在廚房打翻一鍋熱湯，當時聽人說塗牙膏最有效……結果傷口發炎，留下了疤。','後來團長教我「沖、脫、泡、蓋、送」，我一輩子都記得。你也要記住喔。']},
- wood:{card:'spine',text:['我年輕時從樹上摔下來，脖子痛得要命。同伴急著把我扶起來，幸好你爺爺大喊「別動他！」','醫生說，那時如果亂動，我可能再也站不起來了。']},
- kid:{card:'choke',text:['上次弟弟吃糖果噎到，臉都發紫了！','是爺爺從後面抱住他，在肚子上用力一壓，糖果就噴出來了。爺爺說這叫哈姆立克法！']},
- grandpa:{card:'cpr',text:['騎士團的第一件神器「心跳之匣」，守護的是停止的心跳。總有一天你會需要它。','來，爺爺先教你，看到有人突然倒下時該怎麼做。']}};
-const VICTIMS={
- guard:{situ:'落石砸中頭部，頭皮裂開，血流不止。',needs:{glove:1,gauze:2},
-  q:'你用紗布加壓，但紗布很快被血浸濕了。接下來？',opts:['拿掉濕紗布，換一塊新的','不要移除，直接在上面再加一層紗布，持續加壓','先停下來，看看還有沒有在流血'],ans:1,
-  explain:'拿掉浸濕的紗布會扯掉剛形成的血塊。應該在上面再加紗布，持續加壓。',ok:'血止住了……謝謝你，小勇者。'},
- cook:{situ:'被倒下的櫃子壓到，前臂變形、劇烈疼痛。',needs:{sling:1},
-  q:'疑似前臂骨折，你該怎麼做？',opts:['把變形的骨頭推回原位','維持原本姿勢，用三角巾做懸臂帶支撐固定','請她甩甩手，確認還能不能動'],ans:1,
-  explain:'疑似骨折不要自行復位，也不要讓傷者活動患肢。應維持原姿勢固定、支撐，再送醫。',ok:'手臂固定好就沒那麼痛了，謝謝你啊！'},
- soldier:{situ:'逃跑時扭傷腳踝，腫得站不起來。',needs:{ice:1,elastic:1},
-  q:'要幫他冰敷，哪種方式正確？',opts:['冰敷袋直接貼皮膚，敷越久越好','冰敷袋外面包一層布，每次約 15 到 20 分鐘','天氣冷，不用冰敷'],ans:1,
-  explain:'冰敷袋直接接觸皮膚、敷太久可能凍傷。應隔一層布，每次約 15 到 20 分鐘，並把腳抬高。',ok:'謝、謝謝你……我以後也要學急救！'}};
-const RATION_NEED=3,RATION_SELL=15,WATER_NEED=3;
-const SIGNS={village:[{x:1520,y:330,t:()=>S.f.p3?'往河谷 →':'往河谷 →（落石擋路）'},{x:890,y:870,t:()=>'↓ 南方森林'}],
- forest:[{x:950,y:150,t:()=>'↑ 綠葉村'},{x:830,y:880,t:()=>S.step>=7?'↓ 爺爺的農田':'↓ 雜草叢生'}],
- farm:[{x:865,y:150,t:()=>'↑ 南方森林'},{x:935,y:880,t:()=>'↓ 礦坑'}],
- mine_out:[{x:90,y:280,t:()=>'← 爺爺的農田'}],
- river:[{x:110,y:400,t:()=>'← 綠葉村'},{x:1560,y:430,t:()=>'東方草原 →'}],
- plain:[{x:110,y:370,t:()=>'← 河谷'},{x:940,y:150,t:()=>'↑ 落石之城'}],
- gate:[{x:760,y:880,t:()=>'↓ 東方草原'}],ruin:[{x:838,y:900,t:()=>'↓ 東方草原'}]};
+/* ================= 內容編譯（JSON 字串條件 → 函式） ================= */
+/* 場景出口、路標的條件在 JSON 裡是函式原始碼字串，這裡轉成函式；S 每次呼叫時取當下的存檔狀態 */
+const mk=src=>{const f=new Function('S','return ('+src+')');return (...a)=>f(S)(...a);};
+function compileScenes(raw){const out={};
+  for(const [id,s] of Object.entries(raw))out[id]=Object.assign({},s,{exits:(s.exits||[]).map(e=>({
+    test:mk(e.test),to:e.toFn?mk(e.toFn):e.to,at:e.at,need:e.need?mk(e.need):undefined,block:e.block||undefined}))});
+  return out;}
+function compileSigns(raw){const out={};
+  for(const [id,list] of Object.entries(raw))out[id]=list.map(g=>({x:g.x,y:g.y,
+    t:typeof g.t==='string'?()=>g.t:(c=>()=>c()?g.t.yes:g.t.no)(mk(g.t.cond))}));
+  return out;}
+/* ================= 對話文字（content/dialogues.json） ================= */
+function lookup(path,v){const ks=path.split('.');let o=(ks[0] in v)?v:GLOBALS;
+  for(const k of ks){if(o==null||!(k in Object(o)))throw new Error('對話缺少變數：'+path);o=o[k];}return o;}
+const fill=(s,v)=>s.replace(/\{([\w.]+)\}/g,(m,p)=>lookup(p,v));
+function T(key,v){const s=DLG.text[key];if(s==null)throw new Error('找不到文字：'+key);return fill(s,v||{});}
+function steps(key,v){const d=DLG.say[key];if(!d)throw new Error('找不到對話：'+key);v=v||{};const out=[];
+  for(const st of d){
+    if(st.lines){for(const l of st.lines)out.push({p:st.p,html:`<p>${fill(l,v)}</p>`});}
+    else{const o=Object.assign({},st);o.html=fill(st.html,v);out.push(o);}}
+  return out;}
+async function play(key,v){let r;for(const o of steps(key,v))r=await say(o);return r;}
+const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain);};
+const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
+
+/* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
+const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
+const DLG=C.dialogues,GLOBALS=Object.assign({CARDS,ITEMS},C.balance);
 function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>sl.plots.forEach(i=>{const p=S.plots[i];if(p&&(p.st==='tilled'||(p.st==='planted'&&p.g<GROW_DAYS))&&!p.wet){p.wet=true;n++;}}));return n;}
-const SPRINKLER_AREA=['左上角 4 塊田','右上角 3 塊田','下排 4 塊田'];
-const SPRINKLER_SLOTS=[{x:585,y:470,plots:[0,1,3,4]},{x:1180,y:420,plots:[2,5,6]},{x:960,y:670,plots:[7,8,9,10]}];
-const FORAGE_SPOTS={village:[[620,330],[1350,470],[900,700],[420,390],[1550,330],[880,560]],
- forest:[[480,440],[1300,520],[1200,380],[720,700],[880,850],[1000,120],[420,620]],
- farm:[[250,480],[900,790],[1400,640],[640,300],[300,650],[860,120]]};
-const FORAGE_N={village:2,forest:3,farm:2};
-const SHOP_MED=['glove','gauze','elastic','saline','bandaid','sling','ice','sugar'];
-const MERCHANT_GOODS=['cotton','toothpaste','soy'];
-const MAT_UP=[{cap:20,cost:40},{cap:30,cost:90},{cap:40,cost:160}];
-const KIT_UP=[{cap:6,cost:60},{cap:8,cost:120},{cap:10,cost:200},{cap:12,cost:280},{cap:14,cost:360}];
-const LOAD_OK=8,LOAD_HEAVY=12;           /* 負重：8 以下正常，9～12 變慢，超過 12 很慢 */
-const STA_MAX=100,COST={chop:4,mine:5,till:3,water:3,plant:2};
-const GROW_DAYS=3,RATION_WHEAT=3,RATION_LIFE=10,MACHINE_WOOD=20,MACHINE_COIN=100;
-
-const CARDS={
- legend:{title:'救護騎士團的傳說',text:'百年前，救護騎士團不靠魔法，而是靠正確的急救知識和三件神器守護王國：心跳之匣、守護之囊、療癒之箱。騎士團解散後，神器的內容物散落各地。'},
- bleed:{title:'外出血怎麼處理',text:'先確認環境安全、戴上手套保護自己。用無菌紗布覆蓋傷口，直接用力加壓。紗布被血浸濕時不要拿掉，在上面再加一層繼續加壓，再用繃帶固定。手邊沒有用品時，可先用乾淨的布直接壓住傷口並求救。'},
- scrape:{title:'擦傷怎麼處理',text:'先用生理食鹽水或乾淨的清水，把傷口上的砂土沖乾淨，再用 OK 繃或敷料覆蓋。不要塗牙膏等偏方，也不要用嘴吹傷口。'},
- mushroom:{title:'野生菇不能隨便吃',text:'許多有毒的菇類和可以吃的菇長得很像，無法用顏色、外觀或「煮熟」來判斷是否安全。不要採食來路不明的野生菇。誤食後如果出現噁心、嘔吐、腹瀉、腹痛等症狀，要儘速就醫，並把剩下的菇帶去給醫師辨識。'},
- fracture:{title:'疑似骨折怎麼辦',text:'受傷部位變形、劇烈疼痛、不能活動時，可能是骨折。不要把骨頭推回原位，也不要讓傷者活動受傷的部位。維持原本的姿勢固定，手臂可以用三角巾做懸臂帶支撐，再儘快送醫。'},
- sprain:{title:'扭傷初期怎麼處理',text:'冰敷（冰敷袋外面包一層布，每次約 15 到 20 分鐘）、用彈性繃帶適度壓迫，並把受傷的部位抬高。受傷初期不要熱敷，也不要用力按摩。'},
- bee:{title:'被蜜蜂叮了怎麼辦',text:'先離開蜂群附近。螫針如果還留在皮膚上，要儘快移除，可以用卡片邊緣刮掉，再用清水清洗、冰敷減輕腫痛。如果出現呼吸困難、臉或嘴唇腫起來、全身起疹子，可能是嚴重過敏，要立刻打 119 求救。'},
- allergy:{title:'嚴重過敏反應',text:'被叮咬或吃了某些東西後，如果出現呼吸困難、喉嚨緊、臉或嘴唇腫起來、全身起疹子、頭暈想昏倒，可能是嚴重過敏反應，要立刻打 119。讓傷者保持舒服的姿勢（呼吸困難時可以坐起來）；如果他有醫師開立的腎上腺素注射筆，協助他使用。'},
- nose:{title:'流鼻血怎麼處理',text:'身體稍微前傾，用手指捏住鼻翼（鼻子柔軟的部分）約 10 分鐘，用嘴巴呼吸。不要把頭往後仰，血會流進喉嚨。如果流血超過 20 分鐘停不下來，或是頭部被重擊後流鼻血，要就醫。'},
- cut:{title:'小傷口流血',text:'戴上手套，用乾淨的紗布或布直接按壓止血；止血後用清水沖洗，再貼上 OK 繃。不要撒麵粉、咖啡粉等偏方，也不要用嘴吸傷口。'},
- tetanus:{title:'髒傷口與破傷風',text:'被生鏽的工具、泥土等弄髒的深傷口，有感染破傷風的風險。先止血、清洗，再就醫讓醫師評估是否需要追加破傷風疫苗。成人的破傷風疫苗一般約每 10 年追加一次；傷口很髒而且距離上次注射超過 5 年，醫師可能會建議追加。'},
- snake:{title:'被蛇咬傷',text:'保持冷靜、遠離蛇，記下蛇的外觀特徵（顏色、花紋、頭形）。讓傷者少動、保持冷靜，把被咬的部位固定不動、約與心臟同高或略低，並取下戒指、手錶等束縛物，儘速送醫。不可以用嘴吸毒液、切開傷口、綁緊止血帶、冰敷或喝酒。'},
- hypo:{title:'頭暈冒冷汗、可能是低血糖',text:'空腹或過度勞動時，可能出現頭暈、冒冷汗、發抖、心跳加快、很餓等症狀（低血糖在糖尿病患者身上比較常見）。如果意識清醒、能吞嚥，可以吃方糖、糖果或喝果汁，休息約 15 分鐘；沒有改善就再補充並就醫。如果意識不清，不可以餵食，以免嗆到，要讓他側躺並打 119。'},
- faint:{title:'有人昏倒、意識不清',text:'先確認環境安全，大聲呼叫、拍肩確認反應，並請人打 119。如果有正常呼吸，讓他側躺（復甦姿勢），避免嘔吐物嗆到。不要餵食、餵水或催吐。如果是誤食造成的，把剩下的東西一起帶給醫護人員。'},
- burn:{title:'燒燙傷：沖、脫、泡、蓋、送',text:'沖：用流動的冷水沖洗傷處約 15 到 30 分鐘。脫：在冷水中小心脫去衣物，黏住的部分不要硬扯，可以剪開。泡：在冷水中持續浸泡約 15 到 30 分鐘。蓋：用乾淨的布或紗布覆蓋。送：儘快送醫。不要塗牙膏、醬油等偏方。'},
- spine:{title:'懷疑頭頸部受傷',text:'懷疑頭部、頸部或背部受傷時，除非現場有立即的危險（例如火災、落石），不要任意移動傷者，儘量讓他的頭頸保持不動，並立刻打 119 求救。'},
- choke:{title:'被東西噎住',text:'如果還能咳嗽、說話，鼓勵他用力咳嗽。如果不能說話、不能咳嗽、無法呼吸，要立刻請人打 119，並使用哈姆立克法（從背後環抱，在肚臍上方向內上方快速擠壓）。一歲以下的嬰兒則改用拍背和壓胸。'},
- cpr:{title:'看到有人突然倒下',text:'先確認環境安全，拍打肩膀大聲呼叫，確認有沒有反應。沒有反應就請旁人打 119、拿 AED。如果沒有正常呼吸，立刻開始胸部按壓，用力壓、快快壓。AED 送到就打開電源，依照語音指示操作。'},
- water:{title:'乾淨的水',text:'井水、山泉水、河水等未經處理的水，看起來清澈也可能含有細菌或寄生蟲，要煮沸後再喝。沖洗傷口可以用生理食鹽水、乾淨的自來水，或煮沸放涼的開水。防災包裡也要準備至少三天份的飲用水。'},
- food:{title:'防災包的食物',text:'防災避難包的食物要選免烹煮、易開封、耐保存的種類。常見建議至少準備三天份的食物與飲水。放進包裡後要定期檢查保存期限，快過期就吃掉並換新。'}
-};
-const REQUESTS=[
- {from:'shopkeeper',who:'雜貨店老闆',text:'貨架壞了，需要木材修理。',item:'wood',n:4,pay:25},
- {from:'grandpa',who:'爺爺',text:'晚上冷，幫爺爺補充柴火。',item:'wood',n:6,pay:35},
- {from:'kid',who:'小芽',text:'我想做一個木頭小馬！',item:'wood',n:2,pay:12},
- {from:'shopkeeper',who:'雜貨店老闆',text:'要做新的木箱裝貨。',item:'wood',n:8,pay:50},
- {from:'kid',who:'小芽',text:'想幫媽媽做一張小板凳。',item:'wood',n:5,pay:28},
- {from:'wood',who:'樵夫阿木',text:'要幾塊石頭磨斧頭。',item:'stone',n:4,pay:20,p2:true},
- {from:'shopkeeper',who:'雜貨店老闆',text:'想進一批新鮮小麥。',item:'wheat',n:3,pay:22,p2:true},
- {from:'grandpa',who:'爺爺',text:'屋頂漏水，需要石頭修補。',item:'stone',n:6,pay:30,p2:true},
- {from:'kid',who:'小芽',text:'想要一塊亮晶晶的金礦當寶物！',item:'gold',n:1,pay:40,p2:true}
-];
-const PEOPLE={
- grandpa:{name:'爺爺',img:'grandpa',face:'grandpa_face',hk:1.0},
- kid:{name:'小芽',img:'kid',face:'kid_face',hk:.72},
- wood:{name:'樵夫阿木',img:'wood',face:'wood_face',hk:1.08},
- shopkeeper:{name:'雜貨店老闆',img:'shopkeeper',face:'shopkeeper_face',hk:1.0},
- merchant:{name:'迷霧商人',img:'merchant',face:'merchant_face',hk:1.05},
- hunt:{name:'獵人阿鹿',img:'hunt',face:'hunt_face',hk:1.02},
- guard:{name:'城堡守衛',img:'guard',face:'guard_face',hk:1.06},
- cook:{name:'廚娘',img:'cook',face:'cook_face',hk:.98},
- soldier:{name:'見習小兵',img:'soldier',face:'soldier_face',hk:.95}
-};
-const RATIO={hunt:.594,cook:.618,guard:.644,soldier:.451,hero:.634,grandpa:.658,kid:.573,wood:.578,shopkeeper:.651,merchant:.639,tree:.889,stump:1.48,bed:.97,machine:.974,sprinkler:1.474,harvester:1.227,bench:1.139,bin:.959,rock:1.254,rock_gold:1.235,rubble:1.772,soil_dry:1.391,soil_wet:1.391,sprout:1.368,tall:1.239,ripe:1.232};
-
-/* 場景：座標為原圖像素 */
-const PLOTS=[[430,396],[712,362],[1051,327],[459,551],[758,517],[1039,482],[1326,442],[505,706],[815,677],[1108,643],[1395,603]];
-const ROCKS=[[520,430],[780,330],[1040,320],[1300,420],[680,580],[1080,560]];
-const SCENES={
- home:{name:'爺爺的家',spawn:[1010,690],bg:'home',heroH:240,
-   npcs:[{id:'grandpa',x:1180,y:560,flip:true}],
-   things:[{kind:'fire',x:800,y:335,label:'用爐火煮水'},{kind:'shelf',x:430,y:450,label:'查看書架'},{kind:'oldchest',x:1250,y:430,label:'打開舊箱子'},{kind:'bed',x:390,y:640,label:'睡覺'}],
-   exits:[{test:(x,y)=>y>845,to:'village',at:[1045,305]}]},
- village:{name:'綠葉村',spawn:[1045,305],bg:'village',heroH:118,
-   npcs:[{id:'kid',x:560,y:480},{id:'merchant',x:725,y:250,flip:true}],
-   things:[{kind:'door',x:1045,y:290,label:'進入爺爺的家',to:'home',at:[840,770]},{kind:'door',x:330,y:338,label:'進入雜貨店',to:'shop',at:[840,760]},{kind:'board',x:1215,y:452,label:'查看委託板'},{kind:'well',x:765,y:515,label:'水井'}],
-   exits:[{test:(x,y)=>y>925,to:'forest',at:[950,70]},{test:(x,y)=>x>1645,to:'river',at:[60,440],need:()=>S.f.p3,block:'往河谷的路被落石擋住了，之後才能通過。'}]},
- forest:{name:'南方森林',spawn:[950,300],bg:'forest',heroH:140,
-   npcs:[{id:'wood',x:990,y:640,flip:true}],
-   things:[{kind:'fchest',x:360,y:432,label:'打開寶箱'}],
-   trees:[{id:'t1',x:470,y:565},{id:'t2',x:620,y:700},{id:'t3',x:1250,y:600},{id:'t4',x:1370,y:470},{id:'t5',x:1120,y:300}],
-   exits:[{test:(x,y)=>y<22,to:'village',at:[890,900]},{test:(x,y)=>y>925,to:'farm',at:[865,60],need:()=>S.step>=7,block:'森林南邊的小路雜草叢生，先完成村子裡的事情再說吧。'}]},
- shop:{name:'雜貨店',spawn:[840,700],bg:'shop',heroH:220,
-   npcs:[{id:'shopkeeper',x:600,y:500}],things:[],
-   exits:[{test:(x,y)=>y>790,to:'village',at:[335,350]}]},
- farm:{name:'爺爺的農田',spawn:[865,120],bg:'farm',heroH:120,npcs:[],
-   things:[{kind:'well',x:600,y:258,label:'水井'},{kind:'shed',x:1263,y:300,label:'查看工具棚'},{kind:'machine',x:300,y:560,label:'乾糧製造機'}],
-   plots:true,
-   exits:[{test:(x,y)=>y<22,to:'forest',at:[830,900]},{test:(x,y)=>y>925,to:'mine_out',at:[70,300]}]},
- mine_out:{name:'礦坑入口',spawn:[400,420],bg:'mine_out',heroH:130,npcs:[],
-   things:[{kind:'toolbox',x:830,y:380,label:'查看工具箱'},{kind:'door',x:1160,y:360,label:'進入礦坑',to:'mine_in',at:[860,690]}],
-   exits:[{test:(x,y)=>x<35,to:'farm',at:[935,900]}]},
- river:{name:'河谷',spawn:[60,440],bg:'river',heroH:140,npcs:[],things:[{kind:'tablet',x:380,y:350,label:'查看石碑'}],
-   exits:[{test:(x,y)=>x<30,to:'village',at:[1540,380]},{test:(x,y)=>x>1642,to:'plain',at:[60,400]}]},
- plain:{name:'東方草原',spawn:[60,400],bg:'plain',heroH:130,npcs:[{id:'hunt',x:1148,y:620,flip:true}],things:[],
-   exits:[{test:(x,y)=>x<30,to:'river',at:[1610,450]},{test:(x,y)=>y<25,to:()=>S.quake?'ruin':'gate',at:[760,880]}]},
- gate:{name:'落石之城',spawn:[760,860],bg:'gate',heroH:120,npcs:[{id:'guard',x:712,y:445,flip:true}],things:[{kind:'gatedoor',x:861,y:405,label:'進入城堡'}],
-   exits:[{test:(x,y)=>y>920,to:'plain',at:[940,60]}]},
- ruin:{name:'落石之城（地震後）',spawn:[838,880],bg:'ruin',heroH:120,npcs:[{id:'guard',x:643,y:482},{id:'cook',x:1183,y:597,flip:true},{id:'soldier',x:540,y:650}],things:[],
-   exits:[{test:(x,y)=>y>920,to:'plain',at:[940,60]}]},
- mine_in:{name:'礦坑深處',spawn:[860,650],bg:'mine_in',heroH:150,npcs:[],rocks:true,things:[],
-   exits:[{test:(x,y)=>y>905,to:'mine_out',at:[1150,400]}]}
-};
 
 /* ================= 狀態 ================= */
 let S=null,busy=true;
@@ -217,29 +90,27 @@ async function useSta(n){
   return true;}
 async function hypoWarn(){
   const has=kitCount('sugar')>0;
-  const i=await say({p:'hero',html:'<p class="warn">從早上工作到現在都沒吃東西……頭好暈、冒冷汗、手在發抖，心跳也好快，肚子好餓。</p>'+(has?'<p>背包裡有方糖。</p>':'<p class="small">如果背包裡有方糖就好了……</p>'),
-    buttons:has?[{label:'吃一顆方糖，休息一下',primary:true},{label:'不管它，繼續工作'}]:[{label:'知道了',primary:true}]});
+  const i=await play(has?'hypo.warnHas':'hypo.warnNone');
   if(has&&i===0){S.kit.splice(S.kit.findIndex(k=>base(k)==='sugar'),1);S.sta=Math.min(STA_MAX,S.sta+30);refresh();
     const isNew=!S.cards.hypo;S.cards.hypo=true;
-    await say({p:'hero',html:`<p>吃了方糖、坐下來休息了一會兒，頭暈和發抖慢慢好轉了。</p><p class="good">體力恢復 30</p><div class="card"><b>${CARDS.hypo.title}</b><p>${CARDS.hypo.text}</p></div>${isNew?'<p class="good">獲得知識卡</p>':''}`});}
-  else if(!has)await say({p:'hero',html:'<p class="small">體力歸零就會昏倒。雜貨店有賣方糖，可以放在急救背包裡備用。</p>'});
+    await play('hypo.ate',{newTag:isNew?'<p class="good">獲得知識卡</p>':''});}
+  else if(!has)await play('hypo.tip');
 }
 async function faint(reason){
   stopInput();
-  await say({icon:'…',who:'',html:reason==='mushroom'?'<p class="bad">吃下野生菇後，肚子絞痛、全身冒冷汗，眼前一黑……</p>':'<p class="bad">眼前突然一片黑，雙腳一軟，倒在地上……</p>'});
+  await play(reason==='mushroom'?'faint.mushroom':'faint.other');
   $('fade').classList.add('on');await sleep(RM?0:800);
   const summary=nextDay();
   S.scene='home';S.pos={x:420,y:660};buildScene();S.sta=Math.round(STA_MAX*.6);
   S.coins-=MED_FEE;refresh();$('fade').classList.remove('on');
   if(reason==='mushroom'){
-    await say({p:'grandpa',html:'<p>你終於醒了！村人發現你倒在地上，意識不清。大家趕快打電話找醫生，讓你側躺，免得吐出來的東西嗆到，還把剩下的菇拿給醫生看。</p>'});
-    await say({p:'grandpa',html:'<p>醫生說你是吃了有毒的野生菇。孩子，野生菇絕對不能隨便吃！</p>'});
+    await play('faint.mushroomWake');
     S.cards.mushroom=true;S.cards.faint=true;
-    await say({p:'grandpa',html:`<div class="card"><b>${CARDS.faint.title}</b><p>${CARDS.faint.text}</p></div><div class="card"><b>${CARDS.mushroom.title}</b><p>${CARDS.mushroom.text}</p></div><p class="good">獲得知識卡</p>`});}
+    await play('faint.mushroomCards');}
   else{
-    await say({p:'grandpa',html:'<p>你終於醒了！你空著肚子工作過度，昏倒在路邊。醫生來家裡看過了，說是太累又沒吃東西。</p><p>以後頭暈、冒冷汗、發抖的時候就要停下來休息，吃點糖。急救背包裡也可以放幾顆方糖。</p>'});
+    await play('faint.otherWake');
     S.cards.hypo=true;
-    await say({p:'grandpa',html:`<div class="card"><b>${CARDS.hypo.title}</b><p>${CARDS.hypo.text}</p></div>`});}
+    await play('faint.otherCard');}
   await say({icon:'￥',who:'醫療費',html:`<p>醫生的診療費 ${MED_FEE} 金幣。</p>${S.coins<0?`<p class="bad">金幣不夠，先欠著 ${-S.coins} 金幣。還清之前不能在商店買東西。</p>`:`<p>剩下 ${S.coins} 金幣。</p>`}<p class="small">今天是第 ${S.day} 天，體力恢復到 ${S.sta}。</p>`});
   if(summary)await say({icon:'☀',who:`第 ${S.day} 天`,html:summary});
   save();refresh();
@@ -268,7 +139,6 @@ function say(o){return new Promise(res=>{
   $('dialog').hidden=false;if(o.onRender)o.onRender($('dText'),finish);
   const fb=bs.querySelector('button:not([disabled])');fb&&fb.focus({preventScroll:true});
 });}
-async function lines(p,arr){for(const t of arr)await say({p,html:`<p>${t}</p>`});}
 
 /* ================= 場景繪製 ================= */
 const plane=$('plane');
@@ -338,22 +208,14 @@ window.addEventListener('resize',fit);
 
 /* ================= 劇情 ================= */
 function goalText(){switch(S.step){
-  case 0:return '和爺爺說話。';
-  case 1:return '到村子南邊的森林找樵夫阿木，向他借斧頭。';
-  case 2:return '砍樹收集木材，拿到雜貨店賣掉。';
-  case 3:return '接委託板的工作賺金幣，到雜貨店擴充包包。';
-  case 4:return '回南方森林看看阿木。';
-  case 5:{const a=S.flagWoodDone?'✓':'□',b=S.flagKidDone?'✓':'□';return `到雜貨店買急救用品，幫助受傷的村民。${a} 阿木　${b} 小芽`;}
-  case 6:return '回家告訴爺爺這個好消息。';
-  case 7:return '穿過南方森林，到爺爺的農田拿工具、種小麥。';
-  case 8:return `建造乾糧製造機（木材 ${MACHINE_WOOD} 份＋${MACHINE_COIN} 金幣）。`;
-  case 9:return `收成小麥，用乾糧製造機做出第一包乾糧（小麥 ${RATION_WHEAT} 份）。`;
-  default:{if(S.coins<0)return `你還欠醫療費 ${-S.coins} 金幣，賺錢還清之前不能買東西。`;
-    if(S.f.p3&&!S.f.final){if(S.castleDone)return '回綠葉村，把救援的經過告訴爺爺。';if(!S.f.tablet)return '往東走，到河谷看看那塊古老的石碑。';if(!S.f.hunter)return '到東方草原找獵人阿鹿。';if(!S.f.guard)return '往北走到落石之城，和守衛說話。';return `準備好急救背包、${RATION_NEED} 包有效的乾糧和 ${WATER_NEED} 瓶開水，再進入落石之城。`;}
-    if(S.step>=10&&!S.f.p3)return '回家和爺爺說說話，好像有新的消息。';
-    if(!S.bench)return `在農田蓋一座工作台（木材 ${BENCH_WOOD} 份），之後就能做自動化機器。`;
-    if(!S.spr.length||!S.harvester)return '用工作台製作自動灑水器和自動收割機；記得每天送禮給村民。';
-    return '農場自動化完成！繼續送禮、接委託，準備好你的背包。';}}}
+  case 5:return T('goal.5',{a:S.flagWoodDone?'✓':'□',b:S.flagKidDone?'✓':'□'});
+  case 0:case 1:case 2:case 3:case 4:case 6:case 7:case 8:case 9:return T('goal.'+S.step);
+  default:{if(S.coins<0)return T('goal.debt',{debt:-S.coins});
+    if(S.f.p3&&!S.f.final){if(S.castleDone)return T('goal.castleDone');if(!S.f.tablet)return T('goal.tablet');if(!S.f.hunter)return T('goal.hunter');if(!S.f.guard)return T('goal.guard');return T('goal.prepare');}
+    if(S.step>=10&&!S.f.p3)return T('goal.p3');
+    if(!S.bench)return T('goal.bench');
+    if(!S.spr.length||!S.harvester)return T('goal.auto');
+    return T('goal.done');}}}
 function npcHasNews(id){
   if(S.event&&S.event.day===S.day&&!S.event.done&&EVENTS.find(e=>e.id===S.event.id).who===id&&S.step>=7)return true;
   if(S.scene==='ruin'&&VICTIMS[id]&&!S.rescue[id])return true;
@@ -366,28 +228,21 @@ function npcHasNews(id){
   if(id==='shopkeeper')return S.step===2&&S.mat.wood>0;
   return false;}
 async function introGrandpa(){
-  await lines('grandpa',['你醒啦。坐吧，爺爺有件事一定要告訴你。',
-    '百年前，王國有一支救護騎士團。他們不靠魔法，而是靠正確的急救知識，和三件神器守護人民。',
-    '騎士團解散後，神器的內容物散落各地。現在東南方的浮空島又出現了災厄之霧……聽說還有個迷霧商人，到處賣奇怪的偏方。']);
-  await say({p:'grandpa',html:`<p>這個背包，是當年療癒之箱的外殼。它現在是空的，要靠你自己一件一件裝滿。</p><p>另外這個素材袋給你，砍的木材、挖的礦石都放這裡。</p><p class="small">獲得：急救背包（${S.kitCap} 格）、素材袋（${S.matCap} 格）</p>`,buttons:[{label:'收下',primary:true}]});
-  await say({p:'grandpa',html:`<p>先去村子南邊的森林找樵夫阿木，跟他借把斧頭。賺點錢，把包包弄大一點，冒險才走得遠。</p><p class="small">用左下角的${S.ctrl==='joy'?'搖桿':'方向鍵'}走路，靠近人或東西時按右下角的按鈕互動。做事會消耗體力，累了就回家睡覺。</p>`,buttons:[{label:'出發',primary:true}]});
+  await play('introGrandpa.welcome');
+  await play('introGrandpa.bag',{kitCap:S.kitCap,matCap:S.matCap});
+  await play('introGrandpa.go',{ctrlName:S.ctrl==='joy'?'搖桿':'方向鍵'});
   S.cards.legend=true;S.step=1;
 }
 async function accident(){
   busy=true;
   try{
-    await say({p:'wood',html:'<p>嘿，你來啦！看我示範一下正確的砍法——</p>'});
-    await say({icon:'！',who:'',html:'<p class="bad">斧頭一滑，阿木的前臂割開一道口子，鮮血直流！</p>'});
-    await say({p:'wood',html:'<p>唔……好痛！你、你身上有沒有什麼可以用的東西？</p>'});
-    await say({p:'hero',html:'<p>（翻開急救背包……裡面什麼都沒有。）</p>'});
-    const i=await say({p:'merchant',html:'<p>哎呀呀，真巧。我這裡有上等的雪白棉花球，往傷口裡一塞，血馬上就不流了。一顆只要 5 金幣喔。</p>',
-      buttons:[{label:'買棉花球塞進傷口'},{label:'不買。請阿木用他乾淨的手帕直接壓住傷口，我去叫爺爺'}]});
-    if(i===0){await say({p:'grandpa',html:'<p class="bad">住手！</p><p>棉花的纖維會黏在傷口上，也止不了血。手邊沒有用品的時候，先用乾淨的布直接用力壓住傷口，再找人幫忙。</p>'});}
-    else{await say({p:'grandpa',html:'<p class="good">做得好。</p><p>手邊沒有用品的時候，先用乾淨的布直接用力壓住傷口，再找人幫忙。這是正確的判斷。</p>'});addHeart('wood',1);}
-    await say({p:'merchant',html:'<p>嘖……真是個不懂行情的老頭。我們後會有期。</p>'});
-    await say({p:'grandpa',html:'<p>血暫時壓住了，但傷口還需要好好處理。孩子，這就是急救背包空著的代價。</p><p>去雜貨店買<b>拋棄式手套、無菌紗布、彈性繃帶</b>回來幫阿木包紮。書架上那本外出血的書，爺爺也幫你翻出來了。</p>'});
+    await play('accident.opening');
+    const i=await play('accident.merchant');
+    if(i===0){await play('accident.buy');}
+    else{await play('accident.refuse');addHeart('wood',1);}
+    await play('accident.after');
     S.cards.bleed=true;S.step=5;
-    await say({icon:'★',who:'新的內容',html:'<p>雜貨店開始販售急救用品。</p><p class="small">迷霧商人也在村子裡擺起了攤……</p>'});
+    await play('accident.newContent');
   }finally{busy=false;save();refresh();}
 }
 
@@ -558,10 +413,7 @@ async function takeBin(){
 async function eatMushroom(){
   if(Math.random()<.5){S.mat.mushroom--;S.pendingFaint=null;await faint('mushroom');return;}
   S.mat.mushroom--;S.sta=0;refresh();
-  await say({p:'hero',html:'<p>烤得香噴噴的野生菇，看起來很好吃……吃下去了。</p>'});
-  await say({icon:'！',who:'',html:'<p class="bad">過了一會兒，肚子開始絞痛，頭暈、想吐……</p><p class="small">體力歸零了。</p>'});
-  await say({p:'grandpa',html:'<p>傻孩子！野生菇怎麼能隨便吃！爺爺馬上帶你去給醫生看，剩下的菇也要一起帶去，讓醫生知道你吃了什麼。</p>'});
-  await say({p:'grandpa',html:`<p>${CARDS.mushroom.text}</p><p class="good">獲得知識卡：${CARDS.mushroom.title}</p>`});
+  await play('eatMushroom');
   S.cards.mushroom=true;
 }
 async function gift(id){
@@ -612,11 +464,11 @@ async function well(){
   const i=await say({p:'hero',who:'水井',html:`<p>清涼的井水，看起來很清澈。</p><p class="small">素材袋 ${matUsed()}/${S.matCap}　井水 ${S.mat.rawwater||0} 份</p>`,
     buttons:[{label:'打一桶井水（體力 2）',primary:true,disabled:matFree()<=0},{label:'直接喝一口'},{label:'離開'}]});
   if(i===0){if(!await useSta(2))return;S.mat.rawwater=(S.mat.rawwater||0)+1;toast('打了一桶井水');
-    if(first){S.cards.water=true;await say({p:'grandpa',html:`<p>井水要拿回家用爐火煮開再用喔。</p><div class="card"><b>${CARDS.water.title}</b><p>${CARDS.water.text}</p></div><p class="good">獲得知識卡：${CARDS.water.title}</p>`});}}
+    if(first){S.cards.water=true;await play('well.first');}}
   else if(i===1){
-    if(Math.random()<.5){S.sta=Math.max(0,S.sta-15);refresh();await say({p:'hero',html:'<p class="bad">喝完沒多久，肚子開始咕嚕咕嚕地痛……</p><p class="small">體力 -15</p>'});if(S.sta<=0)S.pendingFaint='work';}
-    else await say({p:'hero',html:'<p>咕嚕咕嚕……好像沒什麼事。不過這次沒事，不代表下次也沒事。</p>'});
-    S.cards.water=true;await say({p:'grandpa',html:`<p>傻孩子，井水怎麼能直接喝！</p><div class="card"><b>${CARDS.water.title}</b><p>${CARDS.water.text}</p></div>`});}
+    if(Math.random()<.5){S.sta=Math.max(0,S.sta-15);refresh();await play('well.sick');if(S.sta<=0)S.pendingFaint='work';}
+    else await play('well.ok');
+    S.cards.water=true;await play('well.scold');}
 }
 async function boil(){
   const raw=S.mat.rawwater||0,space=S.kitCap-S.kit.length;
@@ -628,36 +480,35 @@ async function boil(){
 }
 async function tablet(){
   const c=CARDS.fracture,isNew=!S.cards.fracture;S.cards.fracture=true;S.f.tablet=true;
-  await say({icon:'碑',who:'救護騎士團的石碑',html:`<p>石碑上刻著褪色的文字，還有一幅手臂被三角巾吊起來的圖……</p><div class="card"><b>${c.title}</b><p>${c.text}</p></div>${isNew?`<p class="good">獲得知識卡：${c.title}</p>`:''}`});
+  await play('tablet',{newTag:isNew?`<p class="good">獲得知識卡：${c.title}</p>`:''});
 }
 async function hunter(){
   if(!S.f.hunter){
     const needs={ice:1,elastic:1};
-    await say({p:'hunt',html:'<p>啊，有人來了……我追兔子時踩空，腳踝扭到了，腫得好厲害。</p>'});
+    await play('hunter.hello');
     const miss=needCheck(needs);
-    if(miss.length){await say({p:'hunt',html:`<p>需要：${needTxt(needs)}。</p><p class="warn">你的背包還缺：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p><p class="small">冰敷袋在雜貨店買得到。</p>`});return;}
-    await quiz('hunt','扭傷初期，哪一種處理正確？',['立刻熱敷，促進血液循環','用力按摩，把瘀血揉開','冰敷，用彈性繃帶適度壓迫，並把腳抬高'],2,
-      '急性扭傷初期應冰敷、壓迫、抬高，減輕腫脹。熱敷和按摩可能讓腫脹更嚴重。冰敷袋外面要包一層布。');
+    if(miss.length){await play('hunter.missing',{need:needTxt(needs),missing:missTxt(miss)});return;}
+    await quizOf('hunt');
     takeKit(needs);S.f.hunter=true;S.coins+=30;S.earned+=30;addHeart('hunt',2);S.cards.sprain=true;
-    await say({p:'hunt',html:'<p>好多了！我叫阿鹿，是這片草原的獵人。這 30 金幣你收下。</p><p>往北走就是落石之城，最近那裡常常地鳴，你要小心。</p><p class="good">獲得知識卡：扭傷初期怎麼處理</p>'});return;}
-  return chatMenu('hunt','草原上的風真舒服。要去落石之城的話，往北走就到了。');
+    await play('hunter.thanks');return;}
+  return chatMenu('hunt',T('chat.hunt'));
 }
 async function guardTalk(){
   if(S.scene==='gate'&&!S.f.guard){
-    await lines('guard',['站住！……原來是團長的孫子。','最近地底常常轟隆作響，城牆都出現裂縫了。城裡的人卻沒幾個懂急救，真讓人擔心。',`如果你要進城，最好先把急救背包準備好，也帶上 ${RATION_NEED} 包乾糧和 ${WATER_NEED} 瓶乾淨的水。萬一被困住，救援可能要好幾天才能進來。`]);
+    await play('guard.warn');
     S.f.guard=true;return;}
-  return chatMenu('guard','城門隨時為你開著。進城前，再確認一次背包吧。');
+  return chatMenu('guard',T('chat.guard'));
 }
 function quakeFx(){if(RM)return;$('game').classList.add('quake');setTimeout(()=>$('game').classList.remove('quake'),900);}
 async function gateDoor(){
-  if(!S.f.guard){await say({p:'guard',html:'<p>等一下，先過來跟我說話。</p>'});return;}
+  if(!S.f.guard){await play('guard.wait');return;}
   const valid=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length;
   const first=!S.castleDone;
-  const i=await say({p:'hero',who:first?'落石之城':'再次挑戰落石之城',html:`<p>${first?'城堡深處傳來低沉的轟隆聲。進去之後，災難可能隨時發生。':'城堡已經修好了。要再進行一次地震救援挑戰嗎？'}</p>
+  const i=await say({p:'hero',who:first?'落石之城':'再次挑戰落石之城',html:`<p>${T(first?'gate.first':'gate.again')}</p>
     <p>急救背包：${S.kit.length}/${S.kitCap}　有效乾糧：${valid} 包　開水：${kitCount('water')} 瓶</p><p class="small">背包裡的東西在救援中用掉就沒了，確定準備好了嗎？</p>`,buttons:[{label:'進入城堡',primary:true},{label:'再準備一下'}]});
   if(i!==0)return;
-  quakeFx();await say({icon:'！',who:'',html:'<p class="bad">轟隆隆隆——！</p><p>大地劇烈搖晃，城牆崩落，塵土漫天！</p>'});
-  await say({p:'hero',html:'<p>（先趴下、掩護、穩住……搖晃停了。）</p><p>確認周圍環境安全後，發現有三個人受傷倒在廣場上！</p>'});
+  quakeFx();await play('quake.rumble');
+  await play('quake.after');
   S.quake=true;S.rescue={};S.rescueMiss={};S.fakesAtStart=[...new Set(S.kit.filter(k=>ITEMS[base(k)].fake).map(base))];S.expiredAtStart=S.kit.filter(expired).length;
   await go('ruin',[838,880]);quakeFx();
 }
@@ -679,18 +530,18 @@ async function victim(id){
   if(Object.keys(VICTIMS).every(k=>S.rescue[k]))await rationPhase();
 }
 async function rationPhase(){
-  await lines('guard',['大家的傷都處理過了……但是城門被落石完全堵住了。','外面的救援隊說，要三天後才能挖通。這三天，大家需要食物撐下去。']);
+  await play('rations.intro');
   const valid=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length;
   let ok=false;
   if(valid>=RATION_NEED){for(let n=0;n<RATION_NEED;n++)S.kit.splice(S.kit.findIndex(k=>base(k)==='ration'&&!expired(k)),1);ok=true;
-    await say({p:'hero',html:`<p>你從背包拿出 ${RATION_NEED} 包乾糧分給大家。</p><p class="good">三天份的食物，足夠撐到救援隊進來！</p>`});}
-  else await say({p:'hero',html:`<p>你翻遍背包，只找到 ${valid} 包還能吃的乾糧${S.expiredAtStart?`（另外有 ${S.expiredAtStart} 包已經過期）`:''}。</p><p class="bad">食物不夠三天份，大家只能餓著肚子等待……</p>`});
+    await play('rations.ok');}
+  else await play('rations.short',{valid,expiredNote:S.expiredAtStart?`（另外有 ${S.expiredAtStart} 包已經過期）`:''});
   S.rescue.rations=ok?'ok':'missing';
-  await say({p:'guard',html:'<p>還有……城裡的水井被震垮了，井水混濁得不能用。大家這三天也需要喝水。</p>'});
+  await play('water.intro');
   const w=kitCount('water');
   if(w>=WATER_NEED){for(let n=0;n<WATER_NEED;n++)S.kit.splice(S.kit.findIndex(k=>base(k)==='water'),1);S.rescue.water='ok';
-    await say({p:'hero',html:`<p>你拿出 ${WATER_NEED} 瓶煮過的開水。</p><p class="good">三天份的飲用水準備充足！</p>`});}
-  else{S.rescue.water='missing';await say({p:'hero',html:`<p>你的背包裡只有 ${w} 瓶開水。</p><p class="bad">水不夠三天份，大家只能省著喝……</p>`});}
+    await play('water.ok');}
+  else{S.rescue.water='missing';await play('water.short',{w});}
   const stars=['guard','cook','soldier','rations','water'].filter(k=>S.rescue[k]==='ok').length;
   S.castleDone=true;S.castleBest=Math.max(S.castleBest||0,stars);refresh();
   await castleReport(stars);
@@ -750,7 +601,7 @@ async function board(){
 async function shopMenu(){
   let msg='',keepScroll=0;
   if(S.step===2&&!S.warned.firstSell){S.warned.firstSell=true;
-    await say({p:'shopkeeper',html:'<p>哎呀，是團長家的孫子！要賣木材嗎？一份 3 金幣。</p><p>賺了錢記得來擴充包包喔，我這裡的背包可是全村最耐用的。對了，村口的委託板也常有人需要木材，報酬更好。</p>'});
+    await play('shop.firstSell');
     if(!S.mat.wood)return;}
   for(;;){
     let pick=null;
@@ -774,7 +625,7 @@ async function shopMenu(){
     msg='';
     if(pick.startsWith('sell:')){const k=pick.slice(5),g=S.mat[k]*MATS[k].sell;S.coins+=g;S.earned+=g;msg=`✓ 賣出${MATS[k].name} ×${S.mat[k]}，獲得 ${g} 金幣`;S.mat[k]=0;if(S.step===2&&k==='wood')S.step=3;}
     else if(pick==='ration'){const list=S.kit.map((k,i)=>[k,i]).filter(([k])=>base(k)==='ration'&&!expired(k)).sort((a,b)=>expiry(a[0])-expiry(b[0]));const [k,i]=list[0];S.kit.splice(i,1);S.coins+=RATION_SELL;S.earned+=RATION_SELL;msg=`✓ 賣出乾糧 ×1（保存到第 ${expiry(k)} 天），獲得 ${RATION_SELL} 金幣`;}
-    else if(pick==='mush'){await say({p:'shopkeeper',html:'<p>野生菇？不行不行，我不收來路不明的野生菇。萬一有毒，吃了會出人命的！</p>'});}
+    else if(pick==='mush'){await play('shop.noMushroom');}
     else if(pick.startsWith('part:')){const k=pick.slice(5);S.coins-=MATS[k].buy;S.mat[k]++;msg=`✓ 已購買：${MATS[k].name} ×1`;}
     else if(pick==='seed'){S.coins-=MATS.seed.buy;S.mat.seed++;msg=`✓ 已購買：小麥種子 ×1（共 ${S.mat.seed} 包）`;}
     else if(pick==='mat'){S.coins-=matNext.cost;S.matCap=matNext.cap;S.matLv++;addHeart('shopkeeper',1);msg=`✓ 素材袋擴充為 ${S.matCap} 格`;}
@@ -784,7 +635,7 @@ async function shopMenu(){
   }
 }
 async function merchantMenu(){
-  if(S.step<5){await say({p:'merchant',html:'<p>呵呵……時候還沒到。我們很快就會再見面的，小勇者。</p>'});return;}
+  if(S.step<5){await play('merchant.early');return;}
   let mmsg='';
   for(;;){let pick=null;
     const html=(mmsg?`<p class="warn">${mmsg}</p>`:'')+`<p class="small">急救背包 ${S.kit.length}/${S.kitCap}</p>`+(S.step>=7?'<p>對了，森林裡長的野生菇，烤一烤可香了，我自己天天吃呢，呵呵。</p>':'')+'<p>便宜又有效的祖傳祕方，別人都不知道喔。</p>'+MERCHANT_GOODS.map(k=>{const it=ITEMS[k];const full=S.kit.length>=S.kitCap;
@@ -809,74 +660,62 @@ async function talk(id){
   if(S.event&&S.event.day===S.day&&!S.event.done&&S.step>=7){const ev=EVENTS.find(e=>e.id===S.event.id);if(ev.who===id)return doEvent(ev);}
   if(id==='hunt')return hunter();
   if(id==='guard')return guardTalk();
-  if(id==='shopkeeper'){if(S.step>=7){const i=await say({p:'shopkeeper',html:'<p>歡迎光臨！今天想買點什麼？</p>',buttons:[{label:'購物',primary:true},{label:'送禮'},{label:'離開'}]});if(i===0)return shopMenu();if(i===1)return gift('shopkeeper');return;}return shopMenu();}
+  if(id==='shopkeeper'){if(S.step>=7){const i=await play('shop.welcome');if(i===0)return shopMenu();if(i===1)return gift('shopkeeper');return;}return shopMenu();}
   if(id==='merchant')return merchantMenu();
   if(id==='grandpa'){
     if(S.step===0)return introGrandpa();
     const fakes=[...new Set(S.kit.filter(k=>ITEMS[base(k)].fake))];
     if(fakes.length){const k=fakes[0];
-      const i=await say({p:'grandpa',html:`<p>等等，你背包裡怎麼有「${ITEMS[k].name}」？</p><p>${ITEMS[k].truth}</p>`,buttons:[{label:'把它丟掉',primary:true},{label:'先留著'}]});
+      const i=await play('grandpa.fake',{name:ITEMS[k].name,truth:ITEMS[k].truth});
       if(i===0){S.kit=S.kit.filter(x=>x!==k);addHeart('grandpa',1);toast(`丟掉了 ${ITEMS[k].name}`);}return;}
     const old=S.kit.filter(expired);
-    if(old.length){const i=await say({p:'grandpa',html:`<p>你背包裡有 ${old.length} 包乾糧已經過期了。過期的食物不能吃，防災包裡的食物要定期檢查、換新。</p>`,buttons:[{label:'把過期乾糧丟掉',primary:true},{label:'先留著'}]});
+    if(old.length){const i=await play('grandpa.expired',{n:old.length});
       if(i===0){S.kit=S.kit.filter(k=>!expired(k));addHeart('grandpa',1);}return;}
     if(S.castleDone&&!S.f.final){
       const st=S.castleBest||0;
-      await lines('grandpa',[`你回來了！聽說你在落石之城救了人，拿到了 ${st} 顆星。`,
-        '急救不是魔法。是你平常就把背包準備好、把知識記在心裡，災難來的時候才救得了人。',
-        '療癒之箱和守護之囊都亮起來了。孩子，你已經是一名真正的救護見習騎士了。']);
-      await say({icon:'★',who:'序章完成',html:'<p>恭喜完成序章「綠葉谷」！</p><p>你可以繼續在綠葉谷生活、接委託、幫助村民，也可以再挑戰一次落石之城，爭取更多星星。</p><p class="small">世界地圖上的其他區域，將隨課程單元陸續開放。</p>'});
+      await play('grandpa.castleBack',{stars:st});
       S.f.final=true;return;}
     if(S.step>=10&&!S.f.p3){
-      await lines('grandpa',['最近地底常常傳來轟隆聲……落石之城那邊的地鳴越來越頻繁了。',
-        '阿木幫忙把往河谷的落石清開了。從村子往東走，經過河谷和東方草原，就能到落石之城。',
-        '河谷有一塊騎士團留下的石碑，記得去看看。還有，災難不會等你準備好，背包要隨時備妥。']);
-      await say({icon:'★',who:'新的區域',html:`<p>綠葉村往東的道路開放了：河谷、東方草原、落石之城。</p><p class="small">進城前，準備好急救背包、${RATION_NEED} 包還在保存期限內的乾糧，以及 ${WATER_NEED} 瓶開水。</p>`});
+      await play('grandpa.p3');
       S.f.p3=true;return;}
     if(S.step===6){
-      await lines('grandpa',['阿木和小芽都跟我說了，你做得很好。療癒之箱開始發出微光了。',
-        '不過，災難來的時候，光有急救用品還不夠。人要活下去，還需要食物和水。',
-        '穿過南方森林，再往南走，有爺爺年輕時的農田。去種些小麥，再用木材做一台乾糧製造機。那附近還有一座舊礦坑，挖到金礦可以換不少錢。']);
-      await say({icon:'★',who:'新的區域',html:'<p>南方森林往南的小路開放了：爺爺的農田、礦坑。</p><p class="small">做事會消耗體力，回家睡覺就能恢復並進入下一天。</p>'});
+      await play('grandpa.step6');
       S.step=7;return;}
     if(S.step===9&&kitCount('ration')>0){
-      await lines('grandpa',['這就是你親手做的乾糧啊。','記住，防災包裡的食物要選免烹煮、耐保存的，還要定期檢查保存期限。我把這本書放在書架上了，有空讀一讀。']);
+      await play('grandpa.step9a');
       S.step=10;S.cards.food=true;
-      await say({icon:'★',who:'第二階段完成',html:'<p>你學會了種田、挖礦，還做出了第一包乾糧。</p><p>背包裡的「療癒之箱」和「守護之囊」都開始發出微光……</p><p class="small">下一階段將開放：河谷、東方草原、落石之城。</p>'});return;}
-    const tip=S.step>=10?(S.bench?'自動化機器能幫你省下很多時間。有空就多陪村裡的人聊聊天吧。':'農田那邊可以蓋一座工作台，用材料做些省力的機器。'):S.step===7?'先去工具棚拿農具，翻土、澆水、播種。每天都要澆水，小麥才會長大。':S.step===8?`乾糧製造機需要木材 ${MACHINE_WOOD} 份和 ${MACHINE_COIN} 金幣，多砍點樹、挖點礦吧。`:S.step===9?'小麥收成後放進乾糧製造機，做好了拿給爺爺看看。':S.step===5?'阿木和小芽都需要幫忙，記得先確認背包裡的用品夠不夠。':'多砍點木材、接委託賺錢，把包包擴充起來吧。累了就回來睡一覺。';
+      await play('grandpa.step9b');return;}
+    const tip=T(S.step>=10?(S.bench?'tip.autoDone':'tip.bench'):S.step===7?'tip.7':S.step===8?'tip.8':S.step===9?'tip.9':S.step===5?'tip.5':'tip.default');
     return chatMenu('grandpa',tip);
   }
   if(id==='wood'){
-    if(S.step===1){await say({p:'wood',html:'<p>喔！團長的孫子啊，要借斧頭？拿去吧，這把是我年輕時用的。</p><p>砍樹的時候靠近樹，連按三下就能砍倒。木材可以拿去雜貨店賣錢。</p><p class="good">獲得：斧頭</p>'});S.axe=true;S.step=2;addHeart('wood',1);return;}
+    if(S.step===1){await play('wood.axe');S.axe=true;S.step=2;addHeart('wood',1);return;}
     if(S.step===5&&!S.flagWoodDone){
       const needs={glove:1,gauze:1,elastic:1};const miss=needCheck(needs);
-      if(miss.length){await say({p:'wood',html:`<p>手臂還隱隱作痛……需要：${needTxt(needs)}。</p><p class="warn">你的背包還缺：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p>`});return;}
-      await say({p:'wood',html:'<p>你把用品都帶來了！麻煩你幫我好好包紮。</p>'});
-      await quiz('wood','打開手帕，傷口又開始滲血。你已經戴上手套，接下來應該？',
-        ['用無菌紗布覆蓋傷口，直接加壓止血，再用彈性繃帶固定','先把傷口旁邊的血跡擦乾淨，看清楚傷口多深','塗一點清涼薄荷牙膏，減輕疼痛'],0,
-        '出血時以直接加壓止血為優先，止住後再用繃帶固定敷料。偏方不能處理傷口。');
+      if(miss.length){await play('wood.missing',{need:needTxt(needs),missing:missTxt(miss)});return;}
+      await play('wood.bring');
+      await quizOf('wood');
       takeKit(needs);S.flagWoodDone=true;S.coins+=40;S.earned+=40;addHeart('wood',2);
-      await say({p:'wood',html:'<p>包得真好，一點都不鬆！這 40 金幣你收下。以後砍樹我會小心的。</p>'});
+      await play('wood.thanks');
       if(S.flagKidDone){S.step=6;await prologueDone();}
       return;}
-    return chatMenu('wood',S.step>=7?'聽說你在種田？森林南邊那條路我幫你清乾淨了。':'多砍點樹，素材袋滿了就拿去賣！');
+    return chatMenu('wood',T(S.step>=7?'chat.wood7':'chat.wood'));
   }
   if(id==='kid'){
     if(S.step===5&&!S.flagKidDone){
       const needs={saline:1,bandaid:1};const miss=needCheck(needs);
-      await say({p:'kid',html:'<p>嗚嗚……我剛剛跑太快跌倒了，膝蓋磨破皮，上面都是沙子……</p>'});
-      if(miss.length){await say({p:'kid',html:`<p class="warn">你的背包還缺：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p><p class="small">需要：${needTxt(needs)}</p>`});return;}
-      await quiz('kid','傷口上有沙土，該怎麼處理？',['用生理食鹽水沖乾淨，再貼上 OK 繃','塗一點清涼薄荷牙膏，涼涼的比較不痛','吹一吹，直接貼上 OK 繃'],0,
-        '擦傷要先把砂土沖洗乾淨，可用生理食鹽水或乾淨的清水。不要塗牙膏等偏方，也不要用嘴吹傷口。');
+      await play('kid.hurt');
+      if(miss.length){await play('kid.missing',{need:needTxt(needs),missing:missTxt(miss)});return;}
+      await quizOf('kid');
       takeKit(needs);S.flagKidDone=true;S.coins+=20;S.earned+=20;addHeart('kid',2);
-      await say({p:'kid',html:'<p>不痛了！謝謝大哥哥！這是我存的零用錢，給你！</p><p class="good">獲得 20 金幣</p>'});
+      await play('kid.thanks');
       if(S.flagWoodDone){S.step=6;await prologueDone();}
       return;}
-    return chatMenu('kid',S.step>=6?'大哥哥好厲害，我長大也要當救護騎士！':'大哥哥要去冒險嗎？好好喔！');
+    return chatMenu('kid',T(S.step>=6?'chat.kid6':'chat.kid'));
   }
 }
 async function prologueDone(){
-  await say({icon:'★',who:'序章完成',html:'<p>你幫助了阿木和小芽，綠葉村的人開始信任你了。</p><p>回家告訴爺爺吧。</p>'});
+  await play('prologueDone');
 }
 
 /* 背包 */
@@ -975,8 +814,5 @@ S=load()||newState();
 if(S.started)$('btnStart').textContent='繼續冒險';
 $('btnStart').onclick=()=>{S.started=true;$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
-if(location.hash==='#debug')window.__fa={moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
-</script>
-</body>
-</html>
