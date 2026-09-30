@@ -23,6 +23,8 @@
 - `reference/` 已從 repo 移除（含舊紅十字圖）。舊圖仍留在 git 歷史；如需徹底清除要改寫歷史，這要先問老師。
 - V3.1 已處理：穿牆修正（`snapFree()`，`tools/wall_test.py` 驗證：舊版 33 個測試點穿牆 24 個，新版 0 個）、cap.webp 更新（RATIO cap=0.414）。V3.1 第 3～5 節（旅館二樓遮罩、設備檢查點、砂輪機任務）屬第二章內容，隨階段 D 合併；對照用原型在 `~/Projects/first-aid-kingdom-v3-spec/v3.1/`。
 - 階段 B 資料表 SQL 草稿在 `supabase/drafts/001_fa_tables.sql`。**尚未套用到 Supabase**：老師已同意內容，但套用指令被權限分類器擋下，需老師自行授權或在 Supabase SQL 編輯器貼上執行。套用前不要寫依賴這些表的程式邏輯以外的上線動作。
+- 階段 B 程式已寫好，在 `stage-b` 分支（**尚未併進 main，線上版沒有登入功能**）：`js/cloud.js`（登入、同步、每日存檔點、失敗記錄）、`js/config.js`（Supabase URL 與可公開的 publishable key）、`game.js` 整合（存檔排程上傳、bed/faint 建存檔點、`rescueFail()` 救援失敗、設定選單登出）、標題畫面登入區。測試：`tools/cloud_test.py`（用模擬雲端，16 項全過）。真正的 Google 登入與 Supabase 尚未實測，因為資料表 SQL 還沒套用、Google 登入與重新導向網址也需老師在 Supabase 後台設定。套用與設定完成後才把 `stage-b` 併進 main。
+- 階段 B 尚未完成：PWA（manifest、iOS 設定）、手機橫向版面與直向提示（取自 V3 head.html）。救援失敗的 5 個致命情境（山洪、颱風躲樹下、失溫、溺水、觸電）與 3 個一般錯誤扣 100 金幣，都屬於 V3 新功能，等階段 D 合併時再接 `rescueFail()`。
 - **尚未合併 V3 新功能**：V3 原型在本機 `~/Projects/first-aid-kingdom-v3-spec/`（src、content、reference/prototype-latest-DO-NOT-COMMIT.html）。不要用它的 src 覆蓋現有程式，把它當規格逐項合併進目前結構。
 - 下一步：階段 B（Google 登入＋雲端存檔），摘要待老師確認。
 

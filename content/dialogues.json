@@ -193,6 +193,18 @@
   "shop.noMushroom": [
    {"p":"shopkeeper","html":"<p>野生菇？不行不行，我不收來路不明的野生菇。萬一有毒，吃了會出人命的！</p>"}
   ],
+  "rescueFail.intro": [
+   {"icon":"…","who":"救援失敗","html":"<p class=\"bad\">{intro}</p><p>在現實中，這個選擇可能讓你失去生命。</p>"}
+  ],
+  "rescueFail.card": [
+   {"icon":"卡","who":"正確的做法","html":"<div class=\"card\"><b>{cardTitle}</b><p>{cardText}</p></div>"}
+  ],
+  "rescueFail.back": [
+   {"icon":"☀","who":"回到今天早上","html":"<p>回到今天早上，重新做出選擇。</p><p class=\"small\">救援隊出動，花費 {RESCUE_FEE} 金幣。</p>"}
+  ],
+  "rescueFail.backNoCheckpoint": [
+   {"icon":"☀","who":"救援隊","html":"<p>你在原地醒了過來，重新做出選擇。</p><p class=\"small\">救援隊出動，花費 {RESCUE_FEE} 金幣。</p>"}
+  ],
   "merchant.early": [
    {"p":"merchant","html":"<p>呵呵……時候還沒到。我們很快就會再見面的，小勇者。</p>"}
   ]

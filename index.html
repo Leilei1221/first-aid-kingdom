@@ -113,6 +113,8 @@ button.pill{cursor:pointer}
 .card b{color:var(--gold)}
 @media (max-width:640px){.box{flex-direction:column;gap:8px}.face{width:60px;height:60px}#title .hero-art{opacity:.35;max-width:80%}#title .copy{max-width:86%}#goal{bottom:auto;top:118px;max-width:calc(100% - 24px)}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.authbox{margin-top:18px;font-size:14px;line-height:1.7;color:#E9E1CF;min-height:24px}.authbox .small{opacity:.8}
+.authbox button{min-height:40px;padding:0 18px;border-radius:999px;border:2px solid var(--gold-dim);background:rgba(16,24,33,.6);color:var(--text);font-weight:700;font-size:15px;cursor:pointer;margin:4px 8px 4px 0}
 </style>
 </head>
 <body>
@@ -124,6 +126,7 @@ button.pill{cursor:pointer}
     <div class="sub">序章　綠葉谷</div>
     <p>百年前守護王國的救護騎士團早已解散，神器也散落各地。如今災厄之霧再次出現，而你，是最後一任騎士團團長的孫子。</p>
     <button class="cta" id="btnStart" type="button">開始冒險</button>
+    <div class="authbox" id="authBox" aria-live="polite"></div>
   </div>
 </section>
 
@@ -157,6 +160,8 @@ button.pill{cursor:pointer}
   </div>
 </div>
 
+<script src="js/config.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
