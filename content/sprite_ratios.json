@@ -1,0 +1,30 @@
+{
+  "RATIO": {
+    "hunt": 0.594,
+    "cook": 0.618,
+    "guard": 0.644,
+    "soldier": 0.451,
+    "hero": 0.634,
+    "grandpa": 0.658,
+    "kid": 0.573,
+    "wood": 0.578,
+    "shopkeeper": 0.651,
+    "merchant": 0.639,
+    "tree": 0.889,
+    "stump": 1.48,
+    "bed": 0.97,
+    "machine": 0.974,
+    "sprinkler": 1.474,
+    "harvester": 1.227,
+    "bench": 1.139,
+    "bin": 0.959,
+    "rock": 1.254,
+    "rock_gold": 1.235,
+    "rubble": 1.772,
+    "soil_dry": 1.391,
+    "soil_wet": 1.391,
+    "sprout": 1.368,
+    "tall": 1.239,
+    "ripe": 1.232
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "MAT_UP": [
+    {
+      "cap": 20,
+      "cost": 40
+    },
+    {
+      "cap": 30,
+      "cost": 90
+    },
+    {
+      "cap": 40,
+      "cost": 160
+    }
+  ],
+  "KIT_UP": [
+    {
+      "cap": 6,
+      "cost": 60
+    },
+    {
+      "cap": 8,
+      "cost": 120
+    },
+    {
+      "cap": 10,
+      "cost": 200
+    },
+    {
+      "cap": 12,
+      "cost": 280
+    },
+    {
+      "cap": 14,
+      "cost": 360
+    }
+  ],
+  "LOAD_OK": 8,
+  "LOAD_HEAVY": 12,
+  "STA_MAX": 100,
+  "COST": {
+    "chop": 4,
+    "mine": 5,
+    "till": 3,
+    "water": 3,
+    "plant": 2
+  },
+  "GROW_DAYS": 3,
+  "RATION_WHEAT": 3,
+  "RATION_LIFE": 10,
+  "MACHINE_WOOD": 20,
+  "MACHINE_COIN": 100,
+  "BENCH_WOOD": 10,
+  "MED_FEE": 100,
+  "HYPO_AT": 20,
+  "RATION_NEED": 3,
+  "RATION_SELL": 15,
+  "WATER_NEED": 3
+}

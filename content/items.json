@@ -1,0 +1,194 @@
+{
+  "ITEMS": {
+    "glove": {
+      "name": "拋棄式手套",
+      "ch": "套",
+      "color": "#4F8FD6",
+      "text": "#fff",
+      "price": 20,
+      "w": 1,
+      "desc": "處理傷口、接觸血液前先戴上，保護自己也保護傷者。"
+    },
+    "gauze": {
+      "name": "無菌紗布",
+      "ch": "紗",
+      "color": "#F4F4F0",
+      "text": "#333",
+      "price": 15,
+      "w": 1,
+      "desc": "覆蓋傷口、直接加壓止血。"
+    },
+    "elastic": {
+      "name": "彈性繃帶",
+      "ch": "繃",
+      "color": "#D9B38C",
+      "price": 25,
+      "w": 2,
+      "desc": "固定敷料，也能對扭傷處適度壓迫。"
+    },
+    "saline": {
+      "name": "生理食鹽水",
+      "ch": "鹽",
+      "color": "#CDE7E3",
+      "price": 20,
+      "w": 3,
+      "desc": "沖洗傷口上的砂土髒污。"
+    },
+    "bandaid": {
+      "name": "OK繃",
+      "ch": "OK",
+      "color": "#E8B87A",
+      "price": 10,
+      "w": 1,
+      "desc": "小傷口清潔後貼上保護。"
+    },
+    "ice": {
+      "name": "冰敷袋",
+      "ch": "冰",
+      "color": "#8FD3F0",
+      "price": 25,
+      "w": 2,
+      "desc": "扭傷、挫傷、蜂螫腫痛時冰敷用。使用時外面要包一層布。"
+    },
+    "water": {
+      "name": "開水",
+      "ch": "水",
+      "color": "#BFE3F5",
+      "w": 2,
+      "desc": "煮沸放涼的乾淨開水，可以喝，也可以代替生理食鹽水沖洗傷口。"
+    },
+    "sugar": {
+      "name": "方糖",
+      "ch": "糖",
+      "color": "#FFF3DC",
+      "text": "#8A5A2B",
+      "price": 10,
+      "w": 1,
+      "desc": "體力快用完、頭暈冒冷汗時可以吃，快速補充糖分。"
+    },
+    "sling": {
+      "name": "三角巾",
+      "ch": "巾",
+      "color": "#E07A5F",
+      "text": "#fff",
+      "price": 30,
+      "w": 2,
+      "desc": "可做成懸臂帶支撐受傷的手臂，也能包紮固定。"
+    },
+    "ration": {
+      "name": "乾糧",
+      "ch": "糧",
+      "color": "#D9B26B",
+      "w": 2,
+      "desc": "用小麥做成、免烹煮的乾糧，是防災避難包的食物。要注意保存期限。"
+    },
+    "cotton": {
+      "name": "雪白棉花球",
+      "ch": "棉",
+      "color": "#FFFFFF",
+      "text": "#666",
+      "price": 5,
+      "w": 1,
+      "fake": true,
+      "desc": "迷霧商人說：「傷口塞一團棉花，血馬上就不流了！」",
+      "truth": "棉花纖維容易黏在開放性傷口上，也不能有效止血。傷口要用無菌紗布覆蓋，直接加壓。"
+    },
+    "toothpaste": {
+      "name": "清涼薄荷牙膏",
+      "ch": "膏",
+      "color": "#9BE0C6",
+      "price": 5,
+      "w": 2,
+      "fake": true,
+      "desc": "迷霧商人說：「燙傷、擦傷塗一點，涼涼的馬上不痛！」",
+      "truth": "牙膏不能處理燙傷或擦傷：它會把熱悶在皮膚裡，也可能增加感染風險。燙傷要先用流動的冷水沖，擦傷要先沖洗乾淨。"
+    },
+    "soy": {
+      "name": "祖傳醬油",
+      "ch": "醬",
+      "color": "#6B3A22",
+      "text": "#fff",
+      "price": 5,
+      "w": 3,
+      "fake": true,
+      "desc": "迷霧商人說：「燙傷塗醬油，保證不留疤！」",
+      "truth": "燙傷不可以塗醬油等偏方：會污染傷口、增加感染風險，也可能妨礙醫護人員判斷傷勢。"
+    }
+  },
+  "MATS": {
+    "wood": {
+      "name": "木材",
+      "sell": 3,
+      "icon": "i_twig"
+    },
+    "stone": {
+      "name": "石頭",
+      "sell": 2,
+      "icon": "i_pebble"
+    },
+    "gold": {
+      "name": "金礦",
+      "sell": 25,
+      "icon": "rock_gold"
+    },
+    "wheat": {
+      "name": "小麥",
+      "sell": 4,
+      "icon": "ripe"
+    },
+    "seed": {
+      "name": "小麥種子",
+      "buy": 5
+    },
+    "flower": {
+      "name": "野花",
+      "sell": 3,
+      "icon": "i_flower"
+    },
+    "scrap": {
+      "name": "廢鐵片",
+      "sell": 1,
+      "icon": "i_scrap"
+    },
+    "mushroom": {
+      "name": "野生菇",
+      "icon": "i_mushroom"
+    },
+    "rawwater": {
+      "name": "井水（未煮沸）"
+    },
+    "pipe": {
+      "name": "銅管",
+      "buy": 30,
+      "icon": "i_pipe"
+    },
+    "gear": {
+      "name": "齒輪",
+      "buy": 60,
+      "icon": "i_gear"
+    }
+  },
+  "SHOP_MED": [
+    "glove",
+    "gauze",
+    "elastic",
+    "saline",
+    "bandaid",
+    "sling",
+    "ice",
+    "sugar"
+  ],
+  "MERCHANT_GOODS": [
+    "cotton",
+    "toothpaste",
+    "soy"
+  ],
+  "GIFTABLE": [
+    "flower",
+    "wheat",
+    "wood",
+    "stone",
+    "gold",
+    "mushroom"
+  ]
+}

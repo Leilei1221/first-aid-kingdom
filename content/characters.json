@@ -1,0 +1,116 @@
+{
+  "PEOPLE": {
+    "grandpa": {
+      "name": "爺爺",
+      "img": "grandpa",
+      "face": "grandpa_face",
+      "hk": 1
+    },
+    "kid": {
+      "name": "小芽",
+      "img": "kid",
+      "face": "kid_face",
+      "hk": 0.72
+    },
+    "wood": {
+      "name": "樵夫阿木",
+      "img": "wood",
+      "face": "wood_face",
+      "hk": 1.08
+    },
+    "shopkeeper": {
+      "name": "雜貨店老闆",
+      "img": "shopkeeper",
+      "face": "shopkeeper_face",
+      "hk": 1
+    },
+    "merchant": {
+      "name": "迷霧商人",
+      "img": "merchant",
+      "face": "merchant_face",
+      "hk": 1.05
+    },
+    "hunt": {
+      "name": "獵人阿鹿",
+      "img": "hunt",
+      "face": "hunt_face",
+      "hk": 1.02
+    },
+    "guard": {
+      "name": "城堡守衛",
+      "img": "guard",
+      "face": "guard_face",
+      "hk": 1.06
+    },
+    "cook": {
+      "name": "廚娘",
+      "img": "cook",
+      "face": "cook_face",
+      "hk": 0.98
+    },
+    "soldier": {
+      "name": "見習小兵",
+      "img": "soldier",
+      "face": "soldier_face",
+      "hk": 0.95
+    }
+  },
+  "LIKES": {
+    "grandpa": {
+      "love": "wood",
+      "hate": "mushroom",
+      "loveTxt": "木柴！爺爺年紀大了怕冷，這個最實用了。",
+      "normTxt": "謝謝你記得爺爺。",
+      "hateTxt": ""
+    },
+    "kid": {
+      "love": "flower",
+      "hate": "stone",
+      "loveTxt": "哇！好漂亮的花！我要插在窗邊！",
+      "normTxt": "謝謝大哥哥！",
+      "hateTxt": "……石頭？這個我不要啦。"
+    },
+    "wood": {
+      "love": "wheat",
+      "loveTxt": "新鮮小麥！今晚可以烤麵包了，謝啦！",
+      "normTxt": "喔，謝謝你啊。",
+      "hateTxt": ""
+    },
+    "shopkeeper": {
+      "love": "gold",
+      "loveTxt": "天啊，是金礦！你真是太貼心了！",
+      "normTxt": "哎呀，謝謝你！",
+      "hateTxt": ""
+    }
+  },
+  "STORIES": {
+    "shopkeeper": {
+      "card": "burn",
+      "text": [
+        "跟你說個祕密。我年輕時在廚房打翻一鍋熱湯，當時聽人說塗牙膏最有效……結果傷口發炎，留下了疤。",
+        "後來團長教我「沖、脫、泡、蓋、送」，我一輩子都記得。你也要記住喔。"
+      ]
+    },
+    "wood": {
+      "card": "spine",
+      "text": [
+        "我年輕時從樹上摔下來，脖子痛得要命。同伴急著把我扶起來，幸好你爺爺大喊「別動他！」",
+        "醫生說，那時如果亂動，我可能再也站不起來了。"
+      ]
+    },
+    "kid": {
+      "card": "choke",
+      "text": [
+        "上次弟弟吃糖果噎到，臉都發紫了！",
+        "是爺爺從後面抱住他，在肚子上用力一壓，糖果就噴出來了。爺爺說這叫哈姆立克法！"
+      ]
+    },
+    "grandpa": {
+      "card": "cpr",
+      "text": [
+        "騎士團的第一件神器「心跳之匣」，守護的是停止的心跳。總有一天你會需要它。",
+        "來，爺爺先教你，看到有人突然倒下時該怎麼做。"
+      ]
+    }
+  }
+}
