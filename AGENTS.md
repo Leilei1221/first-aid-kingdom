@@ -21,6 +21,8 @@
 - 已用 V3 圖片覆蓋 hero、grandpa、grandpa_face、home（綠底白十字），並加入 V3 新素材 39 張（第二章、傷口圖 w_*）。`w_cut_arm.webp` 依 V3 文件不使用，未加入。
 - `assets/manifest.json` 仍是舊的 55 張清單（啟動時預載用）。新功能合併、實際用到新圖時，再跑 `python3 tools/gen_manifest.py`，不要預載沒用到的圖。
 - `reference/` 已從 repo 移除（含舊紅十字圖）。舊圖仍留在 git 歷史；如需徹底清除要改寫歷史，這要先問老師。
+- V3.1 已處理：穿牆修正（`snapFree()`，`tools/wall_test.py` 驗證：舊版 33 個測試點穿牆 24 個，新版 0 個）、cap.webp 更新（RATIO cap=0.414）。V3.1 第 3～5 節（旅館二樓遮罩、設備檢查點、砂輪機任務）屬第二章內容，隨階段 D 合併；對照用原型在 `~/Projects/first-aid-kingdom-v3-spec/v3.1/`。
+- 階段 B 資料表 SQL 草稿在 `supabase/drafts/001_fa_tables.sql`。**尚未套用到 Supabase**：老師已同意內容，但套用指令被權限分類器擋下，需老師自行授權或在 Supabase SQL 編輯器貼上執行。套用前不要寫依賴這些表的程式邏輯以外的上線動作。
 - **尚未合併 V3 新功能**：V3 原型在本機 `~/Projects/first-aid-kingdom-v3-spec/`（src、content、reference/prototype-latest-DO-NOT-COMMIT.html）。不要用它的 src 覆蓋現有程式，把它當規格逐項合併進目前結構。
 - 下一步：階段 B（Google 登入＋雲端存檔），摘要待老師確認。
 

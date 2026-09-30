@@ -167,6 +167,7 @@ function buildScene(){
   if(S.forageDay!==S.day)genForage();
   (S.forage[S.scene]||[]).forEach(f=>{const e=sprite('','',f.x,f.y+14,Math.round(H*.34),1);e.querySelector('img').src=A[PICK[f.t].icon];e.querySelector('img').style.filter='drop-shadow(0 0 6px rgba(255,240,170,.95))';forageEls.push(e);});
   (SIGNS[S.scene]||[]).forEach(g=>{const e=document.createElement('div');e.className='ent signpost';e.style.transform=`translate(${g.x}px,${g.y}px) translate(-50%,-50%)`;e.textContent=g.t();plane.appendChild(e);});
+  snapFree();
   heroEl=sprite('shadow','',S.pos.x,S.pos.y,H,RATIO.hero);heroEl.id='hero';heroImg=heroEl.querySelector('img');heroImg.src=A.hero;
   refresh();fit();
 }
@@ -753,6 +754,8 @@ function free(x,y){const H=sc().heroH,r=H*.12;
   if(!(walkable(x,y)&&walkable(x-r,y)&&walkable(x+r,y)&&walkable(x,y-r*.5)&&walkable(x,y+r*.5)))return false;
   for(const [bx,by,rx] of blockers()){if(((x-bx)/rx)**2+((y-by)/(rx*.5))**2<1)return false;}
   return true;}
+/* 目前位置不可走時，螺旋搜尋最近的可走位置；找不到就回場景入口（避免穿牆） */
+function snapFree(){if(free(S.pos.x,S.pos.y))return;for(let r=8;r<600;r+=8)for(let k=0;k<16;k++){const a=k/16*Math.PI*2,x=S.pos.x+Math.cos(a)*r,y=S.pos.y+Math.sin(a)*r;if(x>10&&y>10&&x<MW-10&&y<MH-10&&free(x,y)){S.pos={x,y};return;}}const sp=sc().spawn;if(sp)S.pos={x:sp[0],y:sp[1]};}
 const input={jx:0,jy:0,keys:{},pad:{}};
 function stopInput(){input.jx=input.jy=0;input.pad={};input.keys={};resetKnob();if(walking){walking=false;heroEl&&heroEl.classList.remove('walking');}}
 function inputVec(){let x=input.jx,y=input.jy;const k=input.keys,p=input.pad;
@@ -764,7 +767,7 @@ function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;
     const [vx,vy]=inputVec();
     if(Math.hypot(vx,vy)>.12){const sp=sc().heroH*1.8*speedMul();
       const nx=S.pos.x+vx*sp*dt,ny=S.pos.y+vy*sp*dt;
-      if(!free(S.pos.x,S.pos.y)){S.pos.x=Math.max(20,Math.min(MW-20,nx));S.pos.y=Math.max(20,Math.min(MH-20,ny));}
+      if(!free(S.pos.x,S.pos.y)){snapFree();}
       else{const dx=nx-S.pos.x,dy=ny-S.pos.y;
         if(free(nx,S.pos.y))S.pos.x=nx;
         else if(Math.abs(dx)>Math.abs(dy)*.3){for(const m of [1,2,3,-1,-2,-3]){const sy=m*Math.abs(dx);if(free(nx,S.pos.y+sy)){S.pos.x=nx;S.pos.y+=sy;break;}}}
