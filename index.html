@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>急救王國：綠葉谷</title>
+<meta name="theme-color" content="#0F1720">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="急救王國">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
 <style>
@@ -115,6 +123,60 @@ button.pill{cursor:pointer}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 .authbox{margin-top:18px;font-size:14px;line-height:1.7;color:#E9E1CF;min-height:24px}.authbox .small{opacity:.8}
 .authbox button{min-height:40px;padding:0 18px;border-radius:999px;border:2px solid var(--gold-dim);background:rgba(16,24,33,.6);color:var(--text);font-weight:700;font-size:15px;cursor:pointer;margin:4px 8px 4px 0}
+/* ===== 手機橫向 ===== */
+#rotate{display:none;position:fixed;inset:0;z-index:100;background:rgba(10,16,22,.96);color:#FFF3D6;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px;font-weight:900;font-size:20px}
+#rotate .ph{width:70px;height:120px;border:5px solid var(--gold);border-radius:14px;animation:rot 2s ease-in-out infinite}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+#rotate small{font-weight:500;font-size:14px;color:var(--muted)}
+#btnFull{display:none}
+@media (orientation:portrait) and (max-width:700px){ body.playing #rotate{display:flex} }
+@media (max-height:520px) and (orientation:landscape){
+  .hud{top:max(6px,env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .hud::-webkit-scrollbar{display:none}
+  .pill{min-height:32px;padding:0 10px;font-size:12px;gap:5px;flex:none}
+  .place{font-size:13px}
+  .sta{width:44px;height:8px}
+  #goal{font-size:12px;padding:5px 10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 300px);line-height:1.4}
+  #toast{top:48px;font-size:13px;padding:6px 14px}
+  .ctrl{bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  #joy{left:calc(12px + env(safe-area-inset-left,0px));width:112px;height:112px}
+  #joy .knob{width:50px;height:50px;margin:-25px 0 0 -25px}
+  #dpad{left:calc(12px + env(safe-area-inset-left,0px));width:126px;height:126px;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px)}
+  #dpad svg{width:20px;height:20px}
+  #act{right:calc(14px + env(safe-area-inset-right,0px));width:86px;height:86px;font-size:14px;padding:6px}
+  #dialog{padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px))}
+  .box{max-height:96%;padding:10px 14px;gap:10px;border-radius:14px}
+  .face{width:48px;height:48px;font-size:22px;border-width:2px}
+  .who{font-size:15px;margin:0 0 2px}
+  #dText{font-size:14px;line-height:1.6}
+  #dText h3{font-size:16px}#dText h4{font-size:14px;margin:8px 0 4px}
+  .q{font-size:15px}
+  .btns{gap:5px;margin-top:8px}
+  .btn{min-height:38px;font-size:13px;padding:6px 12px}
+  .row{padding:6px 0;gap:8px}.row button{min-height:34px;padding:0 10px;font-size:12px}
+  .badge{--s:30px}.badge.lg{--s:52px}
+  .card{padding:8px 12px;margin:6px 0}
+  #title h1{font-size:44px}#title p{font-size:14px;margin:10px 0 16px;line-height:1.6}#title .sub{font-size:16px}
+  .cta{min-height:44px;font-size:16px;padding:0 24px}
+  #btnFull{display:inline-flex}
+}
+
+@media (max-height:520px) and (orientation:landscape){
+  .box{flex-direction:row!important;gap:10px}
+  .face{width:44px!important;height:44px!important}
+  #title .hero-art{opacity:1;max-width:40%}#title .copy{max-width:56%}
+}
+@media (max-height:320px) and (orientation:landscape){
+  .hud{top:4px}.pill{min-height:26px;font-size:11px;padding:0 8px}.place{font-size:11px}.sta{width:32px}
+  #goal{display:none}
+  #joy{width:88px;height:88px}#joy .knob{width:40px;height:40px;margin:-20px 0 0 -20px}
+  #dpad{width:102px;height:102px;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,34px)}
+  #act{width:70px;height:70px;font-size:12px}
+  .box{padding:8px 10px;max-height:98%}.face{width:34px!important;height:34px!important;font-size:16px}
+  .who{font-size:13px}#dText{font-size:12.5px;line-height:1.5}.q{font-size:13px}
+  .btn{min-height:30px;font-size:12px;padding:4px 10px}.btns{margin-top:6px;gap:4px}
+  #title h1{font-size:30px}#title p{display:none}#title .sub{font-size:13px;margin-bottom:10px}.cta{min-height:36px;font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -140,6 +202,7 @@ button.pill{cursor:pointer}
     <button class="pill" id="btnBag" type="button">背包 <b id="bagInfo">0/4</b></button>
     <button class="pill" id="btnCards" type="button">知識卡 <b id="cardInfo">0</b></button>
     <button class="pill" id="btnSettings" type="button">設定</button>
+    <button class="pill" id="btnFull" type="button">全螢幕</button>
   </div>
   <div id="goal"></div>
   <div id="toast"></div>
@@ -151,6 +214,7 @@ button.pill{cursor:pointer}
   </div>
   <button class="ctrl" id="act" type="button" aria-label="動作">動作</button>
   <div id="fade"></div>
+  <div id="rotate"><div class="ph"></div>請把手機轉成橫向<small>橫著玩，畫面和操作都比較舒服</small></div>
 </section>
 
 <div id="dialog" hidden>

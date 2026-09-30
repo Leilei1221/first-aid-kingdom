@@ -857,7 +857,8 @@ async function rescueFail({scenario,choice,intro,cardKey}){
 async function startScene(){busy=false;if(S.step===0&&S.day===1)checkpoint();if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}}
 S=load()||newState();
 if(S.started)$('btnStart').textContent='繼續冒險';
-$('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
+$('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen().then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>toast('這台裝置不支援全螢幕'));else toast('這台裝置不支援全螢幕');}catch(e){toast('這台裝置不支援全螢幕');}};
+$('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
 initCloud();
 if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
