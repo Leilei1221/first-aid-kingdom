@@ -55,5 +55,6 @@
   "HYPO_AT": 20,
   "RATION_NEED": 3,
   "RATION_SELL": 15,
-  "WATER_NEED": 3
+  "WATER_NEED": 3,
+  "RESCUE_FEE": 200
 }

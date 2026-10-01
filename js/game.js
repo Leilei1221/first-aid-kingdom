@@ -49,7 +49,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 const DLG=C.dialogues,GLOBALS=Object.assign({CARDS,ITEMS},C.balance);
 function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>sl.plots.forEach(i=>{const p=S.plots[i];if(p&&(p.st==='tilled'||(p.st==='planted'&&p.g<GROW_DAYS))&&!p.wet){p.wet=true;n++;}}));return n;}
@@ -66,7 +66,7 @@ function migrate(o){
   o.gifted=o.gifted||{};if(!o.spr){o.spr=[];for(let i=0;i<(o.sprinklers||0);i++)o.spr.push(i);}o.f=o.f||{};o.story=o.story||{};o.rescue=o.rescue||{};['hunt','guard','cook','soldier'].forEach(k=>{if(o.hearts[k]==null)o.hearts[k]=0;});o.sprinklers=o.sprinklers||0;o.bin=o.bin||0;if(!o.forage){o.forage={};o.forageDay=0;}
   Object.values(o.trees||{}).forEach(t=>{if(t.regrow&&t.regrow>1e6)t.regrow=o.day+1;});
   o.v=2;return o;}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){if(window.__loggingOut)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(window.FACloud)FACloud.queueSave(S);}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&(o.v===1||o.v===2))return migrate(o);}}catch(e){}return null;}
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -102,7 +102,7 @@ async function faint(reason){
   $('fade').classList.add('on');await sleep(RM?0:800);
   const summary=nextDay();
   S.scene='home';S.pos={x:420,y:660};buildScene();S.sta=Math.round(STA_MAX*.6);
-  S.coins-=MED_FEE;refresh();$('fade').classList.remove('on');
+  S.coins-=MED_FEE;refresh();$('fade').classList.remove('on');checkpoint();
   if(reason==='mushroom'){
     await play('faint.mushroomWake');
     S.cards.mushroom=true;S.cards.faint=true;
@@ -365,7 +365,7 @@ async function bed(){
   const i=await say({p:'hero',who:'床',html:`<p>要睡覺進入下一天嗎？</p><p class="small">體力會恢復，作物會成長（前提是今天有澆水），委託板也會換新。</p>`,buttons:[{label:'睡覺',primary:true},{label:'還不想睡'}]});
   if(i!==0)return;
   $('fade').classList.add('on');await sleep(RM?0:500);
-  const html=nextDay();S.sta=STA_MAX;refresh();$('fade').classList.remove('on');
+  const html=nextDay();S.sta=STA_MAX;refresh();$('fade').classList.remove('on');checkpoint();
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>早安！體力恢復了。</p>'+html});
 }
 function nextDay(){
@@ -737,10 +737,11 @@ async function cards(){if(busy)return;busy=true;stopInput();
   try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>',buttons:[{label:'關閉',primary:true}]});}
   finally{busy=false;}}
 async function settings(){if(busy)return;busy=true;stopInput();let reset=false;
-  try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p>`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},{label:'關閉'}]});
+  try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(window.FACloud&&FACloud.email()?[{label:'登出'}]:[]),{label:'關閉'}]});
     if(i===0)S.ctrl=S.ctrl==='joy'?'pad':'joy';
     else if(i===1){const sp=sc().spawn;S.pos={x:sp[0],y:sp[1]};placeHero();camera();toast('已回到入口');}
-    else if(i===2){const j=await say({p:'hero',who:'重新開始',html:'<p>所有進度都會清除。</p>',buttons:[{label:'重新開始',danger:true},{label:'取消',primary:true}]});if(j===0){const c=S.ctrl;S=newState();S.ctrl=c;S.started=true;reset=true;}}}
+    else if(i===2){const j=await say({p:'hero',who:'重新開始',html:'<p>所有進度都會清除。</p>',buttons:[{label:'重新開始',danger:true},{label:'取消',primary:true}]});if(j===0){const c=S.ctrl;S=newState();S.ctrl=c;S.started=true;reset=true;if(window.FACloud)FACloud.clearCheckpoints();}}
+    else if(i===3&&window.FACloud&&FACloud.email()){await doSignOut();return;}}
   finally{busy=false;save();if(reset){buildScene();startScene();}else refresh();}}
 
 /* ================= 移動 ================= */
@@ -811,11 +812,54 @@ window.addEventListener('blur',stopInput);
 $('act').addEventListener('click',doAction);
 $('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
 
+/* ================= 雲端存檔與存檔點 ================= */
+const checkpoint=()=>{if(window.FACloud)try{FACloud.checkpoint(S);}catch(e){}};
+const CLOUD_TXT={ok:'已同步到雲端',loading:'同步中…',offline:'目前連不上雲端，進度先存在這台裝置，之後會自動補傳',conflict:'另一台裝置也在使用這個帳號，雲端同步已暫停（重新整理頁面可選擇要用哪一份進度）',off:'未登入，進度只存在這台裝置',nolib:'目前無法連線雲端，進度只存在這台裝置'};
+function cloudLine(){if(!window.FACloud)return '進度只存在這台裝置。';const m=FACloud.email();return (m?`已登入：${m}<br>`:'')+'雲端：'+(CLOUD_TXT[FACloud.status()]||'');}
+async function doSignOut(){window.__loggingOut=true;try{if(window.FACloud)await FACloud.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}location.reload();}
+function summary(o){return `第 ${o.day||1} 天，序章進度 ${o.step||0}，金幣 ${o.coins||0}`;}
+async function askConflict({local,cloud}){
+  const i=await say({p:'hero',who:'進度不一致',html:`<p>雲端的進度和這台裝置的進度不一樣，要用哪一個？</p><p>雲端：${summary(cloud)}</p><p>這台裝置：${summary(local)}</p><p class="small">沒選的那一份會被覆蓋。</p>`,
+    buttons:[{label:'用雲端的進度',primary:true},{label:'用這台裝置的進度'}]});
+  return i===0;}
+function renderAuth(){
+  const box=$('authBox');if(!box)return;
+  const st=window.FACloud?FACloud.status():'nolib',mail=window.FACloud?FACloud.email():null;
+  if(!window.FACloud||st==='nolib'){box.innerHTML='<span class="small">目前無法連線雲端，進度只會存在這台裝置。</span>';return;}
+  if(!mail){box.innerHTML='<button type="button" id="btnLogin">用 Google 登入（進度存雲端）</button><div class="small">也可以不登入直接玩，進度只會存在這台裝置。</div>';
+    $('btnLogin').onclick=()=>FACloud.signIn();return;}
+  box.innerHTML=`<span>已登入：${mail}</span> <span class="small">${CLOUD_TXT[st]||''}</span>`;}
+async function initCloud(){
+  if(!window.FACloud)return;
+  FACloud.onStatus(s=>{if(s==='conflict')toast('另一台裝置也在使用這個帳號，雲端同步已暫停');if(!$('title').hidden)renderAuth();});
+  const mail=await FACloud.init();renderAuth();
+  if(!mail)return;
+  const btn=$('btnStart');btn.disabled=true;btn.textContent='同步中…';
+  let raw=null;try{raw=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+  const r=await FACloud.sync(raw&&(raw.v===1||raw.v===2)?raw:null,askConflict);
+  if(r.action==='use-cloud'){const c=S.ctrl;S=migrate(r.state);if(c)S.ctrl=c;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  btn.disabled=false;btn.textContent=S.started?'繼續冒險':startLabel;renderAuth();}
+/* 救援失敗：顯示正確知識卡 → 回到當天早上的存檔點 → 扣救援費 → 記錄失敗。呼叫端在 await 之後要 return，不要繼續原本的流程。 */
+async function rescueFail({scenario,choice,intro,cardKey}){
+  stopInput();
+  await play('rescueFail.intro',{intro});
+  if(cardKey&&CARDS[cardKey]){const c=CARDS[cardKey];S.cards[cardKey]=true;await play('rescueFail.card',{cardTitle:c.title,cardText:c.text});}
+  const snap=window.FACloud?await FACloud.restore(S.day):null;
+  if(window.FACloud)FACloud.failure(scenario,choice);
+  if(snap){const cards=Object.assign({},snap.cards,S.cards),c=S.ctrl;S=migrate(snap);S.cards=cards;S.ctrl=c;S.started=true;}
+  S.coins-=RESCUE_FEE;S.pendingFaint=null;
+  $('fade').classList.add('on');await sleep(RM?0:500);buildScene();refresh();$('fade').classList.remove('on');
+  await play(snap?'rescueFail.back':'rescueFail.backNoCheckpoint');
+  save();if(window.FACloud)FACloud.flush();
+}
+
 /* ================= 啟動 ================= */
-async function startScene(){busy=false;if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}}
+async function startScene(){busy=false;if(S.step===0&&S.day===1)checkpoint();if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}}
 S=load()||newState();
 if(S.started)$('btnStart').textContent='繼續冒險';
-$('btnStart').onclick=()=>{S.started=true;$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
+$('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen().then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>toast('這台裝置不支援全螢幕'));else toast('這台裝置不支援全螢幕');}catch(e){toast('這台裝置不支援全螢幕');}};
+$('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+initCloud();
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
