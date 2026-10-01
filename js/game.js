@@ -49,7 +49,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 const DLG=C.dialogues,GLOBALS=Object.assign({CARDS,ITEMS},C.balance);
 function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>sl.plots.forEach(i=>{const p=S.plots[i];if(p&&(p.st==='tilled'||(p.st==='planted'&&p.g<GROW_DAYS))&&!p.wet){p.wet=true;n++;}}));return n;}
@@ -623,7 +623,7 @@ async function shopMenu(){
     let pick=null;
     const matNext=MAT_UP[S.matLv],kitNext=KIT_UP[S.kitLv];
     const full0=S.kit.length>=S.kitCap;
-    const debt=S.coins<0?`<p class="bad">你還欠醫療費 ${-S.coins} 金幣，還清之前不能買東西，但可以賣素材。</p>`:'';
+    const debt=S.coins<0?`<p class="bad">你還欠醫療費 ${-S.coins} 金幣。急救用品可以先賒帳（欠款最多到 ${DEBT_LIMIT} 金幣），其他東西還清之前不能買，但可以賣素材。</p>`:'';
     let html=(msg?`<p class="good" style="position:sticky;top:-18px;z-index:2;background:#1d3a2a;border:1.5px solid var(--ok);border-radius:10px;padding:8px 12px;margin-top:0">${msg}</p>`:'')+`<p class="small">金幣 <b style="color:var(--gold)">${S.coins}</b>　急救背包 <b style="color:${full0?'var(--bad)':'var(--gold)'}">${S.kit.length}/${S.kitCap}</b>${full0?'（已滿，可以擴充背包，或打開背包丟掉用不到的東西）':''}　素材袋 ${matUsed()}/${S.matCap}</p>`+debt+'<h4>賣出素材</h4>'+['wood','stone','gold','wheat','flower','scrap'].filter(k=>k==='wood'||S.step>=7).map(k=>`<div class="row"><div class="info"><b>${MATS[k].name}</b><span>一份 ${MATS[k].sell} 金幣，素材袋裡有 ${S.mat[k]} 份</span></div><button type="button" data-a="sell:${k}" ${S.mat[k]?'':'disabled'}>全部賣出</button></div>`).join('');
     if(S.step>=7)html+=`<h4>種子</h4><div class="row"><div class="info"><b>小麥種子</b><span>${MATS.seed.buy} 金幣一包，放進素材袋；一包種一塊田</span></div><button type="button" data-a="seed" ${S.coins>=MATS.seed.buy&&matFree()>0?'':'disabled'}>購買</button></div>`;
     {const good=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length,bad=S.kit.filter(expired).length;
@@ -634,7 +634,7 @@ async function shopMenu(){
     html+=`<div class="row"><div class="info"><b>素材袋 ${S.matCap} → ${matNext?matNext.cap:'已達上限'} 格</b><span>${matNext?matNext.cost+' 金幣':''}</span></div>${matNext?`<button type="button" data-a="mat" ${S.coins>=matNext.cost?'':'disabled'}>擴充</button>`:''}</div>`;
     html+=`<div class="row"><div class="info"><b>急救背包 ${S.kitCap} → ${kitNext?kitNext.cap:'已達上限'} 格</b><span>${kitNext?kitNext.cost+' 金幣。格數變多，但裝太重會走得比較慢':'背包已經是最大尺寸'}</span></div>${kitNext?`<button type="button" data-a="kit" ${S.coins>=kitNext.cost?'':'disabled'}>擴充</button>`:''}</div>`;
     if(S.step>=5){html+=`<h4>急救用品</h4>`+SHOP_MED.map(k=>{const it=ITEMS[k];const full=S.kit.length>=S.kitCap;
-      return `<div class="row">${badge(k)}<div class="info"><b>${it.name}　<span style="color:var(--gold)">背包裡有 ${kitCount(k)} 個</span></b><span>${it.price} 金幣　重量 ${it.w}　${it.desc}</span></div><button type="button" data-a="buy:${k}" ${S.coins>=it.price&&!full?'':'disabled'}>${full?'背包已滿':S.coins<it.price?'金幣不足':'買 1 個'}</button></div>`;}).join('');}
+      return `<div class="row">${badge(k)}<div class="info"><b>${it.name}　<span style="color:var(--gold)">背包裡有 ${kitCount(k)} 個</span></b><span>${it.price} 金幣　重量 ${it.w}　${it.desc}</span></div><button type="button" data-a="buy:${k}" ${S.coins-it.price>=-DEBT_LIMIT&&!full?'':'disabled'}>${full?'背包已滿':S.coins-it.price<-DEBT_LIMIT?'超過賒帳上限':S.coins<it.price?'賒帳買 1 個':'買 1 個'}</button></div>`;}).join('');}
     else html+=`<p class="small">急救用品目前缺貨中。</p>`;
     const r=await say({p:'shopkeeper',html,buttons:[{label:'離開',primary:true}],onRender:(root,fin)=>{const box=root.closest('.box');box.scrollTop=keepScroll;root.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{keepScroll=box.scrollTop;pick=b.dataset.a;fin('pick');});}});
     if(r!=='pick')break;
