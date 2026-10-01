@@ -21,9 +21,13 @@ python3 -m http.server 8765
 ```
 再開 http://localhost:8765/index.html 。
 
+## 老師端
+`teacher.html`：老師用學校 Google 帳號登入後，查看自己班學生的遊戲進度（只讀），可匯出 CSV。學生端沒有連結。
+
 ## 測試
 - `#debug`：網址加 `#debug`，且在瀏覽器 Console 先執行 `localStorage.setItem('fa-debug','1')`，才會出現 `window.__fa`（學生沒設旗標就看不到）。
 - 行為比對：`tools/compare_run.py`（新舊版逐字比對對話與狀態）；`tools/walk_test.py`（鍵盤走路測出口）。
+- `tools/cloud_test.py`（雲端同步）、`tools/teacher_test.py`（老師端）：用模擬資料測試。
 - 新增或刪除圖片後：`python3 tools/gen_manifest.py`。
 
 ## 修改內容的注意事項

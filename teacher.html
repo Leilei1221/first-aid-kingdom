@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>急救王國：老師端進度</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0F1720;--panel:#18232F;--panel2:#223142;--text:#F5EFE2;--muted:#9FB0BC;--gold:#E3B95B;--ok:#86E0A4;--bad:#FF9A9A;--warn:#FFD68A;--line:rgba(255,255,255,.12);
+  --sans:"Noto Sans TC","PingFang TC","Heiti TC","Microsoft JhengHei",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6}
+main{max-width:980px;margin:0 auto;padding:16px 16px 60px}
+h1{font-size:22px;margin:6px 0 2px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+button,select{font:inherit;color:var(--text);background:var(--panel2);border:1.5px solid var(--line);border-radius:10px;padding:8px 14px;min-height:42px}
+button{cursor:pointer;font-weight:700}
+button.primary{background:var(--gold);color:#2A1D08;border-color:#F3D48A}
+.sum{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 14px}
+.sum div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px;min-width:110px}
+.sum b{display:block;font-size:22px;color:var(--gold)}
+.sum span{font-size:13px;color:var(--muted)}
+details.st{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:8px 0}
+details.st[open]{border-color:var(--gold)}
+summary{list-style:none;cursor:pointer;padding:10px 14px;display:grid;grid-template-columns:44px 1fr;gap:4px 10px;align-items:center}
+summary::-webkit-details-marker{display:none}
+.seat{font-weight:900;color:var(--gold);text-align:center}
+.nm{font-weight:700}
+.nm small{color:var(--muted);font-weight:400;margin-left:8px}
+.chips{grid-column:2;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted)}
+.chips b{color:var(--text)}
+.prog{grid-column:2;display:flex;align-items:center;gap:10px;font-size:14px}
+.prog i{flex:1;height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;display:block}
+.prog i em{display:block;height:100%;background:var(--ok)}
+.none{opacity:.6}
+.body{padding:2px 14px 14px;font-size:14px;color:var(--muted)}
+.body b{color:var(--text)}
+.hearts{display:flex;flex-wrap:wrap;gap:4px 16px;margin:6px 0}
+.debt{color:var(--bad)}
+.msg{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:18px 0}
+.small{font-size:13px;color:var(--muted)}
+a{color:var(--gold)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>急救王國：老師端進度</h1>
+  <p class="sub">只讀：只顯示您自己班上學生的遊戲進度，不會修改任何學生的存檔。</p>
+  <div id="status" class="msg">載入中…</div>
+  <div id="app" hidden>
+    <div class="bar">
+      <select id="cls" aria-label="選擇班級"></select>
+      <button id="btnRefresh" type="button">重新整理</button>
+      <button id="btnCsv" type="button" class="primary">匯出 CSV</button>
+      <span class="small" id="who"></span>
+    </div>
+    <div class="sum" id="sum"></div>
+    <div id="list"></div>
+    <p class="small">進度是學生每次行動後自動存到雲端的內容，最多有約 10 秒延遲。「尚未開始」表示這位學生還沒有用學校帳號登入過遊戲。</p>
+  </div>
+  <p class="small"><a href="./">回到遊戲</a>　<a href="#" id="btnOut" hidden>登出</a></p>
+</main>
+<script src="js/config.js"></script>
+<script src="js/teacher.js"></script>
+</body>
+</html>

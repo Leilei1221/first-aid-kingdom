@@ -22,6 +22,7 @@
 - `assets/manifest.json` 仍是舊的 55 張清單（啟動時預載用）。新功能合併、實際用到新圖時，再跑 `python3 tools/gen_manifest.py`，不要預載沒用到的圖。
 - `reference/` 已從 repo 移除（含舊紅十字圖）。舊圖仍留在 git 歷史；如需徹底清除要改寫歷史，這要先問老師。
 - V3.1 已處理：穿牆修正（`snapFree()`，`tools/wall_test.py` 驗證：舊版 33 個測試點穿牆 24 個，新版 0 個）、cap.webp 更新（RATIO cap=0.414）。V3.1 第 3～5 節（旅館二樓遮罩、設備檢查點、砂輪機任務）屬第二章內容，隨階段 D 合併；對照用原型在 `~/Projects/first-aid-kingdom-v3-spec/v3.1/`。
+- 老師端進度頁（只讀）：`teacher.html` + `js/teacher.js`（網址 `/first-aid-kingdom/teacher.html`，不放連結給學生）。只列登入老師自己的班級（`hc_classes.teacher_id = 自己`），讀 `hc_students` 名單與 `fa_saves`；權限靠 RLS（`hc_teaches_student_email`）。顯示已開始人數、主線進度%、天數、城堡星數、知識卡、金幣/欠款、好感度，可匯出 CSV。測試：`tools/teacher_test.py`（模擬資料，17 項）。老師決定：不做「全校/其他老師帳號」的進度。
 - 階段 B 資料表 SQL 在 `supabase/drafts/001_fa_tables.sql`（已套用，檔名保留作紀錄）。朋友訪客用 `fa_guests`：`insert into public.fa_guests(email, note) values ('xxx@gmail.com','朋友');`（小寫 email，由老師在 SQL Editor 執行）。
 - V3.2 已收到（本機 `~/Projects/first-aid-kingdom-v3-spec/v3.2/`：CHANGES-v3.2.md、ROADMAP.md、src、5 張新圖 capt/capt_face/deck/port/vport）：渡海航線（新場景 port/deck/vport、船長、船票與補給、停航）屬第二章，隨階段 D 合併，圖片也等那時再放進 assets 與 manifest。ROADMAP.md 是後續需求（新用品、檢傷分類、止血帶、結局與自由模式、2.5D、配樂），階段 D 規劃時納入；其中醫療內容需老師審核後才能製作。
 - 階段 B 已併進 main（2026-10-01）：`js/cloud.js`（登入、同步、每日存檔點、失敗記錄）、`js/config.js`（Supabase URL 與可公開的 publishable key）、`game.js` 整合（存檔排程上傳、bed/faint 建存檔點、`rescueFail()` 救援失敗、設定選單登出）、標題畫面登入區。測試：`tools/cloud_test.py`（模擬雲端，16 項全過）。Supabase 資料表已由老師於 2026-10-01 執行 `supabase/drafts/001_fa_tables.sql` 建立；Google 登入已啟用，重新導向網址已加入。**真實 Google 登入尚待老師實測驗收**（我不能替老師登入）。
