@@ -23,6 +23,7 @@
 - `reference/` 已從 repo 移除（含舊紅十字圖）。舊圖仍留在 git 歷史；如需徹底清除要改寫歷史，這要先問老師。
 - V3.1 已處理：穿牆修正（`snapFree()`，`tools/wall_test.py` 驗證：舊版 33 個測試點穿牆 24 個，新版 0 個）、cap.webp 更新（RATIO cap=0.414）。V3.1 第 3～5 節（旅館二樓遮罩、設備檢查點、砂輪機任務）屬第二章內容，隨階段 D 合併；對照用原型在 `~/Projects/first-aid-kingdom-v3-spec/v3.1/`。
 - 階段 B 資料表 SQL 草稿在 `supabase/drafts/001_fa_tables.sql`。**尚未套用到 Supabase**：老師已同意內容，但套用指令被權限分類器擋下，需老師自行授權或在 Supabase SQL 編輯器貼上執行。套用前不要寫依賴這些表的程式邏輯以外的上線動作。
+- V3.2 已收到（本機 `~/Projects/first-aid-kingdom-v3-spec/v3.2/`：CHANGES-v3.2.md、ROADMAP.md、src、5 張新圖 capt/capt_face/deck/port/vport）：渡海航線（新場景 port/deck/vport、船長、船票與補給、停航）屬第二章，隨階段 D 合併，圖片也等那時再放進 assets 與 manifest。ROADMAP.md 是後續需求（新用品、檢傷分類、止血帶、結局與自由模式、2.5D、配樂），階段 D 規劃時納入；其中醫療內容需老師審核後才能製作。
 - **尚未合併 V3 新功能**：V3 原型在本機 `~/Projects/first-aid-kingdom-v3-spec/`（src、content、reference/prototype-latest-DO-NOT-COMMIT.html）。不要用它的 src 覆蓋現有程式，把它當規格逐項合併進目前結構。
 - 下一步：階段 B（Google 登入＋雲端存檔），摘要待老師確認。
 
