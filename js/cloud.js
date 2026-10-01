@@ -15,7 +15,7 @@ const setStatus=s=>{if(status===s)return;status=s;listeners.forEach(f=>{try{f(s)
 /* ---------- 真實的 Supabase 存取（測試時可用 window.__faRemote 取代） ---------- */
 function makeRemote(client){return {
   async user(){const {data}=await client.auth.getSession();return data.session?data.session.user:null;},
-  signIn(){return client.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});},
+  signIn(){return client.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname,queryParams:{prompt:'select_account'}}});},
   async signOut(){await client.auth.signOut();},
   async load(e){const {data,error}=await client.from('fa_saves').select('state,updated_at').eq('email',e).maybeSingle();if(error)throw error;return data;},
   async insert(e,state){const {data,error}=await client.from('fa_saves').insert({email:e,state}).select('updated_at').single();if(error)throw error;return data.updated_at;},

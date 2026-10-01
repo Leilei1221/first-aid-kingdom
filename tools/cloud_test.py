@@ -138,6 +138,13 @@ async def main(url):
         check('T8 離線時仍可開始遊戲', not await D.evaluate("() => document.getElementById('btnStart').disabled"))
         await D.click('#btnStart'); await D.wait_for_timeout(800)
         check('T8 狀態顯示離線', await D.evaluate("() => window.FACloud.status()") == 'offline')
+        # T9：標題畫面有登出鈕；登出後回到未登入、可換帳號
+        ctxE, E = await device(ALICE); await open_(E)
+        check('T9 標題畫面有登出鈕', await E.locator('#btnLogout').count() == 1)
+        E.once('dialog', lambda d: asyncio.ensure_future(d.accept()))
+        await E.click('#btnLogout')
+        await E.wait_for_function("window.FACloud && !window.FACloud.email() && document.getElementById('btnLogin')", timeout=15000)
+        check('T9 登出後顯示登入按鈕、沒有登出鈕', await E.locator('#btnLogin').count() == 1 and await E.locator('#btnLogout').count() == 0)
         await b.close()
     n = results.count(False); print('全部通過' if not n else f'{n} 項失敗', f'（共 {len(results)} 項）'); return n
 

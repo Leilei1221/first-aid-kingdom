@@ -846,7 +846,9 @@ function renderAuth(){
   if(!window.FACloud||st==='nolib'){box.innerHTML='<span class="small">目前無法連線雲端，進度只會存在這台裝置。</span>';return;}
   if(!mail){box.innerHTML='<button type="button" id="btnLogin">用 Google 登入（進度存雲端）</button><div class="small">也可以不登入直接玩，進度只會存在這台裝置。</div>';
     $('btnLogin').onclick=()=>FACloud.signIn();return;}
-  box.innerHTML=`<span>已登入：${mail}</span> <span class="small">${CLOUD_TXT[st]||''}</span>`;}
+  box.innerHTML=`<span>已登入：${mail}</span> <span class="small">${CLOUD_TXT[st]||''}</span> <button type="button" id="btnLogout">登出（換帳號）</button>`;
+  $('btnLogout').onclick=()=>{const ok=FACloud.status()==='ok';
+    if(confirm(ok?'登出後，這台裝置上的遊戲進度會清除，雲端的進度會保留，下次登入就能接續。確定要登出嗎？':'目前進度還沒同步到雲端，登出後這台裝置上的進度會遺失。確定要登出嗎？'))doSignOut();};}
 async function initCloud(){
   if(!window.FACloud)return;
   FACloud.onStatus(s=>{if(s==='conflict')toast('另一台裝置也在使用這個帳號，雲端同步已暫停');if(!$('title').hidden)renderAuth();});
