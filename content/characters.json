@@ -53,6 +53,12 @@
       "img": "soldier",
       "face": "soldier_face",
       "hk": 0.95
+    },
+    "chief": {
+      "name": "村長",
+      "img": "chief",
+      "face": "chief_face",
+      "hk": 0.98
     }
   },
   "LIKES": {
