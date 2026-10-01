@@ -16,7 +16,36 @@
 - 精簡、低維護，不引入不必要的框架；沒有建置步驟。
 - 對外發布動作（建 repo、推送、開啟服務、寫入資料庫）先問老師。不要把金鑰、service_role key 放進 repo。
 
-## 目前進度（2026-09-30）
+## 最新狀態（2026-10-01 晚，交接用；與下方舊敘述衝突時以本節為準）
+
+### 已上線（main = origin/main，GitHub Pages）
+- 序章 + 階段 B（Google 登入、雲端存檔、每日存檔點、PWA、手機版面）+ 老師端進度頁。
+- 今天新增並已推送：
+  - **背景音樂**：5 首 m4a（`assets/music/`），`js/music.js`；預設**關閉**，設定選單開關與音量，偏好存 localStorage（`fa-music`、`fa-music-vol`），不進存檔。來源與授權：`docs/music-license-and-notes.md`（AI 輔助作曲，可用於學校公開網站；設定選單有標示文字）。給作曲者的委託說明：`docs/music-brief.md`。
+  - **隱私權政策** `privacy.html`（通用版，涵蓋急救王國、健護課教室管理系統、寵物照護）。
+  - **修正**：老闆娘受傷事件缺用品時打不開商店（`tools/shop_event_test.py`）；背包方糖可吃（體力 < `HYPO_AT` 才能吃，`tools/sugar_test.py`）；標題畫面「登出（換帳號）」鈕、登入加 `prompt=select_account`；欠款賒帳（急救用品，`DEBT_LIMIT=300`，`tools/credit_test.py`）；乾糧可吃（體力 +`RATION_EAT`=20，過期不能吃，劇情第 9 步唯一一包要留給爺爺，`tools/ration_test.py`）。
+- 這些改動都用 51 情境比對驗證（與上線版 0 差異，除了有意改的對話按鈕）。
+
+### 尚未上線
+- **防災包搬家（第一階段）**：分支 `stash`（提交 `3c1de68`，基於舊 main，合併時 `game.js` 會有小衝突，處理時保留 main 的新功能）。程式與 `tools/stash_test.py` 17 項已過；**等老師審核文字**後才定稿：`docs/stash-text-review.md`（A1–A4 為補充文件 3.5 節四處更新，尚未寫入；B1 是食物知識卡 `food` 也寫「至少三天份」，老師要提供新寫法或請先擬稿；C 為暫用新增文字）。**審核前不要動醫療與知識卡文字。** 合併後也要把防災包顯示的乾糧「吃」等新行為一起測。
+- **災後救災物資發放**（老師已同意設計，等村長圖）：山洪、地震災後，**村長**指揮發放乾糧、開水、打火石（颱風、火災先不提供）；受背包格數與負重限制；**救災物資不能賣**（防止乾糧賣 15 金幣刷錢）；只開放災後當天與隔天，過後收回、不累積；已領走的視為自己的物品。時間點是**災後**（不是進城前，避免破壞地震章末「事前準備」的評分）。山洪屬 V3 天災系統，隨**階段 D4**；只有地震的部分可先做。村長形象說明：`docs/village-chief-brief.md`（未提交；老師已用 Claude Chat 生成一張全身＋頭像，灰底，**尚未存成檔案給我**，下一步請老師給圖檔路徑，再去背、轉 `chief.webp` / `chief_face.webp`、補角色資料與對話草稿給老師審）。
+- **`origin/music-ready` 分支**：有人（老師的帳號，12:36）提交了一個小修正「設定視窗手機橫向時 4 個以上按鈕改兩欄」，**尚未併入 main**；目前設定選單最多 6 個按鈕，這個修正應該要併入，請先看過再併。該分支還有一個獨立工作樹 `~/Projects/first-aid-kingdom-musicwt`（不是我開的，不要動它的檔案）。
+- 階段 D（D1 框架 → D2 V3 共用系統 → D3 第二章＋渡海 → D4 天災與救援失敗 → D5 老師控制）尚未開始，仍須先出摘要給老師確認。
+
+### Google 登入（已完成，不要改回去）
+- 登入實際使用的 OAuth 用戶端在 Google Cloud 專案 **health-classroom（專案編號 1089473790781）**，用戶端 `health-classroom`；使用者類型已改為**外部**、發布狀態**實際運作中**，只要 email、基本資料，無額外範圍，不需 Google 審查。**這個專案不要改回「內部」**，否則校外 Gmail 又會 403 `org_internal`。
+- 這個專案同時給健護課教室管理系統、寵物照護使用；Supabase 專案 `fcstpyiggvhduaztwlrf` 共用。資料庫以名單判斷權限（老師 `hc_teacher_allowlist`、學生 `hc_students`、急救王國 `fa_guests`），校外 Gmail 登入看不到任何學生資料、也進不了教師端。
+- 之前誤改過另一個專案 `organic-justice-439513-q8`（只有 MCP Drive Client），已還原為內部。**改 Google Cloud 設定時務必看網址列的 `project=` 與用戶端 ID 開頭數字**，專案名稱有兩個都叫 My First Project。
+- 朋友與老師訪客：由老師在 Supabase SQL Editor 執行 `insert into public.fa_guests(email, note) values ('小寫email','備註');`（工具套用會被權限擋下，不要繞過）。老師的測試帳號：`phyllis1982.tw@gmail.com`。
+
+### 老師的決定與偏好（今天）
+- 欠款：不做利息；做限額賒帳（已做）。
+- 老師用 Claude Chat、ChatGPT 生圖與作曲，再交檔案給我；我只負責轉檔與接入。
+- 推送前我都先給比對結果並等老師說「推」（老師說「比對沒問題就推」「A 推」等視為同意）。
+- 測試：`tools/` 下的 `stash_test.py`、`shop_event_test.py`、`sugar_test.py`、`credit_test.py`、`ration_test.py`、`cloud_test.py`（18 項）、`teacher_test.py`（用 `teacher.html` 網址）、`compare_run.py`、`walk_test.py`、`wall_test.py`。`compare_run.py` 網址不要自己加 `#debug`（腳本會加）。macOS 沒有 `timeout` 指令；背景執行的比對要等「真正結束」才看結果。
+- 開新分支測試時用 `git worktree` 放在 scratchpad，測完要移除；`main` 若被工作樹佔用，專案資料夾不能 checkout main。
+
+## 歷史進度（2026-09-30，部分已過時）
 - 階段 A 完成並已上線：圖片外部化（assets/*.webp）、內容改讀 content/*.json、對話抽到 content/dialogues.json、`js/game.js` 為遊戲邏輯。
 - 新舊版行為比對：51 個情境、513 個對話框逐字一致（`tools/compare_run.py`）。
 - 已用 V3 圖片覆蓋 hero、grandpa、grandpa_face、home（綠底白十字），並加入 V3 新素材 39 張（第二章、傷口圖 w_*）。`w_cut_arm.webp` 依 V3 文件不使用，未加入。
@@ -55,7 +84,7 @@ python3 tools/walk_test.py http://localhost:8765/index.html
 - PWA（manifest.json、iOS 設定）需在正式網址上加。
 
 ## 接下來的順序與限制（2026-10-01 老師確認）
-1. **今天（10/1）下午序章上線，線上版維持現況，不要臨時合併任何改動。** 學生的雲端與本機存檔不可損壞。
+1. （已完成）10/1 下午序章已上線；之後的修正與功能見上方「最新狀態」。學生的雲端與本機存檔不可損壞，改存檔結構時務必保留 `migrate()` 相容。
 2. **防災包搬家（第一階段）**：規格見 `docs/HANDOFF-v3.2-world-logic-and-stash.md`。一律在獨立分支做，通過該文件第 6 節 11 項驗收（含舊存檔、實際走路、雲端來回、所有出口）與序章 51 情境比對（有意改變的進城確認對話列為唯一差異）後，由老師決定何時部署。新增 `S.stash`、`STASH_CAP=20`（balance.json）、`migrate()` 補 `[]`。第 3.5 節的新文字（知識卡 water、守衛對話、目標提示、爺爺的話）**須老師逐字審核後才寫入**，先用現有文字完成程式。防災包圖 `escape_bag.webp` 之後由老師提供，先用 badge 暫代。
 3. **階段 D（章節框架）**：順序 D1 框架 → D2 V3 共用系統 → D3 第二章＋渡海 → D4 天災與救援失敗情境 → D5 老師控制（章節開放、天災發布）。第三章（港口藍堡）由老師另用 Co-work 編寫，之後依章節資料包格式交付；D1 完成時請先寫「章節資料包格式說明」給老師轉交 Co-work（章節前綴 `ch3_`、場景/角色/對話/知識卡/事件/遮罩各自獨立成檔、特殊小遊戲另文字說明）。第二章預設**關閉**，待老師審核醫療內容並在老師端開放。
 4. 防災包是「一個物件」，位置為爺爺家／旅館房間／隨身（旅行）；第二章、第三章的設計要依此規則（見補充文件第 1、5 節）。
