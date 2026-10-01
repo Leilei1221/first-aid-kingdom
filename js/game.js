@@ -96,6 +96,13 @@ async function hypoWarn(){
     await play('hypo.ate',{newTag:isNew?'<p class="good">獲得知識卡</p>':''});}
   else if(!has)await play('hypo.tip');
 }
+/* 背包裡的方糖：體力低於 HYPO_AT 時隨時可以吃（原本只能在跨過門檻當下的提示裡吃，錯過就只能丟掉） */
+async function eatSugar(i){
+  if(S.sta>=HYPO_AT){toast('現在體力還夠，方糖先留著');return;}
+  S.kit.splice(i,1);S.sta=Math.min(STA_MAX,S.sta+30);refresh();
+  const isNew=!S.cards.hypo;S.cards.hypo=true;
+  await play('hypo.ate',{newTag:isNew?'<p class="good">獲得知識卡</p>':''});
+}
 async function faint(reason){
   stopInput();
   await play(reason==='mushroom'?'faint.mushroom':'faint.other');
@@ -731,13 +738,14 @@ async function prologueDone(){
 async function bag(){if(busy)return;busy=true;stopInput();
   try{for(;;){let pick=-1;const l=load_();const pct=Math.min(100,l/LOAD_HEAVY*100);
     const slots=S.kit.length?S.kit.map((k,i)=>{const b=base(k);const note=b==='ration'?(expired(k)?'<span style="color:var(--bad)">已過期</span>':`保存到第 ${expiry(k)} 天`):'';
-      return `<div class="row">${badge(k)}<div class="info"><b>${ITEMS[b].name}</b><span>重量 ${ITEMS[b].w}　${note}</span></div>${b==='water'?`<button type="button" data-d="${i}">喝</button> `:''}<button type="button" data-i="${i}">丟掉</button></div>`;}).join(''):'<p class="small">急救背包是空的。</p>';
+      return `<div class="row">${badge(k)}<div class="info"><b>${ITEMS[b].name}</b><span>重量 ${ITEMS[b].w}　${note}</span></div>${b==='water'?`<button type="button" data-d="${i}">喝</button> `:b==='sugar'?`<button type="button" data-g="${i}">吃</button> `:''}<button type="button" data-i="${i}">丟掉</button></div>`;}).join(''):'<p class="small">急救背包是空的。</p>';
     const tools=[S.axe&&'斧頭',S.tools.hoe&&'鋤頭',S.tools.can&&'澆水壺',S.tools.pick&&'十字鎬'].filter(Boolean).join('、')||'沒有';
     const r=await say({p:'hero',who:'我的包包',html:`<h4>急救背包 ${S.kit.length}/${S.kitCap}</h4><div class="meter"><i class="${l>LOAD_HEAVY?'over':l>LOAD_OK?'heavy':''}" style="width:${pct}%"></i></div>
       <p class="small">負重 ${l}　${l>LOAD_HEAVY?'太重了，走得很慢':l>LOAD_OK?'有點重，走路變慢':'輕鬆好走'}</p>${slots}
       <h4>素材袋 ${matUsed()}/${S.matCap}</h4>${Object.entries(S.mat).filter(([k,n])=>n>0).map(([k,n])=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name} ×${n}</b></div>${k==='mushroom'?'<button type="button" data-m="eat">吃掉</button> <button type="button" data-m="toss">丟掉</button>':''}</div>`).join('')||'<p class="small">空的</p>'}<h4>工具</h4><p>${tools}</p>`,buttons:[{label:'關閉',primary:true}],
-      onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});}});
+      onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});}});
     if(r==='drink'){if(S.drinkDay!==S.day){S.drinkDay=S.day;S.drinks=0;}S.kit.splice(pick,1);if(S.drinks<3){S.drinks++;S.sta=Math.min(STA_MAX,S.sta+10);toast('喝了開水，體力 +10');}else toast('喝了開水，已經不渴了');refresh();continue;}
+    if(r==='sugar'){await eatSugar(pick);continue;}
     if(r==='eat'){await eatMushroom();continue;}if(r==='toss'){S.mat.mushroom--;toast('丟掉了野生菇');continue;}
     if(r!=='pick')break;S.kit.splice(pick,1);refresh();}}
   finally{busy=false;save();refresh();}}
@@ -871,5 +879,5 @@ $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fulls
 $('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
 initCloud();
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
