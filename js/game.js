@@ -133,7 +133,7 @@ function say(o){return new Promise(res=>{
   const nm=o.who||(o.p==='hero'?'你':(p?p.name:''));
   $('dWho').innerHTML=`<span>${nm}</span>`+(p&&o.p in S.hearts?`<span class="hearts" aria-label="好感度 ${S.hearts[o.p]}">${hearts(o.p)}</span>`:'');
   $('dText').innerHTML=o.html||'';
-  const bs=$('dBtns');bs.innerHTML='';
+  const bs=$('dBtns');bs.innerHTML='';bs.classList.toggle('many',(o.buttons||[1]).length>3);
   (o.buttons||[{label:'繼續',primary:true}]).forEach((b,i)=>{const el=document.createElement('button');el.type='button';
     el.className='btn'+(b.primary?' primary':'')+(b.danger?' danger':'');el.textContent=b.label;if(b.disabled)el.disabled=true;el.onclick=()=>finish(i);bs.appendChild(el);});
   $('dialog').hidden=false;if(o.onRender)o.onRender($('dText'),finish);
