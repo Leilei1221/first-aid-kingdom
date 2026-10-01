@@ -561,7 +561,13 @@ async function castleReport(stars){
 async function doEvent(ev){
   await say({p:ev.who,html:`<p>${ev.intro}</p>`});
   const miss=needCheck(ev.needs);
-  if(miss.length){await say({p:ev.who,html:`<p>需要：${needTxt(ev.needs)}</p><p class="warn">你的背包還缺：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p><p class="small">今天之內帶用品回來還來得及。急救背包要隨時備著喔。</p>`});return;}
+  if(miss.length){
+    // 受傷的是雜貨店老闆娘時，賣急救用品的就是她：缺用品要能直接買，否則找她說話永遠進事件、打不開商店
+    const shop=ev.who==='shopkeeper';
+    const i=await say({p:ev.who,html:`<p>需要：${needTxt(ev.needs)}</p><p class="warn">你的背包還缺：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p><p class="small">今天之內帶用品回來還來得及。急救背包要隨時備著喔。</p>`,
+      buttons:shop?[{label:'到櫃檯買急救用品',primary:true},{label:'離開'}]:undefined});
+    if(shop&&i===0)await shopMenu();
+    return;}
   for(const q of ev.qs)await quiz(ev.who,q.q,q.opts,q.ans,q.explain);
   takeKit(ev.needs);S.event.done=true;S.coins+=20;S.earned+=20;addHeart(ev.who,1);
   const isNew=!S.cards[ev.id];S.cards[ev.id]=true;
