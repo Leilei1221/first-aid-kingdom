@@ -49,7 +49,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,STASH_CAP,RESCUE_FEE,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 const DLG=C.dialogues,GLOBALS=Object.assign({CARDS,ITEMS},C.balance);
 function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>sl.plots.forEach(i=>{const p=S.plots[i];if(p&&(p.st==='tilled'||(p.st==='planted'&&p.g<GROW_DAYS))&&!p.wet){p.wet=true;n++;}}));return n;}
@@ -65,6 +65,7 @@ function migrate(o){
   ['flower','scrap','mushroom','pipe','gear'].forEach(k=>{if(o.mat[k]==null)o.mat[k]=0;});
   o.gifted=o.gifted||{};if(!o.spr){o.spr=[];for(let i=0;i<(o.sprinklers||0);i++)o.spr.push(i);}o.f=o.f||{};o.story=o.story||{};o.rescue=o.rescue||{};['hunt','guard','cook','soldier'].forEach(k=>{if(o.hearts[k]==null)o.hearts[k]=0;});o.sprinklers=o.sprinklers||0;o.bin=o.bin||0;if(!o.forage){o.forage={};o.forageDay=0;}
   Object.values(o.trees||{}).forEach(t=>{if(t.regrow&&t.regrow>1e6)t.regrow=o.day+1;});
+  if(!Array.isArray(o.stash))o.stash=[];
   o.v=2;return o;}
 function save(){if(window.__loggingOut)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(window.FACloud)FACloud.queueSave(S);}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&(o.v===1||o.v===2))return migrate(o);}}catch(e){}return null;}
@@ -74,6 +75,7 @@ const base=k=>k.split('@')[0];
 const expiry=k=>+(k.split('@')[1]||0);
 const expired=k=>base(k)==='ration'&&S.day>expiry(k);
 const kitCount=k=>S.kit.filter(x=>base(x)===k&&!expired(x)).length;
+const stashCount=k=>S.stash.filter(x=>base(x)===k&&!expired(x)).length;
 const load_=()=>S.kit.reduce((s,k)=>s+ITEMS[base(k)].w,0);
 const matUsed=()=>Object.values(S.mat).reduce((a,b)=>a+b,0);
 const matFree=()=>S.matCap-matUsed();
@@ -156,7 +158,8 @@ function buildScene(){
     if(n.flip)e.querySelector('img').classList.add('flip');
     const tg=document.createElement('div');tg.className='tag';e.appendChild(tg);npcEls[n.id]=e;});
   (s.trees||[]).forEach(t=>{treeEls[t.id]=sprite('tree shadow','',t.x,t.y+6,Math.round(H*1.9),RATIO.tree);});
-  if(S.scene==='home'){const b=sprite('','',270,700,290,RATIO.bed);b.querySelector('img').src=A.bed;b.style.zIndex=600;}
+  if(S.scene==='home'){const b=sprite('','',270,700,290,RATIO.bed);b.querySelector('img').src=A.bed;b.style.zIndex=600;
+    const st=sprite('shadow','',1290,700,90,1);st.innerHTML='<span class="badge lg" style="--c:#2F7D4F;--tc:#fff;--s:84px">包</span>';}
   if(s.plots)PLOTS.forEach((p,i)=>{const e=sprite('plot','',p[0],p[1]+95,190,1);e.style.zIndex=Math.round(p[1]);e.hidden=true;plotEls.push(e);});
   if(s.plots){machineEl=sprite('','',300,560,Math.round(H*1.9),RATIO.machine);machineEl.querySelector('img').src=A.machine;}
   if(s.rocks)ROCKS.forEach(r=>rockEls.push(sprite('tree','',r[0],r[1]+20,Math.round(H*.95),RATIO.rock)));
@@ -279,6 +282,7 @@ async function doAction(){
     else if(it.kind==='oldchest')await oldChest();
     else if(it.kind==='fchest')await forestChest();
     else if(it.kind==='bed')await bed();
+    else if(it.kind==='stash')await stashMenu();
     else if(it.kind==='shed')await shed();
     else if(it.kind==='toolbox')await toolbox();
     else if(it.kind==='plot')await farmPlot(it.i);
@@ -381,8 +385,8 @@ function nextDay(){
   S.event=null;
   if(S.step>=7&&Math.random()<.6){const pool=EVENTS.filter(e=>!e.after||S.cards[e.after]);const ev=pool[Math.floor(Math.random()*pool.length)];S.event={id:ev.id,day:S.day};evMsg+=`<p class="warn">聽說${PEOPLE[ev.who].name}好像出了點小意外……</p>`;}
   if(S.quake&&S.castleDone){S.quake=false;evMsg+='<p class="small">落石之城修復完成了。</p>';}
-  const exp=S.kit.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length;
-  return `${grown?`<p>有 ${grown} 塊田的小麥長大了。</p>`:''}${dry?`<p class="warn">有 ${dry} 塊田昨天沒澆水，所以沒有長大。</p>`:''}${exp?`<p class="bad">背包裡有 ${exp} 包乾糧過期了，已經不能吃。</p>`:''}${auto?`<p>自動灑水器幫 ${auto} 塊田澆好水了。</p>`:''}${harv?`<p>自動收割機收了小麥 ×${harv}，放在收納箱裡。</p>`:''}${evMsg}<p class="small">委託板有新的工作，路邊也出現了新的東西可以撿。</p>`;
+  const exp=S.kit.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length,expS=S.stash.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length;
+  return `${grown?`<p>有 ${grown} 塊田的小麥長大了。</p>`:''}${dry?`<p class="warn">有 ${dry} 塊田昨天沒澆水，所以沒有長大。</p>`:''}${exp?`<p class="bad">背包裡有 ${exp} 包乾糧過期了，已經不能吃。</p>`:''}${expS?`<p class="bad">家裡的防災包有 ${expS} 包乾糧過期了，已經不能吃。</p>`:''}${auto?`<p>自動灑水器幫 ${auto} 塊田澆好水了。</p>`:''}${harv?`<p>自動收割機收了小麥 ×${harv}，放在收納箱裡。</p>`:''}${evMsg}<p class="small">委託板有新的工作，路邊也出現了新的東西可以撿。</p>`;
 }
 async function pickUp(i){
   const f=S.forage[S.scene][i],P=PICK[f.t];
@@ -506,7 +510,7 @@ async function gateDoor(){
   const valid=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length;
   const first=!S.castleDone;
   const i=await say({p:'hero',who:first?'落石之城':'再次挑戰落石之城',html:`<p>${T(first?'gate.first':'gate.again')}</p>
-    <p>急救背包：${S.kit.length}/${S.kitCap}　有效乾糧：${valid} 包　開水：${kitCount('water')} 瓶</p><p class="small">背包裡的東西在救援中用掉就沒了，確定準備好了嗎？</p>`,buttons:[{label:'進入城堡',primary:true},{label:'再準備一下'}]});
+    <p>急救背包：${S.kit.length}/${S.kitCap}　有效乾糧：${valid} 包　開水：${kitCount('water')} 瓶</p><p>家中防災包：有效乾糧 ${stashCount('ration')} 包　開水 ${stashCount('water')} 瓶</p><p class="small">${T('stash.gateHint')}</p><p class="small">背包裡的東西在救援中用掉就沒了，確定準備好了嗎？</p>`,buttons:[{label:'進入城堡',primary:true},{label:'再準備一下'}]});
   if(i!==0)return;
   quakeFx();await play('quake.rumble');
   await play('quake.after');
@@ -537,12 +541,13 @@ async function rationPhase(){
   if(valid>=RATION_NEED){for(let n=0;n<RATION_NEED;n++)S.kit.splice(S.kit.findIndex(k=>base(k)==='ration'&&!expired(k)),1);ok=true;
     await play('rations.ok');}
   else await play('rations.short',{valid,expiredNote:S.expiredAtStart?`（另外有 ${S.expiredAtStart} 包已經過期）`:''});
+  if(!ok&&stashCount('ration')>0)await say({p:'hero',html:`<p>${T('stash.left')}</p>`});
   S.rescue.rations=ok?'ok':'missing';
   await play('water.intro');
   const w=kitCount('water');
   if(w>=WATER_NEED){for(let n=0;n<WATER_NEED;n++)S.kit.splice(S.kit.findIndex(k=>base(k)==='water'),1);S.rescue.water='ok';
     await play('water.ok');}
-  else{S.rescue.water='missing';await play('water.short',{w});}
+  else{S.rescue.water='missing';await play('water.short',{w});if(stashCount('water')>0)await say({p:'hero',html:`<p>${T('stash.left')}</p>`});}
   const stars=['guard','cook','soldier','rations','water'].filter(k=>S.rescue[k]==='ok').length;
   S.castleDone=true;S.castleBest=Math.max(S.castleBest||0,stars);refresh();
   await castleReport(stars);
@@ -672,6 +677,9 @@ async function talk(id){
     const old=S.kit.filter(expired);
     if(old.length){const i=await play('grandpa.expired',{n:old.length});
       if(i===0){S.kit=S.kit.filter(k=>!expired(k));addHeart('grandpa',1);}return;}
+    const oldS=S.stash.filter(expired);
+    if(oldS.length){const i=await play('grandpa.expiredStash',{n:oldS.length});
+      if(i===0){S.stash=S.stash.filter(k=>!expired(k));addHeart('grandpa',1);}return;}
     if(S.castleDone&&!S.f.final){
       const st=S.castleBest||0;
       await play('grandpa.castleBack',{stars:st});
@@ -717,6 +725,27 @@ async function talk(id){
 }
 async function prologueDone(){
   await play('prologueDone');
+}
+
+/* 防災包（爺爺家門口）：產出仍先進急救背包，玩家自己帶回家放入；防災包內的東西不計負重 */
+async function stashMenu(){
+  for(;;){
+    let act=null;
+    const note=k=>base(k)==='ration'?(expired(k)?'<span style="color:var(--bad)">已過期</span>':`保存到第 ${expiry(k)} 天`):'';
+    const goodR=S.stash.filter(k=>base(k)==='ration'&&!expired(k)),water=stashCount('water');
+    const fast=goodR.length?Math.min(...goodR.map(expiry)):null;
+    const inRows=S.stash.length?S.stash.map((k,i)=>`<div class="row">${badge(k)}<div class="info"><b>${ITEMS[base(k)].name}</b><span>${note(k)}</span></div><button type="button" data-o="${i}">取出</button></div>`).join(''):'<p class="small">防災包是空的。</p>';
+    const kitRows=S.kit.map((k,i)=>[k,i]).filter(([k])=>['ration','water'].includes(base(k))).map(([k,i])=>`<div class="row">${badge(k)}<div class="info"><b>${ITEMS[base(k)].name}</b><span>${note(k)}</span></div><button type="button" data-p="${i}">放入</button></div>`).join('')||'<p class="small">急救背包裡沒有乾糧或開水。</p>';
+    await say({p:'hero',who:'防災包',html:`<h4>家中防災包 ${S.stash.length}/${STASH_CAP}</h4>
+      <p>乾糧 ${goodR.length} 包${fast!=null?`（最快保存到第 ${fast} 天）`:''}　開水 ${water} 瓶</p>
+      <p class="small">家中儲備目標（一週）：乾糧 ${goodR.length}/7　開水 ${water}/7</p>${inRows}
+      <h4>急救背包 ${S.kit.length}/${S.kitCap}</h4>${kitRows}`,buttons:[{label:'關閉',primary:true}],
+      onRender:(root,fin)=>{root.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{act=['o',+b.dataset.o];fin('act');});root.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{act=['p',+b.dataset.p];fin('act');});}}).then(r=>{if(r!=='act')act=null;});
+    if(!act)return;
+    if(act[0]==='o'){if(S.kit.length>=S.kitCap){toast('急救背包已滿');continue;}S.kit.push(S.stash.splice(act[1],1)[0]);}
+    else{if(S.stash.length>=STASH_CAP){toast('防災包已滿');continue;}S.stash.push(S.kit.splice(act[1],1)[0]);}
+    refresh();save();
+  }
 }
 
 /* 背包 */
@@ -861,5 +890,5 @@ $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fulls
 $('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
 initCloud();
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={rationPhase,stashMenu,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
