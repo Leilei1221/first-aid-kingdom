@@ -170,6 +170,7 @@ function buildScene(){
   snapFree();
   heroEl=sprite('shadow','',S.pos.x,S.pos.y,H,RATIO.hero);heroEl.id='hero';heroImg=heroEl.querySelector('img');heroImg.src=A.hero;
   refresh();fit();
+  if(window.FAMusic)FAMusic.scene(S.scene,S);
 }
 function treeState(t){const st=S.trees[t.id]||{hp:3,regrow:0};if(st.hp<=0&&st.regrow&&S.day>=st.regrow){st.hp=3;st.regrow=0;}S.trees[t.id]=st;return st;}
 function rockState(i){let r=S.rocks[i];if(!r||(r.hp<=0&&S.day>=r.regrow)){r={hp:3,gold:Math.random()<.34,regrow:0};S.rocks[i]=r;}return r;}
@@ -548,6 +549,7 @@ async function rationPhase(){
   await castleReport(stars);
 }
 async function castleReport(stars){
+  if(window.FAMusic){FAMusic.jingle();FAMusic.scene(S.scene,S);}
   const name={guard:'城堡守衛（頭皮出血）',cook:'廚娘（疑似前臂骨折）',soldier:'見習小兵（腳踝扭傷）'};
   const col=r=>r==='ok'?'var(--ok)':r==='wrong'?'var(--warn)':'var(--bad)';
   const rows=Object.keys(name).map(k=>{const r=S.rescue[k];return `<div class="row"><div class="info"><b>${name[k]}</b><span style="color:${col(r)}">${r==='ok'?'救援成功':r==='wrong'?'有用品，但處置方式有誤':'缺少 '+(S.rescueMiss[k]||[]).join('、')}</span></div></div>`;}).join('')+
@@ -736,12 +738,14 @@ async function bag(){if(busy)return;busy=true;stopInput();
 async function cards(){if(busy)return;busy=true;stopInput();
   try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>',buttons:[{label:'關閉',primary:true}]});}
   finally{busy=false;}}
-async function settings(){if(busy)return;busy=true;stopInput();let reset=false;
-  try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(window.FACloud&&FACloud.email()?[{label:'登出'}]:[]),{label:'關閉'}]});
+async function settings(){if(busy)return;busy=true;stopInput();let reset=false;const hasOut=!!(window.FACloud&&FACloud.email());
+  try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>${window.FAMusic?`<p>背景音樂：<b>${FAMusic.isOn()?'開':'關'}</b>　音量 <input type="range" id="musVol" min="0" max="100" value="${Math.round(FAMusic.vol()*100)}" style="vertical-align:middle"></p><p class="small">配樂：AI 輔助原創作曲與合成音色製作</p>`:''}`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(hasOut?[{label:'登出'}]:[]),...(window.FAMusic?[{label:FAMusic.isOn()?'關閉背景音樂':'開啟背景音樂'}]:[]),{label:'關閉'}],
+      onRender:root=>{const v=root.querySelector('#musVol');if(v)v.oninput=()=>FAMusic.setVol(v.value/100);}});
     if(i===0)S.ctrl=S.ctrl==='joy'?'pad':'joy';
     else if(i===1){const sp=sc().spawn;S.pos={x:sp[0],y:sp[1]};placeHero();camera();toast('已回到入口');}
     else if(i===2){const j=await say({p:'hero',who:'重新開始',html:'<p>所有進度都會清除。</p>',buttons:[{label:'重新開始',danger:true},{label:'取消',primary:true}]});if(j===0){const c=S.ctrl;S=newState();S.ctrl=c;S.started=true;reset=true;if(window.FACloud)FACloud.clearCheckpoints();}}
-    else if(i===3&&window.FACloud&&FACloud.email()){await doSignOut();return;}}
+    else if(i===3&&hasOut){await doSignOut();return;}
+    else if(window.FAMusic&&i===(hasOut?4:3))FAMusic.setOn(!FAMusic.isOn());}
   finally{busy=false;save();if(reset){buildScene();startScene();}else refresh();}}
 
 /* ================= 移動 ================= */
