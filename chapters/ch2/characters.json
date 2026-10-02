@@ -1,0 +1,45 @@
+{
+ "PEOPLE": {
+  "ch2_smith": {
+   "name": "鐵匠老鐵",
+   "img": "ch2_smith",
+   "face": "ch2_smith_face",
+   "hk": 1.08,
+   "heart": true
+  },
+  "ch2_appr": {
+   "name": "學徒阿焰",
+   "img": "ch2_appr",
+   "face": "ch2_appr_face",
+   "hk": 1,
+   "heart": true
+  },
+  "ch2_cap": {
+   "name": "消防隊長",
+   "img": "ch2_cap",
+   "face": "ch2_cap_face",
+   "hk": 1.04,
+   "heart": true
+  },
+  "ch2_innk": {
+   "name": "旅館老闆娘",
+   "img": "ch2_innk",
+   "face": "ch2_innk_face",
+   "hk": 0.98,
+   "heart": true
+  },
+  "ch2_guest": {
+   "name": "旅館客人",
+   "img": "ch2_guest",
+   "face": "ch2_guest_face",
+   "hk": 1,
+   "heart": true
+  },
+  "ch2_capt": {
+   "name": "船長",
+   "img": "ch2_capt",
+   "face": "ch2_capt_face",
+   "hk": 1.06
+  }
+ }
+}

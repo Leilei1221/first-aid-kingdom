@@ -1,0 +1,63 @@
+{
+ "id": "ch2",
+ "name": "熔岩鍛造鎮",
+ "files": {
+  "scenes": "scenes.json",
+  "characters": "characters.json",
+  "ratios": "ratios.json",
+  "walks": "walks.json"
+ },
+ "assets": [
+  "ch2_alarm",
+  "ch2_appr",
+  "ch2_appr_face",
+  "ch2_cap",
+  "ch2_cap_face",
+  "ch2_capt",
+  "ch2_capt_face",
+  "ch2_deck",
+  "ch2_extinguisher",
+  "ch2_gauge",
+  "ch2_guest",
+  "ch2_guest_face",
+  "ch2_ingot",
+  "ch2_inn",
+  "ch2_inn2",
+  "ch2_innk",
+  "ch2_innk_face",
+  "ch2_iron",
+  "ch2_iron_rubble",
+  "ch2_lavamine",
+  "ch2_port",
+  "ch2_smith",
+  "ch2_smith_face",
+  "ch2_smithy",
+  "ch2_smoke",
+  "ch2_town",
+  "ch2_townfire",
+  "ch2_vport"
+ ],
+ "region": {
+  "name": "熔岩鍛造鎮",
+  "pin": [
+   13,
+   68
+  ],
+  "unlock": "()=>S.f.final&&S.c.letter",
+  "center": {
+   "scene": "ch2_town",
+   "at": [
+    120,
+    610
+   ]
+  },
+  "home": {
+   "scene": "ch2_inn2",
+   "at": [
+    650,
+    700
+   ]
+  },
+  "travelHint": "熔岩鍛造鎮在海的另一邊，要從綠葉谷漁港搭船過去（東方草原往東走）。船程 2 天，船票 30 金幣。記得準備乾糧和開水。"
+ }
+}

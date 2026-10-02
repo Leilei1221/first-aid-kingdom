@@ -1,4 +1,5 @@
 """實際走路測試：每個場景從入口出發，用鍵盤方向鍵走到每個出口，確認真的會換場景。
+章節：`CHAPTER=ch2 python3 tools/walk_test.py ...` 改測 chapters/ch2/ 的場景（網址自動加 ?open=ch2）。
 用法：先在專案根目錄 `python3 -m http.server 8765`，再 `python3 tools/walk_test.py http://localhost:8765/index.html`
 路徑用 data/walks.json 的可行走網格做 BFS 找路，再以「按鍵」的方式沿路徑移動（不直接改座標）。"""
 import asyncio, json, re, sys, os
@@ -6,20 +7,30 @@ from collections import deque
 from playwright.async_api import async_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WALKS = json.load(open(os.path.join(ROOT, 'data/walks.json')))
-SCENES = json.load(open(os.path.join(ROOT, 'content/scenes.json'), encoding='utf-8'))
+CH = os.environ.get('CHAPTER')
+if CH:
+    WALKS = json.load(open(os.path.join(ROOT, f'chapters/{CH}/walks.json')))
+    SCENES = json.load(open(os.path.join(ROOT, f'chapters/{CH}/scenes.json'), encoding='utf-8'))
+else:
+    WALKS = json.load(open(os.path.join(ROOT, 'data/walks.json')))
+    SCENES = json.load(open(os.path.join(ROOT, 'content/scenes.json'), encoding='utf-8'))
 CELL = 8
 
+def conds(test):
+    out = []
+    for part in test.split('=>', 1)[1].split('&&'):
+        m = re.match(r'([xy])([<>])(\d+)$', part.strip())
+        out.append((m.group(1), m.group(2), int(m.group(3))))
+    return out
+
 def push_dir(test):
-    m = re.match(r'\(x,y\)=>([xy])([<>])(\d+)$', test)
-    ax, op = m.group(1), m.group(2)
+    ax, op, _ = conds(test)[0]
     d = -1 if op == '<' else 1
     return (d, 0) if ax == 'x' else (0, d)
 
 def pred(test):
-    m = re.match(r'\(x,y\)=>([xy])([<>])(\d+)$', test)
-    ax, op, v = m.group(1), m.group(2), int(m.group(3))
-    return lambda x, y: ((x if ax == 'x' else y) < v) if op == '<' else ((x if ax == 'x' else y) > v)
+    cs = conds(test)
+    return lambda x, y: all((((x if ax == 'x' else y) < v) if op == '<' else ((x if ax == 'x' else y) > v)) for ax, op, v in cs)
 
 def bfs(rows, start, goal):
     H, W = len(rows), len(rows[0])
@@ -73,7 +84,7 @@ async def main(url):
                 ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
                 await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
                 page = await ctx.new_page()
-                await page.goto(url + '#debug')
+                await page.goto(url + (f'?open={CH}' if CH else '') + '#debug')
                 await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
                 await page.evaluate(f"""() => {{ const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.scene = {json.dumps(sid)}; S.pos = {{x: {sc['spawn'][0]}, y: {sc['spawn'][1]}}}; S.started = true;
                   document.getElementById('btnStart').click(); }}""")

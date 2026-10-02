@@ -1,0 +1,399 @@
+{
+ "ch2_town": {
+  "name": "熔岩鍛造鎮",
+  "spawn": [
+   120,
+   610
+  ],
+  "bg": "ch2_town",
+  "heroH": 120,
+  "npcs": [
+   {
+    "id": "ch2_cap",
+    "x": 1010,
+    "y": 470,
+    "flip": true
+   },
+   {
+    "id": "merchant",
+    "x": 1160,
+    "y": 690,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "door",
+    "x": 520,
+    "y": 490,
+    "label": "進入鐵匠鋪",
+    "to": "ch2_smithy",
+    "at": [
+     835,
+     860
+    ]
+   },
+   {
+    "kind": "warehouse",
+    "x": 1180,
+    "y": 520,
+    "label": "查看倉庫"
+   },
+   {
+    "kind": "fountain",
+    "x": 790,
+    "y": 690,
+    "label": "水槽"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch2_lavamine",
+    "at": [
+     830,
+     880
+    ],
+    "block": null,
+    "test": "(x,y)=>y<25",
+    "need": null
+   },
+   {
+    "to": "ch2_inn",
+    "at": [
+     80,
+     530
+    ],
+    "block": null,
+    "test": "(x,y)=>y>920",
+    "need": null
+   },
+   {
+    "to": "ch2_vport",
+    "at": [
+     1560,
+     300
+    ],
+    "block": null,
+    "test": "(x,y)=>x<25",
+    "need": null
+   }
+  ]
+ },
+ "ch2_townfire": {
+  "name": "熔岩鍛造鎮（火災）",
+  "spawn": [
+   860,
+   880
+  ],
+  "bg": "ch2_townfire",
+  "heroH": 120,
+  "npcs": [
+   {
+    "id": "ch2_cap",
+    "x": 1010,
+    "y": 470,
+    "flip": true
+   },
+   {
+    "id": "ch2_appr",
+    "x": 600,
+    "y": 560
+   },
+   {
+    "id": "ch2_smith",
+    "x": 420,
+    "y": 640
+   }
+  ],
+  "things": [
+   {
+    "kind": "bigfire",
+    "x": 1180,
+    "y": 520,
+    "label": "用滅火器滅火"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch2_inn",
+    "at": [
+     80,
+     530
+    ],
+    "block": null,
+    "test": "(x,y)=>y>920",
+    "need": null
+   }
+  ]
+ },
+ "ch2_smithy": {
+  "name": "鐵匠鋪",
+  "spawn": [
+   835,
+   860
+  ],
+  "bg": "ch2_smithy",
+  "heroH": 230,
+  "npcs": [
+   {
+    "id": "ch2_smith",
+    "x": 620,
+    "y": 610
+   },
+   {
+    "id": "ch2_appr",
+    "x": 1010,
+    "y": 720,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "forge",
+    "x": 560,
+    "y": 500,
+    "label": "請鐵匠鍛造"
+   },
+   {
+    "kind": "grinder",
+    "x": 540,
+    "y": 690,
+    "label": "電動砂輪機"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch2_town",
+    "at": [
+     520,
+     510
+    ],
+    "block": null,
+    "test": "(x,y)=>y>920",
+    "need": null
+   }
+  ]
+ },
+ "ch2_lavamine": {
+  "name": "熔岩礦坑",
+  "spawn": [
+   830,
+   880
+  ],
+  "bg": "ch2_lavamine",
+  "heroH": 150,
+  "npcs": [],
+  "things": [],
+  "rocks": [
+   [
+    600,
+    330
+   ],
+   [
+    880,
+    290
+   ],
+   [
+    1100,
+    380
+   ],
+   [
+    560,
+    520
+   ],
+   [
+    1000,
+    560
+   ],
+   [
+    780,
+    470
+   ]
+  ],
+  "exits": [
+   {
+    "to": "ch2_town",
+    "at": [
+     760,
+     60
+    ],
+    "block": null,
+    "test": "(x,y)=>y>920",
+    "need": null
+   }
+  ]
+ },
+ "ch2_inn": {
+  "name": "溫泉旅館",
+  "spawn": [
+   80,
+   530
+  ],
+  "bg": "ch2_inn",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch2_innk",
+    "x": 560,
+    "y": 545,
+    "flip": true
+   },
+   {
+    "id": "ch2_guest",
+    "x": 760,
+    "y": 630,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "door",
+    "x": 640,
+    "y": 445,
+    "label": "進入旅館",
+    "to": "ch2_inn2",
+    "at": [
+     650,
+     880
+    ]
+   }
+  ],
+  "exits": [
+   {
+    "to": null,
+    "at": [
+     860,
+     900
+    ],
+    "block": null,
+    "test": "(x,y)=>x<25",
+    "need": null,
+    "toFn": "()=>S.c&&S.c.fire&&!S.c.done?'ch2_townfire':'ch2_town'"
+   }
+  ]
+ },
+ "ch2_inn2": {
+  "name": "旅館二樓",
+  "spawn": [
+   650,
+   880
+  ],
+  "bg": "ch2_inn2",
+  "heroH": 200,
+  "npcs": [],
+  "things": [
+   {
+    "kind": "room",
+    "x": 780,
+    "y": 460,
+    "label": "住一晚（20 金幣）"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch2_inn",
+    "at": [
+     640,
+     480
+    ],
+    "block": null,
+    "test": "(x,y)=>y>920",
+    "need": null
+   }
+  ]
+ },
+ "ch2_port": {
+  "name": "綠葉谷漁港",
+  "spawn": [
+   80,
+   210
+  ],
+  "bg": "ch2_port",
+  "heroH": 120,
+  "npcs": [
+   {
+    "id": "ch2_capt",
+    "x": 1000,
+    "y": 430,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "board",
+    "x": 1240,
+    "y": 590,
+    "label": "搭船"
+   }
+  ],
+  "exits": [
+   {
+    "to": "plain",
+    "at": [
+     1500,
+     640
+    ],
+    "block": null,
+    "test": "(x,y)=>x<25",
+    "need": null
+   }
+  ],
+  "region": "base"
+ },
+ "ch2_deck": {
+  "name": "渡船甲板",
+  "spawn": [
+   600,
+   560
+  ],
+  "bg": "ch2_deck",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch2_capt",
+    "x": 520,
+    "y": 380
+   }
+  ],
+  "things": [
+   {
+    "kind": "hatch",
+    "x": 1000,
+    "y": 590,
+    "label": "到船艙休息"
+   }
+  ],
+  "exits": [],
+  "region": "base"
+ },
+ "ch2_vport": {
+  "name": "火山島碼頭",
+  "spawn": [
+   560,
+   690
+  ],
+  "bg": "ch2_vport",
+  "heroH": 115,
+  "npcs": [],
+  "things": [
+   {
+    "kind": "board",
+    "x": 520,
+    "y": 700,
+    "label": "搭船"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch2_town",
+    "at": [
+     120,
+     610
+    ],
+    "block": null,
+    "test": "(x,y)=>x>1600&&y<340",
+    "need": null
+   }
+  ]
+ }
+}

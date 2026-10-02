@@ -131,7 +131,7 @@ async def main(url):
         # 1) 預設（沒有 chbase）：只有序章，沒有章節
         page, errs, logs = await boot(ctx, url)
         r = await page.evaluate("() => ({ch: Object.keys(window.__fa.CHAPTERS), scenes: Object.keys(window.__fa.SCENES).length})")
-        check('預設只載入序章（11 個場景、沒有章節）', r == {'ch': [], 'scenes': 11}, str(r))
+        check('預設只載入序章（11 個場景），第二章登記但關閉', r == {'ch': ['ch2'], 'scenes': 11}, str(r))
         check('預設沒有頁面錯誤', not errs, str(errs)); await page.close()
         # 2) 假章節
         page, errs, logs = await boot(ctx, url, '/tools/fixtures/chapters')

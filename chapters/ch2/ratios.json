@@ -1,0 +1,15 @@
+{
+ "RATIO": {
+  "ch2_capt": 0.643,
+  "ch2_smith": 0.627,
+  "ch2_appr": 0.573,
+  "ch2_cap": 0.414,
+  "ch2_innk": 0.564,
+  "ch2_guest": 0.62,
+  "ch2_iron": 0.933,
+  "ch2_iron_rubble": 1.277,
+  "ch2_extinguisher": 0.631,
+  "ch2_alarm": 1.342,
+  "ch2_smoke": 0.788
+ }
+}

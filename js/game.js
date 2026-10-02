@@ -7,6 +7,7 @@ let C,A={};
 const CHAPTERS={};
 const REGIONS={};  /* 章節宣告的地區（chapter.json 的 region）；綠葉谷（base）固定存在，見下方 BASE */  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
+const FORCE_OPEN=DEBUG?(new URLSearchParams(location.search).get('open')||'').split(','):[];
 const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
 const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
 const chClosed=id=>{const c=chOf(id);return !!c&&!(CHAPTERS[c]&&CHAPTERS[c].open);};
@@ -15,7 +16,7 @@ async function loadChapters(){
   const loaded=[];
   for(const e of idx){
     CHAPTERS[e.id]={id:e.id,name:e.name,open:false};
-    if(!e.open)continue;
+    if(!e.open&&!FORCE_OPEN.includes(e.id))continue;  /* FORCE_OPEN：只有 #debug 的 ?open=ch2 才會強制開放（本機測試用） */
     try{
       const meta=await getJSON(`${CH_BASE}/${e.id}/chapter.json`),f=meta.files||{};
       const get=async n=>f[n]?getJSON(`${CH_BASE}/${e.id}/${f[n]}`):null;
@@ -26,12 +27,12 @@ async function loadChapters(){
       Object.keys((d.cards||{}).CARDS||{}).forEach(pre);Object.keys(d.walks||{}).forEach(pre);
       ['say','quizzes','text'].forEach(g=>Object.keys((d.dialogues||{})[g]||{}).forEach(pre));
       ((d.events||{}).EVENTS||[]).forEach(v=>pre(v.id));Object.keys((d.events||{}).VICTIMS||{}).forEach(pre);
-      Object.keys((d.items||{}).ITEMS||{}).forEach(pre);Object.keys((d.ratios||{}).RATIO||{}).forEach(pre);
+      Object.keys((d.items||{}).ITEMS||{}).forEach(pre);Object.keys((d.items||{}).MATS||{}).forEach(pre);Object.keys((d.ratios||{}).RATIO||{}).forEach(pre);
       if(bad.length)throw new Error(`章節 ${e.id} 有 id 沒有 ${e.id}_ 前綴：${bad.join(', ')}`);
       Object.assign(C.scenes,d.scenes||{});Object.assign(C.signs,d.signs||{});Object.assign(C.walks,d.walks||{});
       Object.assign(C.characters.PEOPLE,(d.characters||{}).PEOPLE||{});Object.assign(C.cards.CARDS,(d.cards||{}).CARDS||{});
       if(d.events){C.quests.EVENTS.push(...(d.events.EVENTS||[]));Object.assign(C.quests.VICTIMS,d.events.VICTIMS||{});}
-      if(d.items)Object.assign(C.items.ITEMS,d.items.ITEMS||{});
+      if(d.items){Object.assign(C.items.ITEMS,d.items.ITEMS||{});Object.assign(C.items.MATS,d.items.MATS||{});}
       if(d.ratios)Object.assign(C.ratios.RATIO,d.ratios.RATIO||{});
       ['say','quizzes','text'].forEach(g=>Object.assign(C.dialogues[g],((d.dialogues||{})[g])||{}));
       if(meta.region)REGIONS[e.id]=Object.assign({chapter:e.id,id:e.id},meta.region);
@@ -92,7 +93,7 @@ const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORI
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
-const regionOf=sceneId=>{const c=chOf(sceneId);return (c&&REGIONS[c])||BASE;};
+const regionOf=sceneId=>{const s=C.scenes[sceneId],c=chOf(sceneId);return (s&&s.region==='base')?BASE:(c&&REGIONS[c])||BASE;};
 const curRegion=()=>regionOf(S.scene);
 const regionList=()=>[BASE].concat(Object.values(REGIONS));
 const regionName=id=>(regionList().find(r=>r.id===id)||BASE).name;
@@ -113,6 +114,7 @@ function migrate(o){
   o.gifted=o.gifted||{};if(!o.spr){o.spr=[];for(let i=0;i<(o.sprinklers||0);i++)o.spr.push(i);}o.f=o.f||{};o.story=o.story||{};o.rescue=o.rescue||{};['hunt','guard','cook','soldier'].forEach(k=>{if(o.hearts[k]==null)o.hearts[k]=0;});o.sprinklers=o.sprinklers||0;o.bin=o.bin||0;if(!o.forage){o.forage={};o.forageDay=0;}
   Object.values(o.trees||{}).forEach(t=>{if(t.regrow&&t.regrow>1e6)t.regrow=o.day+1;});
   if(!Array.isArray(o.stash))o.stash=[];
+  Object.entries(PEOPLE).forEach(([k,p])=>{if(p.heart&&o.hearts&&o.hearts[k]==null)o.hearts[k]=0;});  /* 章節角色的好感度（heart:true） */
   o.c=o.c||{};o.wounds=o.wounds||{};if(!o.stashAt)o.stashAt='base';  /* c：各章進度；wounds：看過的傷口圖；stashAt：防災包在哪（base＝爺爺家、地區 id＝該地區住處、carry＝帶在身上） */
   if(!SCENES[o.scene]){o.scene='village';o.pos={x:SCENES.village.spawn[0],y:SCENES.village.spawn[1]};}  /* 存檔所在的章節已關閉或不存在：回村莊 */
   o.v=2;return o;}
