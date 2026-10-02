@@ -1,0 +1,24 @@
+{
+ "ITEMS": {
+  "ch2_extinguisher": {
+   "name": "滅火器",
+   "ch": "滅",
+   "color": "#D9463B",
+   "text": "#fff",
+   "w": 4,
+   "desc": "口訣「拉、瞄、壓、掃」。只能撲滅初期小火；使用前確認壓力表指針在綠色區。"
+  }
+ },
+ "MATS": {
+  "ch2_iron": {
+   "name": "鐵礦石",
+   "sell": 6,
+   "icon": "ch2_iron"
+  },
+  "ch2_ingot": {
+   "name": "鐵錠",
+   "sell": 25,
+   "icon": "ch2_ingot"
+  }
+ }
+}

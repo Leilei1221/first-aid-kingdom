@@ -5,7 +5,9 @@
   "scenes": "scenes.json",
   "characters": "characters.json",
   "ratios": "ratios.json",
-  "walks": "walks.json"
+  "walks": "walks.json",
+  "cards": "cards.json",
+  "items": "items.json"
  },
  "assets": [
   "ch2_alarm",
@@ -58,6 +60,8 @@
     700
    ]
   },
-  "travelHint": "熔岩鍛造鎮在海的另一邊，要從綠葉谷漁港搭船過去（東方草原往東走）。船程 2 天，船票 30 金幣。記得準備乾糧和開水。"
- }
+  "travelHint": "熔岩鍛造鎮在海的另一邊，要從綠葉谷漁港搭船過去（東方草原往東走）。船程 2 天，船票 30 金幣。記得準備乾糧和開水。",
+  "shopkeeper": "ch2_innk"
+ },
+ "script": "chapter.js"
 }
