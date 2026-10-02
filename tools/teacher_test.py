@@ -97,7 +97,7 @@ async def main(url):
 
         # --- 班級控制
         ct = await pg.inner_text('#ctrl')
-        check('班級控制：第二章預設開啟、野外項目與村長救災預設關閉', '第二章（熔岩鍛造鎮）' in ct and '開啟（預設）' in ct and ct.count('關閉（預設）') == 2, ct)
+        check('班級控制：第二章預設開啟、第三章／野外項目／村長救災預設關閉', '第二章（熔岩鍛造鎮）' in ct and '開啟（預設）' in ct and ct.count('關閉（預設）') == 3, ct)
         await pg.click('button[data-flag="wild"]'); await pg.wait_for_function("document.getElementById('ctrl').innerText.includes('野外項目')")
         await pg.wait_for_timeout(300)
         ct = await pg.inner_text('#ctrl'); log = await pg.evaluate("() => window.__ctlLog")
@@ -111,7 +111,7 @@ async def main(url):
         check('取消公告：回到沒有公告', await pg.locator('button[data-cancel]').count() == 0)
         await pg.select_option('#cls', 'c2'); await pg.wait_for_function("document.getElementById('list').innerText.includes('黃別班')")
         ct = await pg.inner_text('#ctrl')
-        check('切換班級：另一班的設定不受影響（仍是預設）', ct.count('（預設）') == 3, ct)
+        check('切換班級：另一班的設定不受影響（仍是預設）', ct.count('（預設）') == 4, ct)
         await pg.select_option('#cls', 'c1'); await pg.wait_for_function("document.getElementById('list').innerText.includes('王小明')")
         pgE, _ = await page_for(T, True, ctl_error=True)
         await pgE.wait_for_selector('#app:not([hidden])', timeout=20000); await pgE.wait_for_selector('details.st')

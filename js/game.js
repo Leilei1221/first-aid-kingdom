@@ -204,6 +204,7 @@ async function faint(reason){
   await play(reason==='mushroom'?'faint.mushroom':'faint.other');
   $('fade').classList.add('on');await sleep(RM?0:800);
   const summary=nextDay();
+  if(S.voyage)S.voyage=null;  /* 在船上昏倒：醒來時航程已經結束，不留下半途的航行狀態 */
   const wk=curRegion(),wh=wk.home||BASE.home;
   S.scene=wh.scene;S.pos={x:wh.at[0],y:wh.at[1]};buildScene();S.sta=Math.round(STA_MAX*.6);
   S.coins-=MED_FEE;refresh();$('fade').classList.remove('on');checkpoint();

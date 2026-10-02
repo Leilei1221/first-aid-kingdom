@@ -64,12 +64,12 @@ async function makeApi(){
 
 /* ---------- 畫面 ---------- */
 let api=null,user=null,classes=[],rows=[],fails=[],cardTotal=0,names={},scenarioNames={};
-let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,wild:false,relief:false},wxNames={};
-const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
+let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,ch3:false,wild:false,relief:false},wxNames={};
+const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['ch3','第三章（港口藍堡）','完成第二章後，從礦坑入口往南的漁港搭船前往'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
 const say=(t,bad)=>{const e=$('status');e.hidden=false;e.textContent=t;e.style.borderColor=bad?'var(--bad)':'';};
 
 async function loadStatic(){
-  try{const ix=await (await fetch('chapters/index.json')).json();const c2=ix.find(x=>x.id==='ch2');if(c2)defaults.ch2=!!c2.open;}catch(e){}
+  try{const ix=await (await fetch('chapters/index.json')).json();ix.forEach(c=>{defaults[c.id]=!!c.open;});}catch(e){}
   try{const w=await (await fetch('content/weather.json')).json();defaults.wild=!!w.WILD_ON;defaults.relief=!!w.RELIEF_ON;Object.entries(w.WX||{}).forEach(([k,v])=>wxNames[k]=v.name);}catch(e){}
   try{const c=await (await fetch('content/knowledge_cards.json')).json();cardTotal=Object.keys(c.CARDS||{}).length;}catch(e){}
   try{const r=await (await fetch('content/rescue.json')).json();Object.entries(r.SCENARIOS||{}).forEach(([k,v])=>scenarioNames[k]=v.name);}catch(e){}

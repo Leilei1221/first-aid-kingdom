@@ -3,11 +3,11 @@
 -- 沿用教室系統慣例：班級擁有者 = hc_classes.teacher_id = auth.uid()（或 hc_is_admin()）；老師身分用 hc_is_allowed_teacher() 把關。
 
 -- ── 班級功能開關：每班每個功能一列 ───────────────────────────────
--- flag：ch2＝第二章；wild＝野外項目（營火、溺水、裝溪水、阿鹿支線）；relief＝村長救災物資。之後章節（ch3…）再加。
+-- flag：ch2＝第二章；ch3＝第三章（港口藍堡）；wild＝野外項目（營火、溺水、裝溪水、阿鹿支線）；relief＝村長救災物資。之後章節（ch3…）再加。
 -- 沒有列＝這個班沒設定，遊戲用程式裡的預設（chapters/index.json 與 content/weather.json）。
 create table public.fa_class_flags (
   class_id   uuid not null references public.hc_classes(id) on delete cascade,
-  flag       text not null check (flag in ('ch2', 'wild', 'relief')),
+  flag       text not null check (flag in ('ch2', 'ch3', 'wild', 'relief')),
   enabled    boolean not null,
   updated_at timestamptz not null default now(),
   primary key (class_id, flag)
