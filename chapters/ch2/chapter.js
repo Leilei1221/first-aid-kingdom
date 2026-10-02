@@ -3,7 +3,7 @@
  * 章節開放時才載入；核心程式透過回傳的掛接點呼叫它。 */
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
-const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,orderQuiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
+const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,orderQuiz,checkpoint,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
 const CHECKS=[{"id": "c_town", "scene": "ch2_town", "x": 900, "y": 430, "type": "ext", "ok": true, "where": "廣場消防隊門口（滅火器）"}, {"id": "c_smithy", "scene": "ch2_smithy", "x": 1200, "y": 470, "type": "ext", "ok": false, "where": "鐵匠鋪（滅火器）"}, {"id": "c_inn", "scene": "ch2_inn", "x": 420, "y": 450, "type": "alarm", "ok": true, "where": "旅館門口（警報器）"}, {"id": "c_inn2e", "scene": "ch2_inn2", "x": 347, "y": 627, "ix": 450, "iy": 720, "painted": true, "type": "ext", "ok": true, "where": "旅館二樓走廊（滅火器）"}, {"id": "c_inn2a", "scene": "ch2_inn2", "x": 331, "y": 407, "ix": 520, "iy": 580, "painted": true, "type": "alarm", "ok": false, "where": "旅館二樓走廊（警報器）"}];
 const FIRES=[[1250, 430], [1360, 520], [1160, 400]];
 function goal2(){const c=S.c;
@@ -80,7 +80,7 @@ async function elecEvent(){
   await say({p:'ch2_appr',html:`<p>嚇死我了……謝謝你。我這就去給醫生看看。</p><p class="good">獲得知識卡：${CARDS.ch2_elec.title}</p>`});}
 async function innRoom(){
   const i=await say({p:'ch2_innk',who:'溫泉旅館',html:`<p>要住一晚嗎？一晚 20 金幣，體力會完全恢復，進入下一天。</p><p class="small">金幣 ${S.coins}</p>`,buttons:[{label:'住一晚',primary:true,disabled:S.coins<20},{label:'不用了'}]});
-  if(i!==0)return;S.coins-=20;$('fade').classList.add('on');await sleep(RM?0:500);const html=nextDay();S.sta=STA_MAX;refresh();$('fade').classList.remove('on');
+  if(i!==0)return;S.coins-=20;$('fade').classList.add('on');await sleep(RM?0:500);const html=nextDay();S.sta=STA_MAX;refresh();$('fade').classList.remove('on');checkpoint();
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>泡完溫泉睡了一覺，體力完全恢復了。</p>'+html});}
 async function bigFire(){
   if(S.c.r_ext){await say({p:'ch2_cap',html:'<p>倉庫的火勢太大了，交給消防隊！你快去幫忙救人！</p>'});return;}
@@ -213,7 +213,7 @@ async function voyageSleep(){
     await say({p:'ch2_capt',html:`<p class="${i===1?'good':'bad'}">${i===1?'做得好！船員抓住了救生圈，被拉回船上了。':'別跳！在海上跳下去，只會多一個需要救的人！快拋救生圈！'}</p><p>他在水裡很冷靜，一直用<b>仰漂</b>的方式浮著等我們。</p>`});
     await say({p:'ch2_capt',html:`<div class="card"><b>${CARDS.ch2_overboard.title}</b><p>${CARDS.ch2_overboard.text}</p></div>`});S.cards.ch2_overboard=true;v.mob=true;return;}
   const msg=await voyageMeal();
-  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,STA_MAX-20);v.left--;refresh();$('fade').classList.remove('on');
+  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,STA_MAX-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
   if(v.left>0){await say({icon:'⚓',who:`第 ${S.day} 天・海上`,html:`<p>${msg.join('。')}。</p><p>在船艙睡了一晚，船還在海上航行。</p>`+html});return;}
   const to=v.to;S.voyage=null;
   await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});

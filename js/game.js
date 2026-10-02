@@ -436,6 +436,7 @@ async function mine(i){
   const o=sc().ore;if(r.ore&&o&&matFree()>0){S.mat[o.mat]=(S.mat[o.mat]||0)+1;msg=o.txt;}
   if(r.gold&&matFree()>0){S.mat.gold++;msg='金礦 ×1';}
   const s=Math.min(2,matFree());if(s>0){S.mat.stone+=s;msg+=(msg?'、':'')+`石頭 ×${s}`;}
+  if(wild()&&Math.random()<.3&&matFree()>0){S.mat.flint=(S.mat.flint||0)+1;msg+=(msg?'、':'')+'打火石 ×1';if(!S.warned.flint){S.warned.flint=true;setTimeout(()=>toast('打火石＋木材 3 份，可以在野外生火露營（打開背包）'),2000);}}
   toast(`獲得 ${msg||'（素材袋滿了）'}`);
 }
 async function farmPlot(i){
@@ -915,11 +916,12 @@ async function bag(){if(busy)return;busy=true;stopInput();
     const tools=[S.axe&&'斧頭',S.tools.hoe&&'鋤頭',S.tools.can&&'澆水壺',S.tools.pick&&'十字鎬'].filter(Boolean).join('、')||'沒有';
     const r=await say({p:'hero',who:'我的包包',html:`<h4>急救背包 ${S.kit.length}/${S.kitCap}</h4><div class="meter"><i class="${l>LOAD_HEAVY?'over':l>LOAD_OK?'heavy':''}" style="width:${pct}%"></i></div>
       <p class="small">負重 ${l}　${l>LOAD_HEAVY?'太重了，走得很慢':l>LOAD_OK?'有點重，走路變慢':'輕鬆好走'}</p>${slots}
-      <h4>素材袋 ${matUsed()}/${S.matCap}</h4>${Object.entries(S.mat).filter(([k,n])=>n>0).map(([k,n])=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name} ×${n}</b></div>${k==='mushroom'?'<button type="button" data-m="eat">吃掉</button> <button type="button" data-m="toss">丟掉</button>':''}</div>`).join('')||'<p class="small">空的</p>'}<h4>工具</h4><p>${tools}</p>`,buttons:[{label:'關閉',primary:true}],
+      <h4>素材袋 ${matUsed()}/${S.matCap}</h4>${Object.entries(S.mat).filter(([k,n])=>n>0).map(([k,n])=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name} ×${n}</b></div>${k==='mushroom'?'<button type="button" data-m="eat">吃掉</button> <button type="button" data-m="toss">丟掉</button>':''}${k==='flint'&&wild()?'<button type="button" data-m="camp">露營</button>':''}</div>`).join('')||'<p class="small">空的</p>'}<h4>工具</h4><p>${tools}</p>`,buttons:[{label:'關閉',primary:true}],
       onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('ration');});}});
     if(r==='drink'){if(S.drinkDay!==S.day){S.drinkDay=S.day;S.drinks=0;}S.kit.splice(pick,1);if(S.drinks<3){S.drinks++;S.sta=Math.min(STA_MAX,S.sta+10);toast('喝了開水，體力 +10');}else toast('喝了開水，已經不渴了');refresh();continue;}
     if(r==='sugar'){await eatSugar(pick);continue;}
     if(r==='ration'){eatRation(pick);refresh();continue;}
+    if(r==='camp'){busy=false;await camp();busy=true;break;}
     if(r==='eat'){await eatMushroom();continue;}if(r==='toss'){S.mat.mushroom--;toast('丟掉了野生菇');continue;}
     if(r!=='pick')break;S.kit.splice(pick,1);refresh();}}
   finally{busy=false;save();refresh();}}
@@ -1051,6 +1053,25 @@ async function rescueFail({scenario,choice,intro,cardKey}){
   save();if(window.FACloud)FACloud.flush();
 }
 
+/* ================= 營火露營（D4）：需要打火石（礦坑 30% 掉落）；WILD 開啟前打火石不會掉、不能露營 ================= */
+const CAMP_OK=['forest','farm','river','plain','mine_out'];
+async function camp(){
+  if(!CAMP_OK.includes(S.scene)){await say({p:'hero',html:'<p>這裡不適合生火露營。</p><p class="small">可以露營的地方：南方森林、農田、礦坑入口、河谷、東方草原。村子和鎮上有房間可以住。</p>'});return;}
+  if((S.mat.flint||0)<1)return;
+  if((S.mat.wood||0)<3){await say({p:'hero',html:`<p>生火需要木材 3 份（目前 ${S.mat.wood||0} 份）。</p>`});return;}
+  busy=true;stopInput();
+  try{
+    if(!S.warned.campQuiz){await quiz('hero','營火要生在哪裡比較安全？',['乾草堆旁邊，比較好點火','空曠的泥土或石頭地面，遠離草木，旁邊先準備好水','大樹底下，可以擋風'],1,'乾草和樹下的落葉很容易被火星點燃，引發野火。要選空曠、沒有可燃物的地面，旁邊準備好水。');S.warned.campQuiz=true;}
+    S.mat.flint--;S.mat.wood-=3;
+    const f=sprite('',A.fire,S.pos.x+70,S.pos.y+10,Math.round(sc().heroH*.6),RATIO.fire);f.querySelector('img').src=A.fire;
+    await say({p:'hero',html:'<p>用打火石點燃了營火。溫暖的火光讓人放鬆下來……</p><p class="small">露營只能恢復部分體力（最多 70）。</p>',buttons:[{label:'在營火旁睡一晚',primary:true}]});
+    $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,70);refresh();$('fade').classList.remove('on');checkpoint();
+    await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>在營火旁醒來，身體有點僵硬，但體力恢復了一些。</p>'+html});
+    const i=await say({p:'hero',html:'<p class="q">出發前，營火要怎麼處理？</p>',buttons:[{label:'火看起來小了，就可以離開'},{label:'用土蓋起來就好'},{label:'澆水、攪拌灰燼、再澆一次，用手背靠近確認沒有餘溫'}]});
+    const ok=i===2;const isNew=!S.cards.campfire;S.cards.campfire=true;
+    await say({p:'hero',html:`<p class="${ok?'good':'bad'}">${ok?'處理正確！':'這樣不夠安全。'}</p><p>${CARDS.campfire.text}</p>${ok?'':'<p class="small">你重新澆水、攪拌、再澆一次，確認沒有餘溫才出發。</p>'}${isNew?'<p class="good">獲得知識卡：野外用火安全</p>':''}`});
+    f.remove();
+  }finally{busy=false;save();refresh();}}
 /* ================= 天災與野外事件（D4）：天災由老師發布（D5）或除錯入口排定；野外項目（溺水、裝溪水）在 WILD 開啟前不出現 ================= */
 async function retreatIndoor(){const h=curRegion().home||BASE.home;await go(h.scene,curRegion()===BASE?SCENES.home.spawn:h.at);}
 async function wxEnter(){
@@ -1110,9 +1131,9 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,orderQuiz,curRegion,regionOf,hearts,
+  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();

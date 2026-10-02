@@ -191,6 +191,10 @@
       "name": "齒輪",
       "buy": 60,
       "icon": "i_gear"
+    },
+    "flint": {
+      "name": "打火石",
+      "sell": 5
     }
   },
   "SHOP_MED": [
