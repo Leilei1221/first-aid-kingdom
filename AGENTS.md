@@ -16,20 +16,54 @@
 - 精簡、低維護，不引入不必要的框架；沒有建置步驟。
 - 對外發布動作（建 repo、推送、開啟服務、寫入資料庫）先問老師。不要把金鑰、service_role key 放進 repo。
 
-## 本機分支進度（2026-10-02，**尚未推送、未合併 main**；以本節為準）
-- `main` = `origin/main`（已含 music-ready 的設定視窗修正）。
-- `chief`：村長圖與角色資料、`docs/chief-dialogue-draft.md`（對話待老師審）。基於舊 main，可獨立合併。
-- `integrate`：main ＋ `stash` 防災包（已解衝突，專項測試全過；與上線版比對只差有意改的進城確認與新欄位 `stash`）。
-- `d1`（基於 integrate）：D1 章節框架（`chapters/index.json`、`tools/chapter_test.py`、假章節在 `tools/fixtures/chapters/`），與 integrate 比對 0 差異；另有 `docs/chapter-pack-format.md`、`docs/stage-d1-summary.md`、`docs/stage-d2-summary.md`。
-- `d1` 另含 D2（地區／世界地圖、`S.c`／`S.stashAt`、傷口圖鑑、哨子手電筒雨衣）；51 情境比對相對 integrate 只多傷口圖（24 個對話框）與新欄位。營火與打火石移到 D4。過敏題 V3 文字差異待老師決定（見 `docs/stage-d2-summary.md`）。
-- `d1` 另含 D3（第二章＋渡海，**預設關閉**）：`chapters/ch2/`（chapter.js、scenes、cards 等）；本機測試加 `?open=ch2`（需 `#debug`）；測試 `tools/ch2_test.py`、`CHAPTER=ch2 python3 tools/walk_test.py`。51 情境比對相對 integrate 仍只多傷口圖與新欄位。D3 未做：老師端「救援失敗次數」（要 Supabase 政策，留 D4）、停航（D4 天氣）。第二章要對學生開放需 D5（老師端開關）或把 `chapters/index.json` 的 `open` 改 true（全班一起開）。
-- **D4 在分支 `d4`（本機，未推送、未併 main）**：天氣引擎（老師發布，無隨機）、救援失敗接線、天災與野外事件、營火、村長救災物資、老師端「全班最常犯的錯」。**開關預設全關**：`content/weather.json` 的 `WILD_ON`、`RELIEF_ON`，天災由 D5 老師端發布；待審文字見 `docs/d4-review-checklist.md`。測試：`weather`、`rescue`、`wild`、`camp`、`relief`、`ch2`（含觸電嚴重錯誤）。觸電嚴重錯誤會影響已上線的第二章。救援費目前 200（摘要曾寫 100，待老師定）。
-- **D5 在分支 `d5`（本機，未推送、未併 main；含 D4）**：老師端「班級控制」（章節與功能開關、發布天災）；遊戲讀取 `fa_my_class_control()`；章節開放改為執行時判斷。**要用必須先由老師在 Supabase 執行 `supabase/drafts/002_fa_class_control.sql`**（Claude 不套用）；沒執行前遊戲用預設、老師端顯示說明。測試：`control_test.py`、`teacher_test.py`（28 項）。救援費以 200 為準（老師 10/2 確認）。
-- **第三章 D1 在分支 `ch3`（本機，未推送）**：`chapters/ch3/`（8 場景＋遮罩＋角色＋物件圖＋航行 chapter.js，預設關閉、老師端 `ch3` 開關）；礦坑入口南邊石階（序章 `mine_out`）通往南岸漁港，完成第二章才能過。**沒有任何教學內容**；待審項見 `chapters/ch3/REVIEW.md`；版面預覽 `docs/ch3-layout/`；測試 `ch3_test.py`、`layout_test.py ch3`、`CHAPTER=ch3 walk_test.py`。**部署 ch3 前要先把 `002_fa_class_control.sql` 的 flag 檢查式含 `ch3`（草稿已改）再執行。**
-- 老師 10/2 已確認 D1 與「防災包先合併再做 D1」的順序；**D2 摘要待老師確認**。防災包文字（`docs/stash-text-review.md`）仍待審；要部署（推送）須老師說「推」。
-- 第三章素材包在 OneDrive：`健康與護理作業/115/多元選修/急救王國/第三章交付包/`（設計草案、題目與知識卡草稿、場景／角色／物件 PNG，含村長）；轉檔等 D3／D1 之後處理。
+## ★ 目前狀態（2026-10-03 交班；與下方所有舊敘述衝突時，以本節為準）
 
-## 最新狀態（2026-10-01 晚，交接用；與下方舊敘述衝突時以本節為準）
+**一切都已推到 `origin/main`（`3e1510c`），本機沒有未推送的工作。** 舊分支（stash、chief、integrate、d1、d4、d5、ch3 等）都已併入 main，可忽略。
+
+### 已上線（GitHub Pages）
+序章；防災包搬家；第二章（熔岩鍛造鎮）＋渡海（**預設開放**）；章節框架（`chapters/`）；世界地圖、傷口圖鑑；救援失敗（嚴重錯誤→正確知識卡→回早上存檔點）；天氣引擎；天災與野外事件；營火；村長救災物資；**老師端「班級控制」**；第三章骨架（8 場景＋航行，**預設關閉、無教學內容**）。
+- 觸電題（第二章阿焰）選「直接抓手／潑水」會變成救援失敗（已上線）。
+- 救援費 **200 金幣**（老師確認）。
+
+### 開關（預設都關，除第二章）
+| 開關 | 位置 | 控制 |
+|---|---|---|
+| 章節 | `chapters/index.json` 的 `open`；老師端 `ch2`／`ch3` | ch2 預設開、ch3 預設關 |
+| `WILD_ON` | `content/weather.json`；老師端 `wild` | 打火石與營火、溺水救援、河谷裝溪水、阿鹿高山症支線 |
+| `RELIEF_ON` | 同上；老師端 `relief` | 村長救災物資 |
+| 天災 | 老師端發布（颱風／豪雨／濃霧）；本機 `__fa.scheduleWx('typhoon')` | 無隨機，只由老師發布 |
+本機測試網址參數（需 `#debug`＋`localStorage fa-debug=1`）：`?open=ch2,ch3`、`?wild=1`、`?relief=1`。
+
+### 老師（蕾蕾）要做的事（我不能代做）
+1. **在 Supabase SQL Editor 執行 `supabase/drafts/002_fa_class_control.sql`**（flag 檢查式已含 `ch2/ch3/wild/relief`）。沒執行前，老師端「班級控制」顯示說明、遊戲用預設。我沒有權限也不應套用，**真實的函式與 RLS 我沒測過**（測試用模擬雲端）。
+2. 審文字（未審前對應開關保持關閉）：`docs/d4-review-checklist.md`（D4 九張知識卡、題目、救援失敗敘述、村長 6 句）；`docs/stash-text-review.md`（防災包 A1–A4、B1、C）；`chapters/ch3/REVIEW.md`（第三章 23 項，**「中斷過久」判定要在做按壓小遊戲前決定**）。
+3. 看 `docs/ch3-layout/` 8 張預覽圖，確認第三章 NPC 與互動點位置。
+
+### 下一步（等老師回覆後）
+- 第三章教學內容：知識卡、題目、CPR 按壓節拍／吹氣／AED／找 AED／指派分工小遊戲、章末市集倒地事件、心跳之匣。**文字一律照草稿（OneDrive `急救王國/第三章交付包/docs/`）搬、標 draft，審過才開；不要自己編醫療內容或秒數。**
+- 防災包文字定稿；D4 待審文字定稿後把 `draft` 標記拿掉、開對應開關。
+- 可選清理：第二章與第三章的航行程式（`chapters/ch2/chapter.js`、`chapters/ch3/chapter.js`）重複，之後可整理成共用。
+
+### 資料與工具位置
+- 第三章素材包與草稿：`~/Library/CloudStorage/OneDrive-個人/健康與護理作業/115/多元選修/急救王國/第三章交付包/`；V3 原型：`~/Projects/first-aid-kingdom-v3-spec/`。
+- 各階段摘要與結果：`docs/stage-d1..d5-summary.md`、`docs/ch3-d1-summary.md`；章節資料包格式：`docs/chapter-pack-format.md`（含 `chapter.js` 掛接點與 `region` 說明）。
+- 第三章遮罩可重跑：`tools/ch3_masks.py`；版面檢查：`python3 tools/layout_test.py ch3`。
+
+### 測試（全部在 `tools/`，先 `python3 -m http.server 8765`；用 `python3 -u` 才看得到即時輸出）
+`stash`、`ration`、`sugar`、`credit`、`shop_event`、`chapter`（含假章節）、`ch2`、`ch3`、`weather`、`rescue`、`wild`、`camp`、`relief`、`control`（班級控制與章節執行時開關）、`cloud`（18 項）、`wall`、`teacher`（用 `teacher.html` 網址，28 項）、`walk_test.py`（章節用 `CHAPTER=ch2|ch3`）、`compare_run.py`（51 情境比對）。
+- **推送前一定跑 51 情境比對**（用 `git worktree` 放 scratchpad、獨立埠，測完 `git worktree remove`），報告差異，**等老師說「推」才推**。
+- 測試寫法陷阱：`page.evaluate` 會等 Promise，遊戲對話要等人點才結束，所以呼叫 `__fa.talk/say/go` 要用 `() => { ...; }` 不回傳；`drive()` 判斷對話結束要再等 450ms 避開場景切換。
+- `walk_test` 在「家、森林南出口、農田南出口、草原北出口、草原通往漁港」會卡住，是測試工具的路徑規劃限制，不是程式錯誤。
+- 已知：macOS 沒有 `timeout`；背景比對要等真正結束（`until [ -f out.json ]` 迴圈）。
+
+### 工作守則（務必遵守）
+- 每個階段動工前先出摘要（列「要老師決定」並給建議），等確認；老師說「按你的建議做」就做完整個階段，每步獨立提交附測試。
+- 醫療與知識卡文字：照原文搬、標 draft，**不得自行改寫**；V3 與現行有出入時列出請老師決定（例如過敏題的「疹子」，至今沒掛 `hives` 圖）。
+- 全程繁體中文；不引入框架；沒有建置步驟。
+- 外部動作（推送、Supabase、Google Cloud）先問；不要把金鑰放進 repo；Supabase SQL 由老師執行。
+- 序章玩起來不可變：改動後 51 情境比對與已上線版 0 差異（有意的差異要逐項說明）。
+
+## （舊）2026-10-01 晚的狀態——已過時，僅供參考；以上方「★ 目前狀態」為準
 
 ### 已上線（main = origin/main，GitHub Pages）
 - 序章 + 階段 B（Google 登入、雲端存檔、每日存檔點、PWA、手機版面）+ 老師端進度頁。
