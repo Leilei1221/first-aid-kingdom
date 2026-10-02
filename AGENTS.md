@@ -21,6 +21,7 @@
 - `chief`：村長圖與角色資料、`docs/chief-dialogue-draft.md`（對話待老師審）。基於舊 main，可獨立合併。
 - `integrate`：main ＋ `stash` 防災包（已解衝突，專項測試全過；與上線版比對只差有意改的進城確認與新欄位 `stash`）。
 - `d1`（基於 integrate）：D1 章節框架（`chapters/index.json`、`tools/chapter_test.py`、假章節在 `tools/fixtures/chapters/`），與 integrate 比對 0 差異；另有 `docs/chapter-pack-format.md`、`docs/stage-d1-summary.md`、`docs/stage-d2-summary.md`。
+- `d1` 另含 D2（地區／世界地圖、`S.c`／`S.stashAt`、傷口圖鑑、哨子手電筒雨衣）；51 情境比對相對 integrate 只多傷口圖（24 個對話框）與新欄位。營火與打火石移到 D4。過敏題 V3 文字差異待老師決定（見 `docs/stage-d2-summary.md`）。
 - 老師 10/2 已確認 D1 與「防災包先合併再做 D1」的順序；**D2 摘要待老師確認**。防災包文字（`docs/stash-text-review.md`）仍待審；要部署（推送）須老師說「推」。
 - 第三章素材包在 OneDrive：`健康與護理作業/115/多元選修/急救王國/第三章交付包/`（設計草案、題目與知識卡草稿、場景／角色／物件 PNG，含村長）；轉檔等 D3／D1 之後處理。
 

@@ -63,6 +63,24 @@ chapters/ch3/
 | `items.json` | `{"ITEMS":{ch3_xxx:{...}}}` |
 | `signs.json` | `{場景id:[路標]}` |
 
+### 地區（選用）：`chapter.json` 的 `region`
+
+章節若是一個「地區」（例如第二章的鍛造鎮），在 `chapter.json` 加 `region`，世界地圖與防災包、昏倒、目標文字就會跟著地區走：
+
+```json
+"region":{"name":"熔岩鍛造鎮","pin":[13,68],"unlock":"()=>S.f.final&&S.c.letter",
+  "center":{"scene":"ch2_town","at":[860,900]},"home":{"scene":"ch2_inn2","at":[650,700]},
+  "travelHint":"熔岩鍛造鎮在海的另一邊，要從漁港搭船過去。",
+  "goal":"()=>S.c.fire?'去滅火！':'和鐵匠聊聊'",
+  "wake":{"other":"ch2_faint.otherWake","mushroom":"ch2_faint.mushroomWake"}}
+```
+
+- `pin`：世界地圖上的位置（百分比）。`unlock`：函式原始碼字串，傳回真值才算解鎖（章節本身還要「開放」）。
+- `center`：在地圖上點自己所在地區時回到的地點；`home`：昏倒後醒來的住處；`wake`：昏倒醒來的對話 key（沒有就用綠葉谷版本，所以最好提供）。
+- `goal`：畫面上方「目標」的文字（函式字串，可讀 `S`）。
+- 住處放一個 `{"kind":"stash","x":..,"y":..,"label":"防災包"}`，防災包就能放在這裡。防災包是**一個物件**：位置 `S.stashAt`（`base`＝爺爺家、地區 id、`carry`＝帶在身上）；章節的出發流程（例如搭船）呼叫 `stashDepart()` 詢問「要帶上防災包嗎」。
+- 傷口圖：對話與題目可帶 `"wound":"bee"`（key 見 `content/wounds.json`，圖是 `assets/w_<key>.webp`）。
+
 ## 4. 交付檢查清單（Co-work 自查）
 
 - [ ] 所有 id 都有 `ch3_` 前綴，沒有與序章重複。
