@@ -23,5 +23,11 @@
     }
   },
   "WILD_ON": false,
-  "DROWN_CHANCE": 0.35
+  "DROWN_CHANCE": 0.35,
+  "RELIEF_ON": false,
+  "RELIEF_LIMIT": {
+    "ration": 2,
+    "water": 2,
+    "flint": 1
+  }
 }

@@ -9,6 +9,7 @@ const CH_MODS={};  /* 章節 id → 章節程式的工廠函式，核心程式�
 const REGIONS={};  /* 章節宣告的地區（chapter.json 的 region）；綠葉谷（base）固定存在，見下方 BASE */  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
 const WILD_FORCE=DEBUG&&new URLSearchParams(location.search).get('wild')==='1';  /* 只有 #debug 的 ?wild=1 能在本機強制開啟野外項目 */
+const RELIEF_FORCE=DEBUG&&new URLSearchParams(location.search).get('relief')==='1';  /* 本機測試用：?relief=1 */
 const FORCE_OPEN=DEBUG?(new URLSearchParams(location.search).get('open')||'').split(','):[];
 const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
 const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
@@ -94,7 +95,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,SCENARIOS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -236,6 +237,7 @@ function say(o){return new Promise(res=>{
 const plane=$('plane');
 let heroEl,heroImg,ringEl,npcEls={},treeEls={},plotEls=[],rockEls=[],machineEl=null,benchEl=null,binEl=null,harvEl=null,sprEls=[],forageEls=[];
 function sc(){return SCENES[S.scene];}
+const sceneNpcs=s=>(s.npcs||[]).concat(s===SCENES.village&&reliefActive()?[CHIEF_AT]:[]);
 function sprite(cls,src,x,y,h,wRatio){const e=document.createElement('div');e.className='ent spr '+cls;
   e.style.setProperty('--x',x);e.style.setProperty('--y',y);e.style.setProperty('--h',h);e.style.setProperty('--w',Math.round(h*wRatio));
   e.style.zIndex=Math.round(y);e.innerHTML=`<img alt="" src="${src||''}">`;plane.appendChild(e);return e;}
@@ -244,7 +246,7 @@ function buildScene(){
   const s=sc();plane.innerHTML='';plane.style.backgroundImage=`url(${A[s.bg]})`;npcEls={};treeEls={};plotEls=[];rockEls=[];machineEl=null;benchEl=null;binEl=null;harvEl=null;sprEls=[];forageEls=[];
   ringEl=document.createElement('div');ringEl.className='ent ring';plane.appendChild(ringEl);
   const H=s.heroH;
-  (s.npcs||[]).forEach(n=>{const P=PEOPLE[n.id];const e=sprite('npc shadow',A[P.img],n.x,n.y,Math.round(H*P.hk),RATIO[P.img]);
+  sceneNpcs(s).forEach(n=>{const P=PEOPLE[n.id];const e=sprite('npc shadow',A[P.img],n.x,n.y,Math.round(H*P.hk),RATIO[P.img]);
     if(n.flip)e.querySelector('img').classList.add('flip');
     const tg=document.createElement('div');tg.className='tag';e.appendChild(tg);npcEls[n.id]=e;});
   (s.trees||[]).forEach(t=>{treeEls[t.id]=sprite('tree shadow','',t.x,t.y+6,Math.round(H*1.9),RATIO.tree);});
@@ -319,6 +321,7 @@ function goalText(){const rg=curRegion();if(rg!==BASE&&rg.goal)return mk(rg.goal
     if(!S.spr.length||!S.harvester)return T('goal.auto');
     return T('goal.done');}}}
 function npcHasNews(id){
+  if(id==='chief')return !!(S.relief&&['ration','water'].some(k=>(S.relief.taken&&S.relief.taken[k]||0)<RELIEF_LIMIT[k]));
   {const h=hookOf(S.scene);if(h&&h.news&&regionOf(S.scene)!==BASE)return h.news(id);}
   if(chBase('newsBase',id))return true;
   if(S.event&&S.event.day===S.day&&!S.event.done&&EVENTS.find(e=>e.id===S.event.id).who===id&&S.step>=7)return true;
@@ -352,7 +355,7 @@ async function accident(){
 
 /* ================= 互動 ================= */
 function interactables(){const s=sc(),L=[];
-  (s.npcs||[]).forEach(n=>{if(npcEls[n.id])L.push({kind:'npc',x:n.x,y:n.y,label:n.id==='merchant'?'看看商品':n.id==='shopkeeper'?'購物':'對話',id:n.id});});
+  sceneNpcs(s).forEach(n=>{if(npcEls[n.id])L.push({kind:'npc',x:n.x,y:n.y,label:n.id==='merchant'?'看看商品':n.id==='shopkeeper'?'購物':n.id==='chief'?'與村長說話':'對話',id:n.id});});
   (s.things||[]).forEach(t=>L.push(Object.assign({},t,t.kind==='machine'?{label:S.machine?'使用乾糧製造機':'建造乾糧製造機'}:{})));
   (s.trees||[]).forEach(t=>{const st=treeState(t);if(st.hp>0)L.push({kind:'tree',x:t.x,y:t.y,label:S.axe?'砍樹':'需要斧頭',t});});
   if(s.plots)PLOTS.forEach((p,i)=>{const ps=plotState(i);let label;
@@ -484,7 +487,8 @@ async function bed(){
 }
 function nextDay(){
   S.day++;let grown=0,dry=0,wxMsg='';
-  if(S.wxNext&&S.wxNext.day===S.day){S.wx=S.wxNext;S.wxNext=null;wxMsg+=`<p class="bad">今天${WX[S.wx.type].name}來襲！</p>`;S.wxHit={};}
+  if(S.wxNext&&S.wxNext.day===S.day){S.wx=S.wxNext;S.wxNext=null;wxMsg+=`<p class="bad">今天${WX[S.wx.type].name}來襲！</p>`;S.wxHit={};if(S.wx.type==='flood')startRelief('flood');}
+  if(S.relief&&S.day>S.relief.until){wxMsg+=`<p class="small">${T('chief.closed')}</p>`;S.relief=null;}
   if(S.wxNext&&S.wxNext.day===S.day+1)wxMsg+=`<p class="warn">天氣預報：${WX[S.wxNext.type].fore}</p>`;
   Object.values(S.plots).forEach(p=>{if(p.st==='planted'&&p.g<GROW_DAYS){if(p.wet){p.g++;grown++;}else dry++;}p.wet=false;});
   S.req=S.req.map(()=>nextReq());
@@ -661,7 +665,7 @@ async function rationPhase(){
     await play('water.ok');}
   else{S.rescue.water='missing';await play('water.short',{w});if(stashCount('water')>0)await say({p:'hero',html:`<p>${T('stash.left')}</p>`});}
   const stars=['guard','cook','soldier','rations','water'].filter(k=>S.rescue[k]==='ok').length;
-  S.castleDone=true;S.castleBest=Math.max(S.castleBest||0,stars);refresh();
+  S.castleDone=true;S.castleBest=Math.max(S.castleBest||0,stars);startRelief('quake');refresh();
   await castleReport(stars);
 }
 async function castleReport(stars){
@@ -735,7 +739,7 @@ async function shopMenu(){
     const debt=S.coins<0?`<p class="bad">你還欠醫療費 ${-S.coins} 金幣。急救用品可以先賒帳（欠款最多到 ${DEBT_LIMIT} 金幣），其他東西還清之前不能買，但可以賣素材。</p>`:'';
     let html=(msg?`<p class="good" style="position:sticky;top:-18px;z-index:2;background:#1d3a2a;border:1.5px solid var(--ok);border-radius:10px;padding:8px 12px;margin-top:0">${msg}</p>`:'')+`<p class="small">金幣 <b style="color:var(--gold)">${S.coins}</b>　急救背包 <b style="color:${full0?'var(--bad)':'var(--gold)'}">${S.kit.length}/${S.kitCap}</b>${full0?'（已滿，可以擴充背包，或打開背包丟掉用不到的東西）':''}　素材袋 ${matUsed()}/${S.matCap}</p>`+debt+'<h4>賣出素材</h4>'+['wood','stone','gold','wheat','flower','scrap'].filter(k=>k==='wood'||S.step>=7).map(k=>`<div class="row"><div class="info"><b>${MATS[k].name}</b><span>一份 ${MATS[k].sell} 金幣，素材袋裡有 ${S.mat[k]} 份</span></div><button type="button" data-a="sell:${k}" ${S.mat[k]?'':'disabled'}>全部賣出</button></div>`).join('');
     if(S.step>=7)html+=`<h4>種子</h4><div class="row"><div class="info"><b>小麥種子</b><span>${MATS.seed.buy} 金幣一包，放進素材袋；一包種一塊田</span></div><button type="button" data-a="seed" ${S.coins>=MATS.seed.buy&&matFree()>0?'':'disabled'}>購買</button></div>`;
-    {const good=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length,bad=S.kit.filter(expired).length;
+    {const good=S.kit.filter(k=>base(k)==='ration'&&!expired(k)&&!isRelief(k)).length,bad=S.kit.filter(k=>expired(k)&&!isRelief(k)).length;
      if(S.step>=7&&(good||bad))html+=`<div class="row">${badge('ration')}<div class="info"><b>乾糧</b><span>一包 ${RATION_SELL} 金幣，急救背包裡有 ${good} 包${bad?`（另有 ${bad} 包過期，不能賣）`:''}。會先賣最快過期的</span></div><button type="button" data-a="ration" ${good?'':'disabled'}>賣 1 包</button></div>`;}
     if(S.step>=7&&S.mat.mushroom)html+=`<div class="row">${matIcon('mushroom')}<div class="info"><b>野生菇</b><span>素材袋裡有 ${S.mat.mushroom} 朵</span></div><button type="button" data-a="mush">賣賣看</button></div>`;
     if(S.step>=10)html+=`<h4>機器零件</h4>`+['pipe','gear'].map(k=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name}</b><span>${MATS[k].buy} 金幣，放進素材袋</span></div><button type="button" data-a="part:${k}" ${S.coins>=MATS[k].buy&&matFree()>0?'':'disabled'}>購買</button></div>`).join('');
@@ -749,7 +753,7 @@ async function shopMenu(){
     if(r!=='pick')break;
     msg='';
     if(pick.startsWith('sell:')){const k=pick.slice(5),g=S.mat[k]*MATS[k].sell;S.coins+=g;S.earned+=g;msg=`✓ 賣出${MATS[k].name} ×${S.mat[k]}，獲得 ${g} 金幣`;S.mat[k]=0;if(S.step===2&&k==='wood')S.step=3;}
-    else if(pick==='ration'){const list=S.kit.map((k,i)=>[k,i]).filter(([k])=>base(k)==='ration'&&!expired(k)).sort((a,b)=>expiry(a[0])-expiry(b[0]));const [k,i]=list[0];S.kit.splice(i,1);S.coins+=RATION_SELL;S.earned+=RATION_SELL;msg=`✓ 賣出乾糧 ×1（保存到第 ${expiry(k)} 天），獲得 ${RATION_SELL} 金幣`;}
+    else if(pick==='ration'){const list=S.kit.map((k,i)=>[k,i]).filter(([k])=>base(k)==='ration'&&!expired(k)&&!isRelief(k)).sort((a,b)=>expiry(a[0])-expiry(b[0]));const [k,i]=list[0];S.kit.splice(i,1);S.coins+=RATION_SELL;S.earned+=RATION_SELL;msg=`✓ 賣出乾糧 ×1（保存到第 ${expiry(k)} 天），獲得 ${RATION_SELL} 金幣`;}
     else if(pick==='mush'){await play('shop.noMushroom',{__p:shopP()});}
     else if(pick.startsWith('part:')){const k=pick.slice(5);S.coins-=MATS[k].buy;S.mat[k]++;msg=`✓ 已購買：${MATS[k].name} ×1`;}
     else if(pick==='seed'){S.coins-=MATS.seed.buy;S.mat.seed++;msg=`✓ 已購買：小麥種子 ×1（共 ${S.mat.seed} 包）`;}
@@ -792,6 +796,7 @@ function takeKit(needs){for(const [k,n] of Object.entries(needs))for(let i=0;i<n
 const needTxt=needs=>Object.entries(needs).map(([k,n])=>`${ITEMS[k].name} ×${n}${ALT[k]?'（或開水）':''}`).join('、');
 
 async function talk(id){
+  if(id==='chief')return chiefTalk();
   {const h=hookOf(S.scene);if(h&&h.talk){const r=h.talk(id);if(r!==undefined)return r;}}
   if(S.scene==='ruin'&&VICTIMS[id])return victim(id);
   if(S.event&&S.event.day===S.day&&!S.event.done&&S.step>=7){const ev=EVENTS.find(e=>e.id===S.event.id);if(ev.who===id)return doEvent(ev);}
@@ -1053,6 +1058,30 @@ async function rescueFail({scenario,choice,intro,cardKey}){
   save();if(window.FACloud)FACloud.flush();
 }
 
+/* ================= 村長與災後救災物資（D4）：地震、山洪災後當天與隔天，村長在村莊發放乾糧與開水；救災物資不能賣、不累積 ================= */
+const reliefOn=()=>RELIEF_ON||RELIEF_FORCE;
+const CHIEF_AT={id:'chief',x:920,y:560};
+const reliefActive=()=>!!(reliefOn()&&S.relief&&S.day<=S.relief.until);
+const isRelief=k=>String(k).endsWith('@r');  /* 救災乾糧：'ration@到期日@r'，其他地方都當自己的物品，只有商店不收 */
+function startRelief(type){if(!reliefOn())return;S.relief={type,from:S.day,until:S.day+1,taken:{}};}
+async function chiefTalk(){
+  const R=S.relief;if(!R)return;R.taken=R.taken||{};
+  if(!R.met){R.met=true;await play('chief.intro');}
+  const items=[['ration','乾糧'],['water','開水']].concat(wild()?[['flint','打火石']]:[]);
+  let got=false;
+  for(;;){
+    const left=k=>(RELIEF_LIMIT[k]||0)-(R.taken[k]||0);
+    if(items.every(([k])=>left(k)<=0)){await play('chief.noNeed');break;}
+    const i=await say({p:'chief',html:`<p>${T('chief.offer')}</p><p class="small">背包 ${S.kit.length}/${S.kitCap}　已領：${items.map(([k,n])=>`${n} ${R.taken[k]||0}/${RELIEF_LIMIT[k]}`).join('　')}</p><p class="small">救災物資不能賣。</p>`,
+      buttons:items.map(([k,n])=>({label:`領${n}（還能領 ${Math.max(0,left(k))}）`,disabled:left(k)<=0})).concat([{label:'離開',primary:true}])});
+    if(i>=items.length)break;
+    const k=items[i][0];
+    if(k==='flint'){if(matFree()<=0){toast('素材袋已滿');continue;}S.mat.flint=(S.mat.flint||0)+1;}
+    else{if(S.kit.length>=S.kitCap){await play('chief.full');continue;}S.kit.push(k==='ration'?'ration@'+(S.day+RATION_LIFE)+'@r':'water');}
+    R.taken[k]=(R.taken[k]||0)+1;got=true;refresh();save();
+  }
+  if(got)await play('chief.taken');
+}
 /* ================= 營火露營（D4）：需要打火石（礦坑 30% 掉落）；WILD 開啟前打火石不會掉、不能露營 ================= */
 const CAMP_OK=['forest','farm','river','plain','mine_out'];
 async function camp(){
@@ -1135,5 +1164,5 @@ try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
