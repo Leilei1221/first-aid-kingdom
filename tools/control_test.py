@@ -12,11 +12,12 @@ def mock(email, control):
     """control：dict＝回傳這個；'error'＝丟錯（模擬沒網路）；None＝這個帳號不是在學學生（RPC 回傳空設定）"""
     c = json.dumps(control)
     return f"""
+    window.__ctrl = {c};
     window.__faRemote = {{
       async user() {{ return {json.dumps({'email': email}) if email else 'null'}; }}, async signIn() {{}}, async signOut() {{}},
       async load() {{ return null; }}, async insert() {{ return '2026-01-01T00:00:00.000001+00:00'; }}, async update() {{ return '2026-01-01T00:00:00.000002+00:00'; }},
       async checkpoint() {{}}, async loadCheckpoint() {{ return null; }}, async clearCheckpoints() {{}}, async failure() {{}},
-      async control() {{ const c = {c}; if (c === 'error') throw new Error('offline'); window.__ctrlCalls = (window.__ctrlCalls || 0) + 1; return c; }}
+      async control() {{ const c = window.__ctrl; if (c === 'error') throw new Error('offline'); window.__ctrlCalls = (window.__ctrlCalls || 0) + 1; return c; }}
     }};"""
 async def open_page(ctx, url, email, control):
     page = await ctx.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
@@ -26,6 +27,40 @@ async def open_page(ctx, url, email, control):
     await page.wait_for_timeout(300)
     return page, errs
 async def ev(page, expr): return await page.evaluate(expr)
+async def chapter_switch(ctx, url):
+    # 老師把第二章關掉：已收到信的玩家也進不去、世界地圖與爺爺的信不出現
+    page, errs = await open_page(ctx, url, 's2@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {'ch2': False}, 'weather': None})
+    await ev(page, "() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.f.final = true; S.started = true; S.coins = 100; document.getElementById('btnStart').click(); }"); await page.wait_for_timeout(500)
+    r = await ev(page, "() => ({open: window.__fa.CHAPTERS.ch2.open, n: Object.keys(window.__fa.SCENES).length, map: window.__fa.mapAvail()})")
+    check('老師關閉第二章：章節資料已載入但「未開放」、世界地圖不出現', r == {'open': False, 'n': 20, 'map': False}, str(r))
+    await ev(page, "() => { window.__fa.go('home', [840, 770]); }"); await page.wait_for_timeout(700)
+    await ev(page, "() => { window.__fa.talk('grandpa'); }"); await page.wait_for_timeout(500)
+    txt = await ev(page, "() => document.getElementById('dText').innerText")
+    check('關閉時爺爺不給信（序章維持原樣）', '老鐵寄信來了' not in txt and await ev(page, "() => !window.__fa.S.c.letter"), txt[:80])
+    while not await ev(page, "() => document.getElementById('dialog').hidden"): await page.click('#dBtns button:first-child'); await page.wait_for_timeout(150)
+    # 玩到一半老師打開：不用重新整理
+    await ev(page, "() => { window.__ctrl = {class_id: 'c1', flags: {'ch2': true}, weather: null}; window.__fa.pullControl(); }"); await page.wait_for_timeout(500)
+    check('老師開放第二章：執行中立刻生效（open = true）', await ev(page, "() => window.__fa.CHAPTERS.ch2.open") is True)
+    await ev(page, "() => { window.__fa.talk('grandpa'); }"); await page.wait_for_timeout(500)
+    txt = await ev(page, "() => document.getElementById('dText').innerText")
+    check('開放後爺爺給信', '老鐵寄信來了' in txt, txt[:80])
+    while not await ev(page, "() => document.getElementById('dialog').hidden"): await page.click('#dBtns button:first-child'); await page.wait_for_timeout(150)
+    check('收到信後世界地圖鈕出現、好感度欄位會補', await ev(page, "() => { window.__fa.refresh(); return !document.getElementById('btnMap').hidden; }"))
+    await ev(page, "() => { window.__fa.go('ch2_town', [120, 610]); }"); await page.wait_for_timeout(900)
+    check('可以進第二章場景', await ev(page, "() => window.__fa.S.scene") == 'ch2_town')
+    await ev(page, "() => { window.__fa.talk('ch2_cap'); }"); await page.wait_for_timeout(400)
+    while not await ev(page, "() => document.getElementById('dialog').hidden"): await page.click('#dBtns button:first-child'); await page.wait_for_timeout(150)
+    # 人在第二章時老師關閉：送回村莊，存檔不壞
+    await ev(page, "() => { window.__ctrl = {class_id: 'c1', flags: {'ch2': false}, weather: null}; window.__fa.pullControl(); }"); await page.wait_for_timeout(2500)
+    r = await ev(page, "() => ({scene: window.__fa.S.scene, c: !!window.__fa.S.c.letter})")
+    check('人在第二章時老師關閉：送回綠葉谷村莊，進度（S.c）保留', r == {'scene': 'village', 'c': True}, str(r))
+    check('章節開關測試沒有頁面錯誤', not errs, str(errs)); await page.close()
+    # 存檔停在第二章、之後老師關閉：下次進遊戲直接在村莊
+    page, errs = await open_page(ctx, url, 's2@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {'ch2': False}, 'weather': None})
+    await ev(page, "() => { const o = JSON.parse(JSON.stringify(window.__fa.S)); o.scene = 'ch2_town'; o.pos = {x: 120, y: 610}; o.started = true; localStorage.setItem('fa-kingdom-p1-v1', JSON.stringify(o)); }")
+    await page.reload(); await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
+    check('存檔在第二章、班級已關閉：讀檔後回村莊', await ev(page, "() => window.__fa.S.scene") == 'village')
+    await page.close()
 async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
@@ -60,6 +95,8 @@ async def main(url):
         # 5) 非在學學生（老師、訪客）：空設定 → 預設
         page, errs = await open_page(ctx, url, 'guest@gmail.com', {'class_id': None, 'flags': {}, 'weather': None})
         check('訪客／老師：class_id 空、flags 空 → 全部用預設', await ev(page, "() => window.__fa.flagOn('wild', false) === false && window.__fa.flagOn('ch2', true) === true"))
-        check('班級控制測試沒有頁面錯誤', not errs, str(errs)); await page.close(); await b.close()
+        check('班級控制測試沒有頁面錯誤', not errs, str(errs)); await page.close()
+        await chapter_switch(ctx, url)
+        await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
 print('班級控制測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)

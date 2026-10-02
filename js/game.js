@@ -18,8 +18,12 @@ async function loadChapters(){
   let idx;try{idx=await getJSON(`${CH_BASE}/index.json`);}catch(e){return [];}
   const loaded=[];
   for(const e of idx){
-    CHAPTERS[e.id]={id:e.id,name:e.name,open:false};
-    if(!e.open&&!FORCE_OPEN.includes(e.id))continue;  /* FORCE_OPEN：只有 #debug 的 ?open=ch2 才會強制開放（本機測試用） */
+    /* 章節一律載入；「開放」在執行時判斷（老師端設定 → 沒設定用 index.json 的 open），所以老師開關章節不用重新整理 */
+    const ch={id:e.id,name:e.name,def:!!e.open,loaded:false};
+    Object.defineProperty(ch,'open',{enumerable:true,get(){return ch.loaded&&(FORCE_OPEN.includes(ch.id)||flagOn(ch.id,ch.def));}});  /* FORCE_OPEN：只有 #debug 的 ?open=ch2 才會強制開放（本機測試用） */
+    CHAPTERS[e.id]=ch;
+    const cached=(window.FACloud&&FACloud.cachedControl&&FACloud.cachedControl()||{}).flags||{};
+    const preload=ch.def||FORCE_OPEN.includes(e.id)||cached[e.id]===true;  /* 預載圖片只給可能開放的章節，沒開放的章節等到真的進去才載 */
     try{
       const meta=await getJSON(`${CH_BASE}/${e.id}/chapter.json`),f=meta.files||{};
       /* 章節程式（選用）：只在章節開放時載入；default export 是 (FA)=>掛接點 */
@@ -41,7 +45,7 @@ async function loadChapters(){
       if(d.ratios)Object.assign(C.ratios.RATIO,d.ratios.RATIO||{});
       ['say','quizzes','text'].forEach(g=>Object.assign(C.dialogues[g],((d.dialogues||{})[g])||{}));
       if(meta.region)REGIONS[e.id]=Object.assign({chapter:e.id,id:e.id},meta.region);
-      CHAPTERS[e.id].open=true;loaded.push({id:e.id,assets:meta.assets||[]});
+      ch.loaded=true;loaded.push({id:e.id,assets:meta.assets||[],preload});
     }catch(err){delete CH_MODS[e.id];console.error('章節載入失敗，已略過：',e.id,err);}
   }
   return loaded;}
@@ -53,7 +57,7 @@ try{
   manifest.forEach(n=>A[n]=`assets/${n}.webp`);
   const imgs=manifest.map(n=>A[n]);
   /* 章節：chapters/index.json 列出各章與開關；開放的章節才載入（格式見 docs/chapter-pack-format.md）。章節載入失敗不影響序章 */
-  for(const ch of await loadChapters())(ch.assets||[]).forEach(n=>{A[n]=`${CH_BASE}/${ch.id}/assets/${n}.webp`;imgs.push(A[n]);});
+  for(const ch of await loadChapters())(ch.assets||[]).forEach(n=>{A[n]=`${CH_BASE}/${ch.id}/assets/${n}.webp`;if(ch.preload)imgs.push(A[n]);});
   let done=0;
   await Promise.all(imgs.map(u=>new Promise(r=>{const im=new Image();
     im.onload=im.onerror=()=>{startBtn.textContent=`載入中… ${++done}/${imgs.length}`;r();};im.src=u;})));
@@ -73,7 +77,8 @@ const mk=src=>{const f=new Function('S','return ('+src+')');return (...a)=>f(S)(
 function compileScenes(raw){const out={};
   for(const [id,s] of Object.entries(raw))out[id]=Object.assign({},s,{exits:(s.exits||[]).map(e=>({
     test:mk(e.test),to:e.toFn?mk(e.toFn):e.to,at:e.at,
-    need:chClosed(e.to)?()=>false:(e.need?mk(e.need):undefined),block:chClosed(e.to)?'這一章還沒開放，等老師開放之後再來探險吧。':(e.block||undefined)}))});
+    need:(c=>()=>!chClosed(e.to)&&(!c||c()))(e.need?mk(e.need):undefined),
+    get block(){return chClosed(e.to)?'這一章還沒開放，等老師開放之後再來探險吧。':(e.block||undefined);}}))});
   return out;}
 function compileSigns(raw){const out={};
   for(const [id,list] of Object.entries(raw))out[id]=list.map(g=>({x:g.x,y:g.y,
@@ -108,8 +113,9 @@ const regionOpen=r=>r===BASE||(CHAPTERS[r.chapter]&&CHAPTERS[r.chapter].open&&(!
 const mapAvail=()=>Object.values(REGIONS).some(regionOpen);
 /* ================= 章節掛接點（章節程式提供，沒開放的章節沒有） ================= */
 const CHH={};
-const hookOf=sceneId=>CHH[chOf(sceneId)]||null;
-const chBase=(name,...a)=>{for(const h of Object.values(CHH)){const r=h[name]&&h[name](...a);if(r!==undefined&&r!==null&&r!==false)return r;}};
+const chOpen=id=>!!(CHAPTERS[id]&&CHAPTERS[id].open);
+const hookOf=sceneId=>{const c=chOf(sceneId);return c&&chOpen(c)?(CHH[c]||null):null;};
+const chBase=(name,...a)=>{for(const [cid,h] of Object.entries(CHH)){if(!chOpen(cid))continue;const r=h[name]&&h[name](...a);if(r!==undefined&&r!==null&&r!==false)return r;}};
 /* ================= 班級控制：老師端設定的功能開關（沒設定就用程式預設）；讀取失敗時用本機快取 ================= */
 let CONTROL=window.FACloud&&FACloud.cachedControl?FACloud.cachedControl():null;  /* {class_id,flags:{ch2,wild,relief},weather:{id,type}|null} */
 const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;return f&&name in f?!!f[name]:!!def;};
@@ -140,9 +146,9 @@ function migrate(o){
   o.gifted=o.gifted||{};if(!o.spr){o.spr=[];for(let i=0;i<(o.sprinklers||0);i++)o.spr.push(i);}o.f=o.f||{};o.story=o.story||{};o.rescue=o.rescue||{};['hunt','guard','cook','soldier'].forEach(k=>{if(o.hearts[k]==null)o.hearts[k]=0;});o.sprinklers=o.sprinklers||0;o.bin=o.bin||0;if(!o.forage){o.forage={};o.forageDay=0;}
   Object.values(o.trees||{}).forEach(t=>{if(t.regrow&&t.regrow>1e6)t.regrow=o.day+1;});
   if(!Array.isArray(o.stash))o.stash=[];
-  Object.entries(PEOPLE).forEach(([k,p])=>{if(p.heart&&o.hearts&&o.hearts[k]==null)o.hearts[k]=0;});  /* 章節角色的好感度（heart:true） */
+  Object.entries(PEOPLE).forEach(([k,p])=>{if(p.heart&&chOpen(chOf(k))&&o.hearts&&o.hearts[k]==null)o.hearts[k]=0;});  /* 章節角色的好感度（heart:true） */
   o.c=o.c||{};o.wounds=o.wounds||{};if(!o.stashAt)o.stashAt='base';  /* c：各章進度；wounds：看過的傷口圖；stashAt：防災包在哪（base＝爺爺家、地區 id＝該地區住處、carry＝帶在身上） */
-  if(!SCENES[o.scene]){o.scene='village';o.pos={x:SCENES.village.spawn[0],y:SCENES.village.spawn[1]};}  /* 存檔所在的章節已關閉或不存在：回村莊 */
+  if(!SCENES[o.scene]||chClosed(o.scene)){o.scene='village';o.pos={x:SCENES.village.spawn[0],y:SCENES.village.spawn[1]};}  /* 存檔所在的章節已關閉或不存在：回村莊 */
   o.v=2;return o;}
 function save(){if(window.__loggingOut)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(window.FACloud)FACloud.queueSave(S);}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&(o.v===1||o.v===2))return migrate(o);}}catch(e){}return null;}
@@ -159,7 +165,8 @@ const matFree=()=>S.matCap-matUsed();
 function speedMul(){const l=load_();return l>LOAD_HEAVY?.5:l>LOAD_OK?.72:1;}
 function badge(k,lg){const it=ITEMS[base(k)];return `<span class="badge ${lg?'lg':''}" style="--c:${it.color};--tc:${it.text||'#1b1b1b'}" aria-hidden="true">${it.ch}</span>`;}
 function hearts(id){const n=Math.min(5,S.hearts[id]||0);return '♥'.repeat(n)+'♡'.repeat(5-n);}
-function addHeart(id,n){if(id in S.hearts)S.hearts[id]=Math.min(5,S.hearts[id]+n);}
+const ensureHeart=id=>{if(PEOPLE[id]&&PEOPLE[id].heart&&S.hearts[id]==null)S.hearts[id]=0;};  /* 章節在遊戲進行中才開放時，角色的好感度欄位用到才補 */
+function addHeart(id,n){ensureHeart(id);if(id in S.hearts)S.hearts[id]=Math.min(5,S.hearts[id]+n);}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
 async function useSta(n){
   if(S.sta<=0){S.pendingFaint='work';return false;}
@@ -225,6 +232,7 @@ function say(o){return new Promise(res=>{
   dlgResolve=res;const f=$('dFace');const p=o.p&&PEOPLE[o.p];
   const faceKey=o.p==='hero'?'hero_face':(p?p.face:null);
   if(faceKey){f.style.backgroundImage=`url(${A[faceKey]})`;f.textContent='';}else{f.style.backgroundImage='none';f.textContent=o.icon||'';}
+  ensureHeart(o.p);
   const nm=o.who||(o.p==='hero'?'你':(p?p.name:''));
   $('dWho').innerHTML=`<span>${nm}</span>`+(p&&o.p in S.hearts?`<span class="hearts" aria-label="好感度 ${S.hearts[o.p]}">${hearts(o.p)}</span>`:'');
   const wUrl=o.wound&&WOUNDS[o.wound]?`assets/w_${o.wound}.webp`:'';
@@ -971,6 +979,7 @@ function inputVec(){let x=input.jx,y=input.jy;const k=input.keys,p=input.pad;
   const m=Math.hypot(x,y);if(m>1){x/=m;y/=m;}return [x,y];}
 let last=0,walking=false,saveT=0,exiting=false;const trail=[];
 function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;
+  if(!$('game').hidden&&!busy&&S&&chClosed(S.scene)&&!loop.reloc){loop.reloc=true;(async()=>{busy=true;try{toast('這一章暫時關閉了，先回到村莊');await go('village',SCENES.village.spawn);}finally{busy=false;loop.reloc=false;}})();}  /* 老師端關閉章節時，人還在裡面 */
   if(!$('game').hidden&&!busy&&heroEl){
     const [vx,vy]=inputVec();
     if(Math.hypot(vx,vy)>.12){const sp=sc().heroH*1.8*speedMul();
