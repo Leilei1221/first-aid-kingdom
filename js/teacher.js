@@ -51,16 +51,18 @@ async function makeApi(){
     async isTeacher(){return must(await c.rpc('hc_is_allowed_teacher'))===true;},
     async classes(uid){return must(await c.from('hc_classes').select('id,name,grade,academic_year,semester').eq('teacher_id',uid).eq('is_active',true).order('grade').order('name'));},
     async students(cid){return must(await c.from('hc_students').select('id,student_no,seat_no,name,email,login_email').eq('class_id',cid).eq('is_active',true).order('seat_no'));},
+    async failures(emails){if(!emails.length)return [];return must(await c.from('fa_failures').select('email,scenario,choice,created_at').in('email',emails));},
     async saves(emails){if(!emails.length)return [];return must(await c.from('fa_saves').select('email,state,updated_at').in('email',emails));}
   };
 }
 
 /* ---------- 畫面 ---------- */
-let api=null,user=null,classes=[],rows=[],cardTotal=0,names={};
+let api=null,user=null,classes=[],rows=[],fails=[],cardTotal=0,names={},scenarioNames={};
 const say=(t,bad)=>{const e=$('status');e.hidden=false;e.textContent=t;e.style.borderColor=bad?'var(--bad)':'';};
 
 async function loadStatic(){
   try{const c=await (await fetch('content/knowledge_cards.json')).json();cardTotal=Object.keys(c.CARDS||{}).length;}catch(e){}
+  try{const r=await (await fetch('content/rescue.json')).json();Object.entries(r.SCENARIOS||{}).forEach(([k,v])=>scenarioNames[k]=v.name);}catch(e){}
   for(const u of ['content/characters.json','chapters/ch2/characters.json']){try{const c=await (await fetch(u)).json();Object.entries(c.PEOPLE||{}).forEach(([k,v])=>names[k]=v.name);}catch(e){}}
 }
 
@@ -70,13 +72,20 @@ async function loadClass(cid){
   const mail=s=>String(s.login_email||s.email||'').trim().toLowerCase();
   const emails=sts.map(mail).filter(Boolean);
   const saves=await api.saves(emails);
+  try{fails=api.failures?await api.failures(emails):[];}catch(e){fails=[];}  /* 失敗記錄讀不到不影響進度頁 */
   const by={};saves.forEach(r=>by[String(r.email).toLowerCase()]=r);
   rows=sts.map(s=>{const r=by[mail(s)];return {seat:s.seat_no,no:s.student_no,name:s.name,email:mail(s),updated:r?r.updated_at:null,sum:r?summarize(r.state,cardTotal):null};});
   render();$('status').hidden=true;
 }
 
+/* 全班最常犯的錯：每個情境有幾位學生、共幾次，以及最常選的那個答案 */
+function failSummary(list){const by={};
+  list.forEach(f=>{const s=by[f.scenario]||(by[f.scenario]={scenario:f.scenario,n:0,who:new Set(),choices:{}});s.n++;s.who.add(String(f.email).toLowerCase());s.choices[f.choice]=(s.choices[f.choice]||0)+1;});
+  return Object.values(by).map(s=>({scenario:s.scenario,times:s.n,students:s.who.size,top:Object.entries(s.choices).sort((a,b)=>b[1]-a[1])[0][0]})).sort((a,b)=>b.students-a.students||b.times-a.times);}
 function render(){
   const started=rows.filter(r=>r.sum);
+  const fs=failSummary(fails);
+  $('fails').innerHTML=fs.length?`<h3>全班最常犯的錯（救援失敗）</h3>`+fs.map(f=>`<div class="fl"><b>${esc(scenarioNames[f.scenario]||f.scenario)}</b><span>${f.students} 人、${f.times} 次</span><small>最常選：${esc(f.top)}</small></div>`).join(''):'';
   $('sum').innerHTML=[
     [`${started.length} / ${rows.length}`,'已開始遊戲的人數'],
     [started.length?Math.round(started.reduce((a,r)=>a+r.sum.pct,0)/started.length)+'%':'—','已開始者的平均進度'],
@@ -119,6 +128,6 @@ async function main(){
   $('cls').onchange=go;$('btnRefresh').onclick=go;$('btnCsv').onclick=exportCsv;
   await go();
 }
-window.FATeacher={summarize,stageLabel,milestones,csv};
+window.FATeacher={failSummary,summarize,stageLabel,milestones,csv};
 main();
 })();

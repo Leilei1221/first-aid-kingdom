@@ -3,13 +3,14 @@
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 
-def api_js(user, teacher, classes, students, saves):
+def api_js(user, teacher, classes, students, saves, failures=()):
     return f"""
     window.__faTeacherApi = {{
       async user() {{ return {json.dumps(user)}; }}, signIn() {{}}, async signOut() {{}},
       async isTeacher() {{ return {json.dumps(teacher)}; }},
       async classes(uid) {{ return {json.dumps(classes)}; }},
       async students(cid) {{ return {json.dumps(students)}[cid] || []; }},
+      async failures(emails) {{ const all = {json.dumps(list(failures))}; return all.filter(r => emails.includes(r.email)); }},
       async saves(emails) {{ const all = {json.dumps(saves)}; return all.filter(r => emails.includes(r.email)); }}
     }};"""
 
@@ -32,6 +33,13 @@ SAVES = [
   {'email': 's120001@hlhs.hlc.edu.tw', 'updated_at': '2026-10-01T02:00:00+00:00', 'state': {'day': 3, 'step': 5, 'coins': 5, 'cards': {}, 'hearts': {}, 'f': {}}},
 ]
 
+FAILS = [
+  {'email': 's110001@hlhs.hlc.edu.tw', 'scenario': 'flood', 'choice': '走到橋上看清楚一點', 'created_at': '2026-10-01T03:00:00+00:00'},
+  {'email': 's110001@hlhs.hlc.edu.tw', 'scenario': 'flood', 'choice': '走到橋上看清楚一點', 'created_at': '2026-10-01T04:00:00+00:00'},
+  {'email': 's110002@hlhs.hlc.edu.tw', 'scenario': 'flood', 'choice': '沿著溪谷往下游跑', 'created_at': '2026-10-01T05:00:00+00:00'},
+  {'email': 's110002@hlhs.hlc.edu.tw', 'scenario': 'typhoon', 'choice': '大樹下面，可以擋雨', 'created_at': '2026-10-01T05:30:00+00:00'},
+  {'email': 's120001@hlhs.hlc.edu.tw', 'scenario': 'typhoon', 'choice': '別班的不算', 'created_at': '2026-10-01T06:00:00+00:00'},
+]
 async def main(url):
     res = []
     def check(name, ok, extra=''):
@@ -40,7 +48,7 @@ async def main(url):
         b = await p.chromium.launch()
         async def page_for(user, teacher, classes=CLASSES):
             ctx = await b.new_context(viewport={'width': 390, 'height': 800}, accept_downloads=True)
-            await ctx.add_init_script(api_js(user, teacher, classes, STUDENTS, SAVES))
+            await ctx.add_init_script(api_js(user, teacher, classes, STUDENTS, SAVES, FAILS))
             pg = await ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.goto(url); return pg, errs
         T = {'id': 'u1', 'email': 'teacher@hlhs.hlc.edu.tw'}
@@ -73,6 +81,9 @@ async def main(url):
         check('CSV 有標題列與 4 位學生', len(lines) == 5 and lines[0].startswith('班級,座號,學號,姓名'), data[:200])
         check('CSV 含尚未開始與欠款數字', '尚未開始' in data and ',-100' in data, data)
         check('CSV 的姓名逸出正確（含 < > 的名字）', '李<b>大華</b>' in data)
+        ftxt = await pg.inner_text('#fails')
+        check('全班最常犯的錯：山洪 2 人 3 次排第一、颱風 1 人 1 次（別班不算）', '山洪徵兆時走上橋或沿溪谷跑' in ftxt and '2 人、3 次' in ftxt and '1 人、1 次' in ftxt and ftxt.index('山洪') < ftxt.index('颱風'), ftxt)
+        check('最常選的答案：走到橋上看清楚一點', '最常選：走到橋上看清楚一點' in ftxt, ftxt)
         check('頁面沒有 JS 錯誤', not errs, str(errs))
         r = await pg.evaluate("() => ['{}', '{\"c\":{\"letter\":true}}', '{\"c\":{\"letter\":true,\"intro\":true}}', '{\"c\":{\"done\":true,\"stars\":4}}'].map(j => window.FATeacher.summarize(JSON.parse(j), 20).ch2)")
         check('第二章狀態：未開始／已收到信／進行中／已完成（4★）', [x['label'] for x in r] == ['', '已收到信', '進行中', '已完成'] and r[3]['stars'] == 4, str(r))

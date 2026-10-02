@@ -44,10 +44,10 @@ async function loadChapters(){
   }
   return loaded;}
 try{
-  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,weather,walks,manifest]=await Promise.all(
-    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues','wounds','weather'].map(n=>getJSON(`content/${n}.json`))
+  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,weather,rescue,walks,manifest]=await Promise.all(
+    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues','wounds','weather','rescue'].map(n=>getJSON(`content/${n}.json`))
     .concat([getJSON('data/walks.json'),getJSON('assets/manifest.json')]));
-  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,weather,walks};
+  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,weather,rescue,walks};
   manifest.forEach(n=>A[n]=`assets/${n}.webp`);
   const imgs=manifest.map(n=>A[n]);
   /* 章節：chapters/index.json 列出各章與開關；開放的章節才載入（格式見 docs/chapter-pack-format.md）。章節載入失敗不影響序章 */
@@ -93,7 +93,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,SCENARIOS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -394,7 +394,8 @@ async function doAction(){
     else if(it.kind==='gatedoor')await gateDoor();
     else if(hookOf(S.scene)&&hookOf(S.scene).acts&&hookOf(S.scene).acts[it.kind])await hookOf(S.scene).acts[it.kind](it);
     if(S.pendingFaint){const r=S.pendingFaint;S.pendingFaint=null;await faint(r);}
-  }finally{busy=false;save();refresh();updateNear();}
+  }catch(e){if(!e||!e.rescueAbort)throw e;}  /* 救援失敗：整段流程到此結束 */
+  finally{busy=false;save();refresh();updateNear();}
 }
 async function go(to,at){
   if(typeof to==='function')to=to();
@@ -759,8 +760,11 @@ async function merchantMenu(){
 }
 
 /* 問答 */
-async function quiz(p,q,opts,ans,explain,w){
+/* 問答。fatal={scenario,bad:[選項編號]}：選到嚴重錯誤的選項 → 救援失敗（顯示正確知識卡、回到早上），並用 RESCUE_ABORT 中止呼叫端整段流程 */
+const RESCUE_ABORT={rescueAbort:true};
+async function quiz(p,q,opts,ans,explain,w,fatal){
   for(;;){const i=await say({p,wound:w,hideCap:true,html:`<p class="q">${q}</p>`,buttons:opts.map(o=>({label:o}))});
+    if(fatal&&i!==ans&&fatal.bad.includes(i)){const sc=SCENARIOS[fatal.scenario];await rescueFail({scenario:fatal.scenario,choice:opts[i],intro:sc.intro,cardKey:sc.card});throw RESCUE_ABORT;}
     const ok=i===ans;await say({p,html:`<p class="${ok?'good':'bad'}">${ok?'處置正確！':'這個做法不對。'}</p><p>${explain}</p>`,buttons:[{label:ok?'繼續':'再選一次',primary:true}]});
     if(ok)return;}}
 const ALT={saline:['water']};
@@ -962,6 +966,7 @@ async function checkExit(){if(exiting)return;
         let back=null;for(let k=trail.length-1;k>=0;k--){const [tx,ty]=trail[k];if(!ex.test(tx,ty)&&free(tx,ty)&&Math.hypot(tx-px,ty-py)>30){back=[tx,ty];break;}}
         if(!back)back=sc().spawn;S.pos={x:back[0],y:back[1]};trail.length=0;placeHero();camera();}
       else await go(ex.to,ex.at);}
+    catch(e){if(!e||!e.rescueAbort)throw e;}
     finally{busy=false;exiting=false;save();refresh();}
     return;}}}
 
@@ -1042,9 +1047,9 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,curRegion,regionOf,hearts,
+  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
