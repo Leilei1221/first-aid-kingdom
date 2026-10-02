@@ -77,7 +77,8 @@
     "test": "(x,y)=>x<25",
     "need": null
    }
-  ]
+  ],
+  "outdoor": true
  },
  "ch2_townfire": {
   "name": "熔岩鍛造鎮（火災）",
@@ -227,7 +228,8 @@
    "rubble": "ch2_iron_rubble",
    "mat": "ch2_iron",
    "txt": "鐵礦石 ×1"
-  }
+  },
+  "outdoor": true
  },
  "ch2_inn": {
   "name": "溫泉旅館",
@@ -276,7 +278,8 @@
     "need": null,
     "toFn": "()=>S.c&&S.c.fire&&!S.c.done?'ch2_townfire':'ch2_town'"
    }
-  ]
+  ],
+  "outdoor": true
  },
  "ch2_inn2": {
   "name": "旅館二樓",

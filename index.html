@@ -178,6 +178,11 @@ button.pill{cursor:pointer}
   #title h1{font-size:30px}#title p{display:none}#title .sub{font-size:13px;margin-bottom:10px}.cta{min-height:36px;font-size:14px}
 }
 @media (max-height:520px) and (orientation:landscape){.btns.many{display:grid;grid-template-columns:1fr 1fr}.btns.many .btn{min-height:36px}#dText input[type=range]{width:42%}}
+#view.rain::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:20;background:repeating-linear-gradient(105deg,rgba(200,220,255,.0) 0 14px,rgba(200,220,255,.35) 14px 15px);background-size:200px 200px;animation:rainfall .35s linear infinite;box-shadow:inset 0 0 0 2000px rgba(20,30,50,.28)}
+#view.storm::after{animation-duration:.2s;background:repeating-linear-gradient(120deg,rgba(210,225,255,0) 0 12px,rgba(210,225,255,.45) 12px 13px);background-size:180px 180px;box-shadow:inset 0 0 0 2000px rgba(15,22,40,.4)}
+#view.storm #plane{animation:sway 2.4s ease-in-out infinite}
+#view.fog::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:20;background:radial-gradient(ellipse at 50% 55%,rgba(230,235,240,.15) 0,rgba(230,235,240,.85) 60%)}@keyframes rainfall{to{background-position:-60px 200px}}@keyframes sway{50%{margin-left:3px}}@media (prefers-reduced-motion: reduce){#view.rain::after{animation:none}
+#view.storm #plane{animation:none}}
 </style>
 </head>
 <body>

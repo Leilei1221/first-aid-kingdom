@@ -44,10 +44,10 @@ async function loadChapters(){
   }
   return loaded;}
 try{
-  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,walks,manifest]=await Promise.all(
-    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues','wounds'].map(n=>getJSON(`content/${n}.json`))
+  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,weather,walks,manifest]=await Promise.all(
+    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues','wounds','weather'].map(n=>getJSON(`content/${n}.json`))
     .concat([getJSON('data/walks.json'),getJSON('assets/manifest.json')]));
-  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,walks};
+  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,weather,walks};
   manifest.forEach(n=>A[n]=`assets/${n}.webp`);
   const imgs=manifest.map(n=>A[n]);
   /* 章節：chapters/index.json 列出各章與開關；開放的章節才載入（格式見 docs/chapter-pack-format.md）。章節載入失敗不影響序章 */
@@ -93,7 +93,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -108,6 +108,15 @@ const mapAvail=()=>Object.values(REGIONS).some(regionOpen);
 const CHH={};
 const hookOf=sceneId=>CHH[chOf(sceneId)]||null;
 const chBase=(name,...a)=>{for(const h of Object.values(CHH)){const r=h[name]&&h[name](...a);if(r!==undefined&&r!==null&&r!==false)return r;}};
+/* ================= 天氣：由老師發布（D5）或除錯入口排定，沒有隨機；沒有排定時整套不作用 ================= */
+const wxToday=()=>S.wx&&S.wx.day===S.day?S.wx.type:null;
+const wxTomorrow=()=>S.wxNext&&S.wxNext.day===S.day+1?S.wxNext.type:null;
+const isOutdoor=id=>{const s=C.scenes[id];return s&&s.outdoor!=null?!!s.outdoor:OUTDOOR.includes(id);};
+const stormy=()=>['typhoon','flood'].includes(wxToday())||['typhoon','flood'].includes(wxTomorrow());  /* 船長停航 */
+/* 排定「明天」的天災；之後老師端（D5）發布的天災也走這裡 */
+function scheduleWx(type){if(!WX[type])throw new Error('沒有這種天災：'+type);S.wxNext={type,day:S.day+1};}
+function applyWx(){const t=wxToday(),out=isOutdoor(S.scene),v=$('view');
+  v.classList.toggle('rain',(t==='typhoon'||t==='flood')&&out);v.classList.toggle('storm',t==='typhoon'&&out);v.classList.toggle('fog',t==='fog'&&S.scene==='forest');}
 const DLG=C.dialogues,GLOBALS=Object.assign({CARDS,ITEMS},C.balance);
 function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>sl.plots.forEach(i=>{const p=S.plots[i];if(p&&(p.st==='tilled'||(p.st==='planted'&&p.g<GROW_DAYS))&&!p.wet){p.wet=true;n++;}}));return n;}
 
@@ -279,7 +288,7 @@ function refresh(){
   $('sta').textContent=S.sta;const sb=$('staBar');sb.style.width=(S.sta/STA_MAX*100)+'%';sb.classList.toggle('low',S.sta<20);
   $('bagInfo').textContent=`${S.kit.length}/${S.kitCap}`;$('cardInfo').textContent=Object.keys(S.cards).length;
   $('joy').hidden=S.ctrl!=='joy';$('dpad').hidden=S.ctrl!=='pad';
-  $('btnMap').hidden=!mapAvail();
+  $('btnMap').hidden=!mapAvail();applyWx();
   $('goal').innerHTML='<b>目標</b>'+goalText();
 }
 function placeHero(){heroEl.style.setProperty('--x',S.pos.x);heroEl.style.setProperty('--y',S.pos.y);heroEl.style.zIndex=Math.round(S.pos.y);}
@@ -463,7 +472,9 @@ async function bed(){
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>早安！體力恢復了。</p>'+html});
 }
 function nextDay(){
-  S.day++;let grown=0,dry=0;
+  S.day++;let grown=0,dry=0,wxMsg='';
+  if(S.wxNext&&S.wxNext.day===S.day){S.wx=S.wxNext;S.wxNext=null;wxMsg+=`<p class="bad">今天${WX[S.wx.type].name}來襲！</p>`;S.wxHit={};}
+  if(S.wxNext&&S.wxNext.day===S.day+1)wxMsg+=`<p class="warn">天氣預報：${WX[S.wxNext.type].fore}</p>`;
   Object.values(S.plots).forEach(p=>{if(p.st==='planted'&&p.g<GROW_DAYS){if(p.wet){p.g++;grown++;}else dry++;}p.wet=false;});
   S.req=S.req.map(()=>nextReq());
   let auto=0,harv=0;
@@ -476,7 +487,7 @@ function nextDay(){
   if(S.step>=7&&Math.random()<.6){const pool=EVENTS.filter(e=>!e.after||S.cards[e.after]);const ev=pool[Math.floor(Math.random()*pool.length)];S.event={id:ev.id,day:S.day};evMsg+=`<p class="warn">聽說${PEOPLE[ev.who].name}好像出了點小意外……</p>`;}
   if(S.quake&&S.castleDone){S.quake=false;evMsg+='<p class="small">落石之城修復完成了。</p>';}
   const exp=S.kit.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length,expS=S.stash.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length;
-  return `${grown?`<p>有 ${grown} 塊田的小麥長大了。</p>`:''}${dry?`<p class="warn">有 ${dry} 塊田昨天沒澆水，所以沒有長大。</p>`:''}${exp?`<p class="bad">背包裡有 ${exp} 包乾糧過期了，已經不能吃。</p>`:''}${expS?`<p class="bad">家裡的防災包有 ${expS} 包乾糧過期了，已經不能吃。</p>`:''}${auto?`<p>自動灑水器幫 ${auto} 塊田澆好水了。</p>`:''}${harv?`<p>自動收割機收了小麥 ×${harv}，放在收納箱裡。</p>`:''}${evMsg}<p class="small">委託板有新的工作，路邊也出現了新的東西可以撿。</p>`;
+  return `${wxMsg}${grown?`<p>有 ${grown} 塊田的小麥長大了。</p>`:''}${dry?`<p class="warn">有 ${dry} 塊田昨天沒澆水，所以沒有長大。</p>`:''}${exp?`<p class="bad">背包裡有 ${exp} 包乾糧過期了，已經不能吃。</p>`:''}${expS?`<p class="bad">家裡的防災包有 ${expS} 包乾糧過期了，已經不能吃。</p>`:''}${auto?`<p>自動灑水器幫 ${auto} 塊田澆好水了。</p>`:''}${harv?`<p>自動收割機收了小麥 ×${harv}，放在收納箱裡。</p>`:''}${evMsg}<p class="small">委託板有新的工作，路邊也出現了新的東西可以撿。</p>`;
 }
 async function pickUp(i){
   const f=S.forage[S.scene][i],P=PICK[f.t];
@@ -1031,9 +1042,9 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,curRegion,regionOf,hearts,
+  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();

@@ -182,7 +182,7 @@ async function fireReport(){
   await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>`+items.map(([k,t])=>`<div class="row"><div class="info"><b>${t}</b><span style="color:${c[k]==='ok'?'var(--ok)':c[k]==='wrong'?'var(--warn)':'var(--bad)'}">${c[k]==='ok'?'處置正確':c[k]==='wrong'?'處置有誤':'缺少用品'}</span></div></div>`).join('')+'<p class="good">第二章「熔岩鍛造鎮」完成！</p>',buttons:[{label:'完成',primary:true}]});
   await go('ch2_town',[860,860]);}
 const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
-function stormy(){return false;}  /* 停航判斷要等 D4 的天氣系統；D3 先永遠不停航 */
+const stormy=()=>FA.stormy();  /* 颱風、豪雨（今天或明天）船長拒絕出航 */
 async function captTalk(){
   if(S.scene==='ch2_deck'){const v=S.voyage;return say({p:'ch2_capt',html:`<p>${v.left>1?'還要再航行兩個晚上才會到。':'明天早上就會靠岸了！'}累了就到船艙休息吧。</p>`});}
   const toForge=S.scene==='ch2_port';
