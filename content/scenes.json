@@ -415,6 +415,16 @@
     "test": "(x,y)=>y<25",
     "need": null,
     "toFn": "()=>S.quake?'ruin':'gate'"
+   },
+   {
+    "to": "ch2_port",
+    "at": [
+     80,
+     210
+    ],
+    "block": "往東是海邊的漁港，等收到老鐵的信再去吧。",
+    "test": "(x,y)=>x>1570",
+    "need": "()=>S.c&&S.c.letter"
    }
   ]
  },

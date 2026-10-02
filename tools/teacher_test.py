@@ -74,6 +74,9 @@ async def main(url):
         check('CSV 含尚未開始與欠款數字', '尚未開始' in data and ',-100' in data, data)
         check('CSV 的姓名逸出正確（含 < > 的名字）', '李<b>大華</b>' in data)
         check('頁面沒有 JS 錯誤', not errs, str(errs))
+        r = await pg.evaluate("() => ['{}', '{\"c\":{\"letter\":true}}', '{\"c\":{\"letter\":true,\"intro\":true}}', '{\"c\":{\"done\":true,\"stars\":4}}'].map(j => window.FATeacher.summarize(JSON.parse(j), 20).ch2)")
+        check('第二章狀態：未開始／已收到信／進行中／已完成（4★）', [x['label'] for x in r] == ['', '已收到信', '進行中', '已完成'] and r[3]['stars'] == 4, str(r))
+        check('CSV 標題含第二章欄位', lines[0].endswith('第二章,第二章星數'), lines[0])
 
         pg2, _ = await page_for(T, False)
         await pg2.wait_for_selector('#status:not([hidden])'); await pg2.wait_for_timeout(300)

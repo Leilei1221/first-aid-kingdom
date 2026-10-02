@@ -75,8 +75,19 @@ async def main(url):
     bad = 0
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        for sid, sc in SCENES.items():
+        todo = list(SCENES.items())
+        extra = []  # 章節模式：序章場景通往章節的出口（需要收到信）也要走一遍
+        if CH:
+            pro = json.load(open(os.path.join(ROOT, 'content/scenes.json'), encoding='utf-8'))
+            for psid, psc in pro.items():
+                psc2 = dict(psc, exits=[e for e in psc['exits'] if (e.get('to') or '').startswith(CH + '_')])
+                if psc2['exits']: extra.append((psid, psc2))
+            WALKS.update(json.load(open(os.path.join(ROOT, 'data/walks.json'))))
+            todo += extra
+        for sid, sc in todo:
             for ei, ex in enumerate(sc['exits']):
+                if not CH and (ex.get('to') or '').startswith('ch'):
+                    print('- ', sid, f'出口#{ei}', '→', ex['to'], '（章節出口，預設關閉，用 CHAPTER 模式測）'); continue
                 path = bfs(WALKS[sid], sc['spawn'], pred(ex['test']))
                 if not path:
                     print(f'✗ {sid} 出口#{ei}：從入口找不到可走的路'); bad += 1; continue
@@ -86,7 +97,7 @@ async def main(url):
                 page = await ctx.new_page()
                 await page.goto(url + (f'?open={CH}' if CH else '') + '#debug')
                 await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
-                await page.evaluate(f"""() => {{ const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.scene = {json.dumps(sid)}; S.pos = {{x: {sc['spawn'][0]}, y: {sc['spawn'][1]}}}; S.started = true;
+                await page.evaluate(f"""() => {{ const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.c = Object.assign(S.c || {{}}, {{letter: true}}); S.scene = {json.dumps(sid)}; S.pos = {{x: {sc['spawn'][0]}, y: {sc['spawn'][1]}}}; S.started = true;
                   document.getElementById('btnStart').click(); }}""")
                 await page.wait_for_timeout(600)
                 r = await page.evaluate(WALK_JS, [pts])

@@ -60,6 +60,18 @@ async def talk(page, id):
 async def near_act(page, scene, x, y, wait=250):
     await goto(page, scene, x, y); await page.wait_for_timeout(wait)
     await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(250)
+async def east_exit(page, letter):
+    await page.evaluate(f"() => {{ const S = window.__fa.S; S.c.letter = {str(letter).lower()}; window.__fa.go('plain', [1300, 680]); }}"); await page.wait_for_timeout(800)
+    await page.keyboard.down('ArrowRight'); await page.wait_for_timeout(2500); await page.keyboard.up('ArrowRight'); await page.wait_for_timeout(600)
+async def plain_exit_tests(ctx, url):
+    page, errs = await boot(ctx, url)
+    await east_exit(page, False)
+    txt = await page.inner_text('#dText') if not await page.evaluate("() => document.getElementById('dialog').hidden") else ''
+    check('章節開放、還沒收到信：東方草原東邊被擋下並提示', '等收到老鐵的信' in txt and await st(page, 'S.scene') == 'plain', txt)
+    await drive(page, limit=3)
+    await east_exit(page, True)
+    check('收到信後：從東方草原走到東邊進入漁港', await st(page, 'S.scene') == 'ch2_port', await st(page, 'S.scene'))
+    check('出口測試沒有頁面錯誤', not errs, str(errs)); await page.close()
 async def story_tests(ctx, url):
     page, errs = await boot(ctx, url)
     await page.evaluate("() => { const S = window.__fa.S; S.c.letter = true; S.c.intro = true; S.kit = ['gauze']; S.kitCap = 14; S.coins = 300; }")
@@ -184,6 +196,7 @@ async def main(url):
         check('第二章場景目標與地區', 'ch2' == await page.evaluate("() => window.__fa.curRegion().id") and '鐵匠鋪' in await page.inner_text('#goal'))
         check('渡海沒有頁面錯誤', not errs, str(errs))
         await page.close()
+        await plain_exit_tests(ctx, url)
         await story_tests(ctx, url)
         await stash_trip(ctx, url)
         await b.close()
