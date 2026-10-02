@@ -1,7 +1,7 @@
-# 章節資料包格式說明（草案，D1 確認後定稿）
+# 章節資料包格式說明（D1 已實作，2026-10-02）
 
 給：老師、Claude Chat／Co-work（編寫第三章等後續章節時使用）。
-**狀態：草案。** 這是依現有 `content/` 結構推導的建議格式，階段 D1 實作並經老師確認後才定稿；交付前請以定稿版為準。
+**狀態：D1 載入器已實作並通過測試（`tools/chapter_test.py`），本檔即為實際格式。** 第二章、第三章尚未放入；放入時各章仍需老師開放。
 
 ## 1. 原則
 
@@ -28,16 +28,40 @@ chapters/ch3/
   REVIEW.md             待審項目清單（每項對應一個 id）
 ```
 
-## 3. 各檔欄位（對照現有格式）
+## 3. 各檔欄位（與載入器一致）
 
-| 檔 | 對照現有 | 說明 |
-|---|---|---|
-| `scenes.json` | `content/scenes.json` | 每個場景：`name`、`bg`、`spawn:[x,y]`、`heroH`、`npcs:[{id,x,y,flip}]`、`things:[{kind,x,y,label}]`、`exits:[{to,at,block,test,need}]`。`test` 與 `need` 為函式原始碼字串（如 `(x,y)=>y>845`），載入時編譯 |
-| `characters.json` | `PEOPLE` | `{id:{name,img,face,hk}}`；寬高比由程式從圖片量出（`RATIO`） |
-| `dialogues.json` | `content/dialogues.json` | 分 `say`、`quizzes`、`text`；`{變數}` 會替換，`{CARDS.xxx.title}` 取知識卡標題 |
-| `cards.json` | `CARDS` | `{id:{title,text,status}}` |
-| `events.json` | `EVENTS`／`VICTIMS` | 題目含 `qs:[{q,opts,ans,explain}]`；嚴重錯誤用 `fatal:true` 標記（救援失敗用，**清單需老師確認**） |
-| `chapter.json` | （新） | `{id:"ch3",name,order,entry:"ch3_fishport",requires:["ch2"],status:"draft"}` |
+資料包放在 `chapters/<章id>/`，並在 `chapters/index.json` 登記：
+
+```json
+[{"id":"ch3","name":"港口藍堡","open":false}]
+```
+
+`open` 預設 `false`。關閉的章節不會載入內容，但**通往它的出口**（`to` 以 `ch3_` 開頭）會被擋下，玩家看到「這一章還沒開放」並被退回出口外。D5 之後 `open` 由老師端（資料庫）決定。
+
+`chapters/ch3/chapter.json`：
+
+```json
+{"id":"ch3","name":"港口藍堡","files":{"scenes":"scenes.json","characters":"characters.json",
+ "dialogues":"dialogues.json","cards":"cards.json","events":"events.json","items":"items.json",
+ "ratios":"ratios.json","signs":"signs.json","walks":"walks.json"},
+ "assets":["ch3_harbor","ch3_lifeg","ch3_lifeg_face"]}
+```
+
+- `files`：有哪些檔就列哪些（不是每章都需要全部）。
+- `assets`：圖片檔名（不含 `.webp`），放在 `chapters/ch3/assets/`，只在章節開放時預載；**圖片的 key 也要有 `ch3_` 前綴**。
+- 載入器會檢查：場景、角色、知識卡、對話 key、事件、物品、遮罩的 id 都必須以 `ch3_` 開頭，**有一個不符就整章略過**，並在 console 顯示是哪些 id（不會影響序章）。
+
+| 檔 | 內容（欄位與序章 `content/` 相同） |
+|---|---|
+| `scenes.json` | `{場景id:{name,bg,spawn,heroH,npcs,things,exits}}`。`exits[].test`、`need` 為函式原始碼字串，如 `(x,y)=>x<30` |
+| `walks.json` | `{場景id:[可行走網格]}`（格式同 `data/walks.json`；沒有就由 Claude Code 建） |
+| `characters.json` | `{"PEOPLE":{角色id:{name,img,face,hk}}}` |
+| `ratios.json` | `{"RATIO":{圖key:寬高比}}` |
+| `dialogues.json` | `{say:{},quizzes:{},text:{}}`，key 以 `ch3_` 開頭，如 `ch3_cpr.intro` |
+| `cards.json` | `{"CARDS":{ch3_xxx:{title,text}}}` |
+| `events.json` | `{"EVENTS":[{id:"ch3_x",...}],"VICTIMS":{}}` |
+| `items.json` | `{"ITEMS":{ch3_xxx:{...}}}` |
+| `signs.json` | `{場景id:[路標]}` |
 
 ## 4. 交付檢查清單（Co-work 自查）
 
@@ -52,6 +76,6 @@ chapters/ch3/
 
 | 項目 | 狀況 |
 |---|---|
-| 章節存檔欄位 | 預設不新增；若章節需要自己的狀態，放在 `S.ch.<章id>` 底下，並要有 `migrate()` 預設值 |
+| 章節存檔欄位 | 預設不新增；若章節需要自己的狀態再加（會與 D2 一併設計），並要有 `migrate()` 預設值。玩家存檔所在的場景若屬於未開放或不存在的章節，讀檔時自動回到村莊 |
 | 章節開放 | 預設**關閉**，由老師端（D5）開放；開放狀態讀資料庫，不寫在資料包 |
 | 大小限制 | 第三章若做獨立 Artifact 試玩有 16MB 上限；正式版放 GitHub Pages，無此限制 |
