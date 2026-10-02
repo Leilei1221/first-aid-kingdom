@@ -4,7 +4,8 @@ const startBtn=document.getElementById('btnStart'),startLabel=startBtn.textConte
 startBtn.disabled=true;startBtn.textContent='載入中…';
 const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(u+' '+r.status);return r.json();};
 let C,A={};
-const CHAPTERS={};  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
+const CHAPTERS={};
+const REGIONS={};  /* 章節宣告的地區（chapter.json 的 region）；綠葉谷（base）固定存在，見下方 BASE */  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
 const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
 const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
@@ -33,15 +34,16 @@ async function loadChapters(){
       if(d.items)Object.assign(C.items.ITEMS,d.items.ITEMS||{});
       if(d.ratios)Object.assign(C.ratios.RATIO,d.ratios.RATIO||{});
       ['say','quizzes','text'].forEach(g=>Object.assign(C.dialogues[g],((d.dialogues||{})[g])||{}));
+      if(meta.region)REGIONS[e.id]=Object.assign({chapter:e.id,id:e.id},meta.region);
       CHAPTERS[e.id].open=true;loaded.push({id:e.id,assets:meta.assets||[]});
     }catch(err){console.error('章節載入失敗，已略過：',e.id,err);}
   }
   return loaded;}
 try{
-  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,walks,manifest]=await Promise.all(
-    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues'].map(n=>getJSON(`content/${n}.json`))
+  const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,walks,manifest]=await Promise.all(
+    ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues','wounds'].map(n=>getJSON(`content/${n}.json`))
     .concat([getJSON('data/walks.json'),getJSON('assets/manifest.json')]));
-  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,walks};
+  C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,wounds,walks};
   manifest.forEach(n=>A[n]=`assets/${n}.webp`);
   const imgs=manifest.map(n=>A[n]);
   /* 章節：chapters/index.json 列出各章與開關；開放的章節才載入（格式見 docs/chapter-pack-format.md）。章節載入失敗不影響序章 */
@@ -86,8 +88,16 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
+/* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
+const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
+const regionOf=sceneId=>{const c=chOf(sceneId);return (c&&REGIONS[c])||BASE;};
+const curRegion=()=>regionOf(S.scene);
+const regionList=()=>[BASE].concat(Object.values(REGIONS));
+const regionName=id=>(regionList().find(r=>r.id===id)||BASE).name;
+const regionOpen=r=>r===BASE||(CHAPTERS[r.chapter]&&CHAPTERS[r.chapter].open&&(!r.unlock||mk(r.unlock)()));
+const mapAvail=()=>Object.values(REGIONS).some(regionOpen);
 const DLG=C.dialogues,GLOBALS=Object.assign({CARDS,ITEMS},C.balance);
 function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>sl.plots.forEach(i=>{const p=S.plots[i];if(p&&(p.st==='tilled'||(p.st==='planted'&&p.g<GROW_DAYS))&&!p.wet){p.wet=true;n++;}}));return n;}
 
@@ -103,6 +113,7 @@ function migrate(o){
   o.gifted=o.gifted||{};if(!o.spr){o.spr=[];for(let i=0;i<(o.sprinklers||0);i++)o.spr.push(i);}o.f=o.f||{};o.story=o.story||{};o.rescue=o.rescue||{};['hunt','guard','cook','soldier'].forEach(k=>{if(o.hearts[k]==null)o.hearts[k]=0;});o.sprinklers=o.sprinklers||0;o.bin=o.bin||0;if(!o.forage){o.forage={};o.forageDay=0;}
   Object.values(o.trees||{}).forEach(t=>{if(t.regrow&&t.regrow>1e6)t.regrow=o.day+1;});
   if(!Array.isArray(o.stash))o.stash=[];
+  o.c=o.c||{};o.wounds=o.wounds||{};if(!o.stashAt)o.stashAt='base';  /* c：各章進度；wounds：看過的傷口圖；stashAt：防災包在哪（base＝爺爺家、地區 id＝該地區住處、carry＝帶在身上） */
   if(!SCENES[o.scene]){o.scene='village';o.pos={x:SCENES.village.spawn[0],y:SCENES.village.spawn[1]};}  /* 存檔所在的章節已關閉或不存在：回村莊 */
   o.v=2;return o;}
 function save(){if(window.__loggingOut)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(window.FACloud)FACloud.queueSave(S);}
@@ -154,14 +165,15 @@ async function faint(reason){
   await play(reason==='mushroom'?'faint.mushroom':'faint.other');
   $('fade').classList.add('on');await sleep(RM?0:800);
   const summary=nextDay();
-  S.scene='home';S.pos={x:420,y:660};buildScene();S.sta=Math.round(STA_MAX*.6);
+  const wk=curRegion(),wh=wk.home||BASE.home;
+  S.scene=wh.scene;S.pos={x:wh.at[0],y:wh.at[1]};buildScene();S.sta=Math.round(STA_MAX*.6);
   S.coins-=MED_FEE;refresh();$('fade').classList.remove('on');checkpoint();
   if(reason==='mushroom'){
-    await play('faint.mushroomWake');
+    await play((wk.wake&&wk.wake.mushroom)||'faint.mushroomWake');
     S.cards.mushroom=true;S.cards.faint=true;
     await play('faint.mushroomCards');}
   else{
-    await play('faint.otherWake');
+    await play((wk.wake&&wk.wake.other)||'faint.otherWake');
     S.cards.hypo=true;
     await play('faint.otherCard');}
   await say({icon:'￥',who:'醫療費',html:`<p>醫生的診療費 ${MED_FEE} 金幣。</p>${S.coins<0?`<p class="bad">金幣不夠，先欠著 ${-S.coins} 金幣。還清之前不能在商店買東西。</p>`:`<p>剩下 ${S.coins} 金幣。</p>`}<p class="small">今天是第 ${S.day} 天，體力恢復到 ${S.sta}。</p>`});
@@ -185,7 +197,9 @@ function say(o){return new Promise(res=>{
   if(faceKey){f.style.backgroundImage=`url(${A[faceKey]})`;f.textContent='';}else{f.style.backgroundImage='none';f.textContent=o.icon||'';}
   const nm=o.who||(o.p==='hero'?'你':(p?p.name:''));
   $('dWho').innerHTML=`<span>${nm}</span>`+(p&&o.p in S.hearts?`<span class="hearts" aria-label="好感度 ${S.hearts[o.p]}">${hearts(o.p)}</span>`:'');
-  $('dText').innerHTML=o.html||'';
+  const wUrl=o.wound&&WOUNDS[o.wound]?`assets/w_${o.wound}.webp`:'';
+  if(wUrl)S.wounds[o.wound]=true;
+  $('dText').innerHTML=(wUrl?`<figure style="margin:0 0 8px;text-align:center"><img alt="${WOUNDS[o.wound]}" src="${wUrl}" style="max-width:100%;max-height:min(230px,34vh);border-radius:12px;border:3px solid #F4E7CC;background:#fff">${o.hideCap?'':`<figcaption class="small">傷口圖：${WOUNDS[o.wound]}</figcaption>`}</figure>`:'')+(o.html||'');
   const bs=$('dBtns');bs.innerHTML='';bs.classList.toggle('many',(o.buttons||[1]).length>3);
   (o.buttons||[{label:'繼續',primary:true}]).forEach((b,i)=>{const el=document.createElement('button');el.type='button';
     el.className='btn'+(b.primary?' primary':'')+(b.danger?' danger':'');el.textContent=b.label;if(b.disabled)el.disabled=true;el.onclick=()=>finish(i);bs.appendChild(el);});
@@ -251,6 +265,7 @@ function refresh(){
   $('sta').textContent=S.sta;const sb=$('staBar');sb.style.width=(S.sta/STA_MAX*100)+'%';sb.classList.toggle('low',S.sta<20);
   $('bagInfo').textContent=`${S.kit.length}/${S.kitCap}`;$('cardInfo').textContent=Object.keys(S.cards).length;
   $('joy').hidden=S.ctrl!=='joy';$('dpad').hidden=S.ctrl!=='pad';
+  $('btnMap').hidden=!mapAvail();
   $('goal').innerHTML='<b>目標</b>'+goalText();
 }
 function placeHero(){heroEl.style.setProperty('--x',S.pos.x);heroEl.style.setProperty('--y',S.pos.y);heroEl.style.zIndex=Math.round(S.pos.y);}
@@ -263,7 +278,8 @@ function camera(){const v=$('view'),w=v.clientWidth,h=v.clientHeight;
 window.addEventListener('resize',fit);
 
 /* ================= 劇情 ================= */
-function goalText(){switch(S.step){
+function goalText(){const rg=curRegion();if(rg!==BASE&&rg.goal)return mk(rg.goal)();
+  switch(S.step){
   case 5:return T('goal.5',{a:S.flagWoodDone?'✓':'□',b:S.flagKidDone?'✓':'□'});
   case 0:case 1:case 2:case 3:case 4:case 6:case 7:case 8:case 9:return T('goal.'+S.step);
   default:{if(S.coins<0)return T('goal.debt',{debt:-S.coins});
@@ -575,10 +591,10 @@ async function victim(id){
   if(S.rescue[id]){await say({p:id,html:`<p>${S.rescue[id]==='ok'?v.ok:'……謝謝你，你已經盡力了。'}</p>`});return;}
   const miss=needCheck(v.needs);
   if(miss.length){
-    await say({p:id,html:`<p>${v.situ}</p><p>處理這個傷需要：${needTxt(v.needs)}</p><p class="bad">背包裡缺少：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p><p>你沒辦法好好處理這個傷……</p>`});
+    await say({p:id,wound:v.wound,html:`<p>${v.situ}</p><p>處理這個傷需要：${needTxt(v.needs)}</p><p class="bad">背包裡缺少：${miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k))).join('、')}</p><p>你沒辦法好好處理這個傷……</p>`});
     S.rescue[id]='missing';S.rescueMiss[id]=miss.map(([k,n])=>ITEMS[k].name+' ×'+(n-kitCount(k)));}
   else{
-    await say({p:id,html:`<p>${v.situ}</p><p class="small">使用：${needTxt(v.needs)}</p>`,buttons:[{label:'拿出用品處理',primary:true}]});
+    await say({p:id,wound:v.wound,html:`<p>${v.situ}</p><p class="small">使用：${needTxt(v.needs)}</p>`,buttons:[{label:'拿出用品處理',primary:true}]});
     takeKit(v.needs);
     const i=await say({p:id,html:`<p class="q">${v.q}</p>`,buttons:v.opts.map(o=>({label:o}))});
     const ok=i===v.ans;
@@ -616,7 +632,7 @@ async function castleReport(stars){
   await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>${rows}${fakeHtml}${S.expiredAtStart?`<p class="warn">背包裡有 ${S.expiredAtStart} 包過期的乾糧，要記得定期檢查。</p>`:''}<p class="small">最佳紀錄：${S.castleBest} 顆星。睡一覺之後城堡會修好，可以再挑戰一次。</p>`,buttons:[{label:'完成',primary:true}]});
 }
 async function doEvent(ev){
-  await say({p:ev.who,html:`<p>${ev.intro}</p>`});
+  await say({p:ev.who,wound:ev.wound,html:`<p>${ev.intro}</p>`});
   const miss=needCheck(ev.needs);
   if(miss.length){
     // 受傷的是雜貨店老闆娘時，賣急救用品的就是她：缺用品要能直接買，否則找她說話永遠進事件、打不開商店
@@ -625,7 +641,7 @@ async function doEvent(ev){
       buttons:shop?[{label:'到櫃檯買急救用品',primary:true},{label:'離開'}]:undefined});
     if(shop&&i===0)await shopMenu();
     return;}
-  for(const q of ev.qs)await quiz(ev.who,q.q,q.opts,q.ans,q.explain);
+  for(const q of ev.qs)await quiz(ev.who,q.q,q.opts,q.ans,q.explain,q.wound);
   takeKit(ev.needs);S.event.done=true;S.coins+=20;S.earned+=20;addHeart(ev.who,1);
   const isNew=!S.cards[ev.id];S.cards[ev.id]=true;
   await say({p:ev.who,html:`<p>${ev.thanks}</p><p class="good">獲得 20 金幣${isNew?`、知識卡：${CARDS[ev.id].title}`:''}</p>`});
@@ -683,7 +699,7 @@ async function shopMenu(){
     html+=`<h4>擴充包包</h4>`;
     html+=`<div class="row"><div class="info"><b>素材袋 ${S.matCap} → ${matNext?matNext.cap:'已達上限'} 格</b><span>${matNext?matNext.cost+' 金幣':''}</span></div>${matNext?`<button type="button" data-a="mat" ${S.coins>=matNext.cost?'':'disabled'}>擴充</button>`:''}</div>`;
     html+=`<div class="row"><div class="info"><b>急救背包 ${S.kitCap} → ${kitNext?kitNext.cap:'已達上限'} 格</b><span>${kitNext?kitNext.cost+' 金幣。格數變多，但裝太重會走得比較慢':'背包已經是最大尺寸'}</span></div>${kitNext?`<button type="button" data-a="kit" ${S.coins>=kitNext.cost?'':'disabled'}>擴充</button>`:''}</div>`;
-    if(S.step>=5){html+=`<h4>急救用品</h4>`+SHOP_MED.map(k=>{const it=ITEMS[k];const full=S.kit.length>=S.kitCap;
+    if(S.step>=5){html+=`<h4>急救用品</h4>`+SHOP_MED.concat(mapAvail()?SHOP_EXTRA:[]).map(k=>{const it=ITEMS[k];const full=S.kit.length>=S.kitCap;
       return `<div class="row">${badge(k)}<div class="info"><b>${it.name}　<span style="color:var(--gold)">背包裡有 ${kitCount(k)} 個</span></b><span>${it.price} 金幣　重量 ${it.w}　${it.desc}</span></div><button type="button" data-a="buy:${k}" ${S.coins-it.price>=-DEBT_LIMIT&&!full?'':'disabled'}>${full?'背包已滿':S.coins-it.price<-DEBT_LIMIT?'超過賒帳上限':S.coins<it.price?'賒帳買 1 個':'買 1 個'}</button></div>`;}).join('');}
     else html+=`<p class="small">急救用品目前缺貨中。</p>`;
     const r=await say({p:'shopkeeper',html,buttons:[{label:'離開',primary:true}],onRender:(root,fin)=>{const box=root.closest('.box');box.scrollTop=keepScroll;root.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{keepScroll=box.scrollTop;pick=b.dataset.a;fin('pick');});}});
@@ -711,8 +727,8 @@ async function merchantMenu(){
 }
 
 /* 問答 */
-async function quiz(p,q,opts,ans,explain){
-  for(;;){const i=await say({p,html:`<p class="q">${q}</p>`,buttons:opts.map(o=>({label:o}))});
+async function quiz(p,q,opts,ans,explain,w){
+  for(;;){const i=await say({p,wound:w,hideCap:true,html:`<p class="q">${q}</p>`,buttons:opts.map(o=>({label:o}))});
     const ok=i===ans;await say({p,html:`<p class="${ok?'good':'bad'}">${ok?'處置正確！':'這個做法不對。'}</p><p>${explain}</p>`,buttons:[{label:ok?'繼續':'再選一次',primary:true}]});
     if(ok)return;}}
 const ALT={saline:['water']};
@@ -788,7 +804,22 @@ async function prologueDone(){
 }
 
 /* 防災包（爺爺家門口）：產出仍先進急救背包，玩家自己帶回家放入；防災包內的東西不計負重 */
+/* 防災包是「一個物件」：stashAt 記錄它在哪（base＝爺爺家、地區 id＝該地區住處、carry＝帶在身上旅行）。
+   只有人在放著它的住處才能開；帶在身上時，可在住處放下。 */
 async function stashMenu(){
+  const here=curRegion().id;
+  if(S.stashAt==='carry'){
+    const i=await say({p:'hero',who:'防災包',html:`<p>防災包還帶在身上。要放在這裡（${curRegion().name}）嗎？</p><p class="small">放下後才能整理裡面的東西；之後出遠門前要記得再帶上。</p>`,buttons:[{label:'放在這裡',primary:true},{label:'繼續帶著'}]});
+    if(i===0){S.stashAt=here;save();return stashBox();}
+    return;}
+  if(S.stashAt!==here){await say({p:'hero',who:'防災包',html:`<p>防災包不在這裡，它放在${regionName(S.stashAt)}。</p><p class="small">平時放在住處門口，緊急時才方便一手帶走。</p>`});return;}
+  return stashBox();}
+/* 離開某地區前（例如搭船）呼叫：防災包若放在這個地區，問玩家要不要帶上；回傳是否帶上 */
+async function stashDepart(){
+  const here=curRegion().id;if(S.stashAt!==here)return S.stashAt==='carry';
+  const i=await say({p:'hero',who:'防災包',html:'<p>要帶上防災包嗎？</p><p class="small">不帶的話，它會留在原地；旅途中就用不到裡面的東西。</p>',buttons:[{label:'帶上防災包',primary:true},{label:'留在這裡'}]});
+  if(i===0){S.stashAt='carry';save();return true;}return false;}
+async function stashBox(){
   for(;;){
     let act=null;
     const note=k=>base(k)==='ration'?(expired(k)?'<span style="color:var(--bad)">已過期</span>':`保存到第 ${expiry(k)} 天`):'';
@@ -808,6 +839,19 @@ async function stashMenu(){
   }
 }
 
+/* 世界地圖：只顯示各地區位置與開放狀態；點目前所在的地區回到中心地點，其他地區顯示怎麼過去（由章節 region.travelHint 說明，例如搭船） */
+async function worldMap(){
+  if(busy)return;busy=true;stopInput();let pick=null;const regs=regionList();
+  try{
+    const pins=regs.map((r,i)=>{const open=regionOpen(r),here=r===curRegion();
+      return `<button type="button" data-r="${i}" ${open?'':'disabled'} style="position:absolute;left:${r.pin[0]}%;top:${r.pin[1]}%;transform:translate(-50%,-50%);border:3px solid #FFF3D6;border-radius:999px;padding:4px 12px;font-weight:900;cursor:${open?'pointer':'default'};background:${open?(here?'#86E0A4':'#E3B95B'):'rgba(16,24,33,.8)'};color:${open?'#2A1D08':'#B8C2C9'}">${open?r.name+(here?'（目前）':''):'🔒'}</button>`;}).join('');
+    const r=await say({icon:'圖',who:'世界地圖',html:`<div style="position:relative;border-radius:12px;overflow:hidden"><img alt="" src="${A.world}" style="width:100%;display:block">${pins}</div><p class="small">點選所在地區可以快速回到中心地點；到其他地區要依指示前往。其他地區會隨課程單元開放。</p>`,buttons:[{label:'關閉',primary:true}],
+      onRender:(root,fin)=>root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('go');})});
+    if(r==='go'){const g=regs[pick];
+      if(g===curRegion()){const c=g.center||BASE.center;busy=false;await go(c.scene,c.at);busy=true;}
+      else await say({p:'hero',html:`<p>${g.travelHint||'要依指示才能前往這個地區。'}</p>`});}
+  }finally{busy=false;save();refresh();}}
+
 /* 背包 */
 async function bag(){if(busy)return;busy=true;stopInput();
   try{for(;;){let pick=-1;const l=load_();const pct=Math.min(100,l/LOAD_HEAVY*100);
@@ -824,8 +868,11 @@ async function bag(){if(busy)return;busy=true;stopInput();
     if(r==='eat'){await eatMushroom();continue;}if(r==='toss'){S.mat.mushroom--;toast('丟掉了野生菇');continue;}
     if(r!=='pick')break;S.kit.splice(pick,1);refresh();}}
   finally{busy=false;save();refresh();}}
+/* 傷口圖鑑：看過的傷口才顯示圖；還沒看過任何一張時整段不顯示（序章沒有傷口圖時畫面與以前相同） */
+function woundGallery(){const ws=Object.keys(WOUNDS),seen=S.wounds||{},n=ws.filter(w=>seen[w]).length;if(!n)return '';
+  return `<h4>傷口圖鑑 ${n}/${ws.length}</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">`+ws.map(w=>seen[w]?`<figure style="margin:0;text-align:center"><img alt="" src="assets/w_${w}.webp" style="width:100%;border-radius:8px;border:2px solid #F4E7CC;background:#fff"><figcaption class="small">${WOUNDS[w]}</figcaption></figure>`:`<figure style="margin:0;text-align:center;opacity:.5"><div style="aspect-ratio:1;border-radius:8px;border:2px dashed #B8C2C9;display:grid;place-items:center">？</div><figcaption class="small">？</figcaption></figure>`).join('')+'</div>';}
 async function cards(){if(busy)return;busy=true;stopInput();
-  try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>',buttons:[{label:'關閉',primary:true}]});}
+  try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:woundGallery()+(ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>'),buttons:[{label:'關閉',primary:true}]});}
   finally{busy=false;}}
 async function settings(){if(busy)return;busy=true;stopInput();let reset=false;const hasOut=!!(window.FACloud&&FACloud.email());
   try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>${window.FAMusic?`<p>背景音樂：<b>${FAMusic.isOn()?'開':'關'}</b>　音量 <input type="range" id="musVol" min="0" max="100" value="${Math.round(FAMusic.vol()*100)}" style="vertical-align:middle"></p><p class="small">配樂：AI 輔助原創作曲與合成音色製作</p>`:''}`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(hasOut?[{label:'登出'}]:[]),...(window.FAMusic?[{label:FAMusic.isOn()?'關閉背景音樂':'開啟背景音樂'}]:[]),{label:'關閉'}],
@@ -903,7 +950,7 @@ window.addEventListener('keydown',e=>{if(!$('dialog').hidden)return;const k=e.ke
 window.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;input.keys[k]=false;});
 window.addEventListener('blur',stopInput);
 $('act').addEventListener('click',doAction);
-$('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
+$('btnMap').onclick=worldMap;$('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
 
 /* ================= 雲端存檔與存檔點 ================= */
 const checkpoint=()=>{if(window.FACloud)try{FACloud.checkpoint(S);}catch(e){}};
@@ -956,5 +1003,5 @@ $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fulls
 $('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
 initCloud();
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={SCENES,CHAPTERS,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();

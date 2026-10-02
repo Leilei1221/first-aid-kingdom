@@ -113,6 +113,31 @@
       "fake": true,
       "desc": "迷霧商人說：「燙傷塗醬油，保證不留疤！」",
       "truth": "燙傷不可以塗醬油等偏方：會污染傷口、增加感染風險，也可能妨礙醫護人員判斷傷勢。"
+    },
+    "whistle": {
+      "name": "哨子",
+      "ch": "哨",
+      "color": "#E3B95B",
+      "price": 15,
+      "w": 1,
+      "desc": "求救用。吹三短聲為一組，比大聲喊叫更省力、傳得更遠。"
+    },
+    "flashlight": {
+      "name": "手電筒",
+      "ch": "電",
+      "color": "#5B6B7A",
+      "text": "#fff",
+      "price": 30,
+      "w": 1,
+      "desc": "停電、夜間求救時使用。記得準備備用電池。"
+    },
+    "raincoat": {
+      "name": "雨衣",
+      "ch": "雨",
+      "color": "#F2D14B",
+      "price": 20,
+      "w": 1,
+      "desc": "颱風、大雨時保持身體乾燥，預防失溫。"
     }
   },
   "MATS": {
@@ -190,5 +215,10 @@
     "stone",
     "gold",
     "mushroom"
+  ],
+  "SHOP_EXTRA": [
+    "whistle",
+    "flashlight",
+    "raincoat"
   ]
 }

@@ -14,7 +14,14 @@
     "y": 500
    }
   ],
-  "things": [],
+  "things": [
+   {
+    "kind": "stash",
+    "x": 600,
+    "y": 450,
+    "label": "防災包"
+   }
+  ],
   "exits": [
    {
     "to": "chtest_b",
@@ -43,7 +50,14 @@
     "y": 500
    }
   ],
-  "things": [],
+  "things": [
+   {
+    "kind": "stash",
+    "x": 600,
+    "y": 450,
+    "label": "防災包"
+   }
+  ],
   "exits": [
    {
     "to": "chclosed_x",

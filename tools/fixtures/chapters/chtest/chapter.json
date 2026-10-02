@@ -6,5 +6,33 @@
   "dialogues": "dialogues.json",
   "walks": "walks.json"
  },
- "assets": []
+ "assets": [],
+ "region": {
+  "name": "測試地區",
+  "pin": [
+   13,
+   68
+  ],
+  "unlock": "()=>S.c.go===true",
+  "center": {
+   "scene": "chtest_a",
+   "at": [
+    400,
+    450
+   ]
+  },
+  "home": {
+   "scene": "chtest_b",
+   "at": [
+    400,
+    450
+   ]
+  },
+  "travelHint": "測試用：搭船過去。",
+  "goal": "()=>'測試目標：走到出口'",
+  "wake": {
+   "other": "chtest_wake",
+   "mushroom": "chtest_wake"
+  }
+ }
 }

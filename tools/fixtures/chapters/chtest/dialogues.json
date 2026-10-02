@@ -1,5 +1,14 @@
 {
- "say": {},
+ "say": {
+  "chtest_wake": [
+   {
+    "p": "hero",
+    "lines": [
+     "你在測試地區的房間醒來。"
+    ]
+   }
+  ]
+ },
  "quizzes": {},
  "text": {
   "chtest_hello": "你好，這是假章節。"

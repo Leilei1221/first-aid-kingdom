@@ -18,14 +18,17 @@ def make_fixtures():
     w('index.json', [{'id': 'chtest', 'name': '測試章', 'open': True}, {'id': 'chclosed', 'name': '關閉章', 'open': False},
                      {'id': 'chbad', 'name': '壞章', 'open': True}])
     sc = lambda nx, ex: {'name': '測試場景', 'spawn': [400, 450], 'bg': 'plain', 'heroH': 130,
-        'npcs': [{'id': 'chtest_npc', 'x': 800, 'y': 500}], 'things': [], 'exits': [ex]}
+        'npcs': [{'id': 'chtest_npc', 'x': 800, 'y': 500}], 'things': [{'kind': 'stash', 'x': 600, 'y': 450, 'label': '防災包'}], 'exits': [ex]}
     w('chtest/chapter.json', {'id': 'chtest', 'files': {'scenes': 'scenes.json', 'characters': 'characters.json',
-        'dialogues': 'dialogues.json', 'walks': 'walks.json'}, 'assets': []})
+        'dialogues': 'dialogues.json', 'walks': 'walks.json'}, 'assets': [],
+        'region': {'name': '測試地區', 'pin': [13, 68], 'unlock': '()=>S.c.go===true', 'center': {'scene': 'chtest_a', 'at': [400, 450]},
+                   'home': {'scene': 'chtest_b', 'at': [400, 450]}, 'travelHint': '測試用：搭船過去。', 'goal': "()=>'測試目標：走到出口'",
+                   'wake': {'other': 'chtest_wake', 'mushroom': 'chtest_wake'}}})
     w('chtest/scenes.json', {
         'chtest_a': sc(0, {'to': 'chtest_b', 'at': [400, 450], 'block': None, 'test': '(x,y)=>x<30', 'need': None}),
         'chtest_b': sc(0, {'to': 'chclosed_x', 'at': [400, 450], 'block': None, 'test': '(x,y)=>x<30', 'need': None})})
     w('chtest/characters.json', {'PEOPLE': {'chtest_npc': {'name': '測試村民', 'img': 'guard', 'face': 'guard_face', 'hk': 1}}})
-    w('chtest/dialogues.json', {'say': {}, 'quizzes': {}, 'text': {'chtest_hello': '你好，這是假章節。'}})
+    w('chtest/dialogues.json', {'say': {'chtest_wake': [{'p': 'hero', 'lines': ['你在測試地區的房間醒來。']}]}, 'quizzes': {}, 'text': {'chtest_hello': '你好，這是假章節。'}})
     w('chtest/walks.json', {'chtest_a': walks, 'chtest_b': walks})
     w('chbad/chapter.json', {'id': 'chbad', 'files': {'scenes': 'scenes.json'}})
     w('chbad/scenes.json', {'oops_no_prefix': {'name': 'x', 'spawn': [1, 1], 'bg': 'plain', 'heroH': 100, 'npcs': [], 'things': [], 'exits': []}})
@@ -43,6 +46,83 @@ async def walk_left(page):
     await page.evaluate("() => { window.__fa.S.pos = {x: 150, y: 400}; }")
     await page.keyboard.down('ArrowLeft'); await page.wait_for_timeout(1500); await page.keyboard.up('ArrowLeft')
     await page.wait_for_timeout(500)
+async def dismiss(page, n=40):
+    for _ in range(n):
+        if await page.evaluate("() => document.getElementById('dialog').hidden"): return
+        await page.click('#dBtns button:first-child'); await page.wait_for_timeout(120)
+async def region_tests(ctx, url):
+    # 預設：沒有地區、地圖鈕不顯示、新欄位有預設值
+    page, errs, logs = await boot(ctx, url); await start(page)
+    r = await page.evaluate("() => ({map: document.getElementById('btnMap').hidden, c: window.__fa.S.c, w: window.__fa.S.wounds, at: window.__fa.S.stashAt, a: window.__fa.mapAvail()})")
+    check('預設：世界地圖鈕不顯示、S.c／S.wounds／S.stashAt 有預設值', r == {'map': True, 'c': {}, 'w': {}, 'at': 'base', 'a': False}, str(r))
+    # 舊存檔（沒有新欄位）讀入後補預設值
+    await page.evaluate("() => { const o = JSON.parse(JSON.stringify(window.__fa.S)); delete o.c; delete o.wounds; delete o.stashAt; localStorage.setItem('fa-kingdom-p1-v1', JSON.stringify(o)); }")
+    await page.reload(); await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
+    r = await page.evaluate("() => ({c: window.__fa.S.c, w: window.__fa.S.wounds, at: window.__fa.S.stashAt})")
+    check('舊存檔讀入後補 c／wounds／stashAt', r == {'c': {}, 'w': {}, 'at': 'base'}, str(r))
+    # 商店：地區沒開放時沒有哨子等
+    await start(page)
+    await page.evaluate("() => { window.__fa.S.step = 7; window.__fa.S.coins = 100; window.__fa.shopMenu(); }"); await page.wait_for_selector('#dText button[data-a]')
+    txt = await page.inner_text('#dText')
+    check('地區未開放：商店沒有哨子、手電筒、雨衣', not any(k in txt for k in ['哨子', '手電筒', '雨衣']))
+    await dismiss(page)
+    # 傷口圖：say 帶 wound 會顯示圖、記入圖鑑
+    await page.evaluate("() => { window.__fa.say({p: 'hero', wound: 'bee', html: '<p>測試</p>'}); }"); await page.wait_for_selector('#dText figure img')
+    r = await page.evaluate("() => ({src: document.querySelector('#dText figure img').getAttribute('src'), cap: !!document.querySelector('#dText figcaption'), seen: window.__fa.S.wounds})")
+    check('傷口圖顯示並記入圖鑑', r == {'src': 'assets/w_bee.webp', 'cap': True, 'seen': {'bee': True}}, str(r))
+    await dismiss(page)
+    await page.evaluate("() => { window.__fa.cards(); }"); await page.wait_for_selector('#dText h4')
+    check('知識卡頁顯示傷口圖鑑 1/15', '傷口圖鑑 1/15' in await page.inner_text('#dText'))
+    await dismiss(page)
+    check('預設地區測試沒有頁面錯誤', not errs, str(errs)); await page.close()
+    # 假地區
+    page, errs, logs = await boot(ctx, url, '/tools/fixtures/chapters'); await start(page)
+    r = await page.evaluate("() => ({r: Object.keys(window.__fa.REGIONS), a: window.__fa.mapAvail(), hid: document.getElementById('btnMap').hidden})")
+    check('地區條件未達成：地圖鈕不顯示', r == {'r': ['chtest'], 'a': False, 'hid': True}, str(r))
+    await page.evaluate("() => { window.__fa.S.c.go = true; window.__fa.S.step = 7; window.__fa.S.coins = 100; window.__fa.shopMenu(); }")
+    await page.wait_for_selector('#dText button[data-a]')
+    txt = await page.inner_text('#dText')
+    check('地區開放後：商店出現哨子、手電筒、雨衣', all(k in txt for k in ['哨子', '手電筒', '雨衣']))
+    await dismiss(page)
+    await page.evaluate("() => window.__fa.go('village', [1045, 300])"); await page.wait_for_timeout(800)
+    check('條件達成後地圖鈕出現', await page.evaluate("() => !document.getElementById('btnMap').hidden"))
+    # 世界地圖：點別的地區顯示怎麼過去
+    await page.click('#btnMap'); await page.wait_for_selector('#dText button[data-r]')
+    check('世界地圖有兩個地區按鈕（綠葉谷、測試地區）', await page.locator('#dText button[data-r]').count() == 2)
+    await page.click('#dText button[data-r]:has-text("測試地區")'); await page.wait_for_timeout(300)
+    check('點未到的地區顯示前往方式', '搭船過去' in await page.inner_text('#dText'))
+    await dismiss(page)
+    # 目前所在地區點下去：回中心地點
+    await page.evaluate("() => window.__fa.go('chtest_b', [400, 450])"); await page.wait_for_timeout(800)
+    check('章節場景的目標改用地區的目標文字', '測試目標' in await page.inner_text('#goal'))
+    await page.click('#btnMap'); await page.wait_for_selector('#dText button[data-r]')
+    await page.click('#dText button[data-r]:has-text("目前")'); await page.wait_for_timeout(1000)
+    check('點目前地區：回到該地區的中心地點', await page.evaluate("() => window.__fa.S.scene") == 'chtest_a')
+    # 防災包位置：在別的地區打不開，要先帶上再放下
+    await page.evaluate("() => window.__fa.go('chtest_b', [400, 450])"); await page.wait_for_timeout(800)
+    await page.evaluate("() => { window.__fa.stashMenu(); }"); await page.wait_for_selector('#dialog:not([hidden])')
+    check('防災包不在這個地區：顯示放在綠葉谷', '放在綠葉谷' in await page.inner_text('#dText'))
+    await dismiss(page)
+    await page.evaluate("() => window.__fa.go('home', [420, 660])"); await page.wait_for_timeout(800)
+    await page.evaluate("() => { window.__fa.stashDepart(); }"); await page.wait_for_selector('#dBtns button')
+    await page.click('#dBtns button:first-child'); await page.wait_for_timeout(300)
+    check('出發前選「帶上防災包」：stashAt = carry', await page.evaluate("() => window.__fa.S.stashAt") == 'carry')
+    await page.evaluate("() => window.__fa.go('chtest_b', [400, 450])"); await page.wait_for_timeout(800)
+    await page.evaluate("() => { window.__fa.stashMenu(); }"); await page.wait_for_selector('#dBtns button')
+    check('帶著防災包到住處：詢問放在這裡', '放在這裡' in await page.inner_text('#dText'))
+    await page.click('#dBtns button:first-child'); await page.wait_for_selector('#dText h4')
+    check('放下後：stashAt = 地區 id、開啟防災包畫面', await page.evaluate("() => window.__fa.S.stashAt") == 'chtest' and '家中防災包' in await page.inner_text('#dText'))
+    await dismiss(page)
+    # 昏倒：在測試地區醒在該地區的住處，並用該地區的醒來對話
+    await page.evaluate("() => { window.__fa.S.sta = 0; window.__fa.faint('work'); }")
+    for _ in range(60):
+        if 'chtest_b' == await page.evaluate("() => window.__fa.S.scene") and '測試地區的房間' in (await page.evaluate("() => document.getElementById('dText').innerText")): break
+        await page.wait_for_timeout(150)
+        if not await page.evaluate("() => document.getElementById('dialog').hidden"): await page.click('#dBtns button:first-child')
+    r = await page.evaluate("() => window.__fa.S.scene")
+    check('在測試地區昏倒：醒在該地區的住處', r == 'chtest_b', r)
+    await dismiss(page)
+    check('地區測試沒有頁面錯誤', not errs, str(errs)); await page.close()
 async def main(url):
     make_fixtures()
     async with async_playwright() as p:
@@ -83,6 +163,8 @@ async def main(url):
         page, errs, logs = await boot(ctx, url)
         r = await page.evaluate("() => ({s: window.__fa.S.scene, ok: !!window.__fa.SCENES[window.__fa.S.scene]})")
         check('存檔在已不存在的章節：讀檔後回到村莊', r == {'s': 'village', 'ok': True}, str(r))
-        check('回村莊後沒有頁面錯誤', not errs, str(errs)); await b.close()
+        check('回村莊後沒有頁面錯誤', not errs, str(errs)); await page.close()
+        await region_tests(ctx, url)
+        await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
 print('章節框架測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)
