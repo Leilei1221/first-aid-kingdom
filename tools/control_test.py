@@ -61,6 +61,35 @@ async def chapter_switch(ctx, url):
     await page.reload(); await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
     check('存檔在第二章、班級已關閉：讀檔後回村莊', await ev(page, "() => window.__fa.S.scene") == 'village')
     await page.close()
+async def announcements(ctx, url):
+    page, errs = await open_page(ctx, url, 's3@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {}, 'weather': {'id': 5, 'type': 'typhoon'}})
+    await ev(page, "() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.started = true; S.day = 4; S.wxNext = null; delete S.wxSeen; document.getElementById('btnStart').click(); }"); await page.wait_for_timeout(500)
+    await ev(page, "() => { window.__fa.pullControl(); }"); await page.wait_for_timeout(1500)  # 開局後再讀一次，天數已是第 4 天
+    r = await ev(page, "() => ({next: window.__fa.S.wxNext, seen: window.__fa.S.wxSeen})")
+    check('老師發布颱風：學生遊戲排成「自己的明天」天災、記下公告編號', r['next'] and r['next']['type'] == 'typhoon' and r['next']['day'] == 5 and r['seen'] == 5, str(r))
+    txt = await ev(page, "() => document.getElementById('dialog').hidden ? '' : document.getElementById('dText').innerText")
+    check('套用時馬上顯示天氣預報', '颱風正在接近' in txt, txt)
+    await page.click('#dBtns button:first-child'); await page.wait_for_timeout(300)
+    # 睡一晚：颱風來了；再讀一次同一則公告不會重複套用
+    msg = await ev(page, "() => window.__fa.nextDay()")
+    check('隔天早上：今天颱風來襲', '今天颱風來襲' in msg and await ev(page, "() => window.__fa.wxToday()") == 'typhoon', msg)
+    await ev(page, "() => { window.__fa.pullControl(); }"); await page.wait_for_timeout(500)
+    check('同一則公告不重複套用', await ev(page, "() => !window.__fa.S.wxNext"))
+    await ev(page, "() => window.__fa.nextDay()")
+    # 新公告（編號 6，濃霧）：取代舊的
+    await ev(page, "() => { window.__ctrl = {class_id: 'c1', flags: {}, weather: {id: 6, type: 'fog'}}; window.__fa.pullControl(); }"); await page.wait_for_timeout(1500)
+    r = await ev(page, "() => ({next: window.__fa.S.wxNext, seen: window.__fa.S.wxSeen})")
+    check('新公告（濃霧）取代：排成明天、編號 6', r['next'] and r['next']['type'] == 'fog' and r['seen'] == 6, str(r))
+    # 老師取消：RPC 回傳沒有公告 → 已經排好的不會被收回（還沒套用的學生才不會遇到）
+    await ev(page, "() => { window.__ctrl = {class_id: 'c1', flags: {}, weather: null}; window.__fa.pullControl(); }"); await page.wait_for_timeout(500)
+    check('沒有公告時不動存檔（沒有新增或清除天災）', await ev(page, "() => window.__fa.S.wxNext && window.__fa.S.wxNext.type") == 'fog')
+    check('天災公告測試沒有頁面錯誤', not errs, str(errs)); await page.close()
+    # 沒登入／沒公告：存檔裡不會多出欄位
+    page, errs = await open_page(ctx, url, 's4@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {}, 'weather': None})
+    await ev(page, "() => { localStorage.removeItem('fa-kingdom-p1-v1'); }"); await page.reload(); await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
+    await ev(page, "() => { document.getElementById('btnStart').click(); }"); await page.wait_for_timeout(800)
+    check('沒有公告：存檔沒有 wxSeen／wxNext 欄位', await ev(page, "() => !('wxSeen' in window.__fa.S) && !('wxNext' in window.__fa.S)"))
+    await page.close()
 async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
@@ -70,10 +99,10 @@ async def main(url):
         check('沒登入：不讀班級設定，野外與救災都用預設（關閉）', await ev(page, "() => window.__fa.CONTROL === null && !window.__fa.flagOn('wild', false) && !window.__fa.flagOn('relief', false)"))
         await page.close()
         # 2) 登入、班級開了 wild 和 relief
-        ctrl = {'class_id': 'c1', 'flags': {'wild': True, 'relief': True, 'ch2': False}, 'weather': {'id': 7, 'type': 'typhoon'}}
+        ctrl = {'class_id': 'c1', 'flags': {'wild': True, 'relief': True, 'ch2': False}, 'weather': None}
         page, errs = await open_page(ctx, url, 's1@hlhs.hlc.edu.tw', ctrl)
         r = await ev(page, "() => ({c: window.__fa.CONTROL, wild: window.__fa.flagOn('wild', false), relief: window.__fa.flagOn('relief', false), ch2: window.__fa.flagOn('ch2', true), none: window.__fa.flagOn('zzz', true)})")
-        check('登入後讀到班級設定（wild、relief 開、ch2 關、沒設定的用預設）', r['wild'] and r['relief'] and r['ch2'] is False and r['none'] is True and r['c']['weather']['type'] == 'typhoon', str(r))
+        check('登入後讀到班級設定（wild、relief 開、ch2 關、沒設定的用預設）', r['wild'] and r['relief'] and r['ch2'] is False and r['none'] is True, str(r))
         check('設定存進本機快取', await ev(page, "() => { try { const c = JSON.parse(localStorage.getItem('fa-kingdom-ctrl-v1')); return c.email === 's1@hlhs.hlc.edu.tw' && c.data.flags.wild === true; } catch (e) { return false; } }"))
         # 老師端的 wild 開關真的控制遊戲：沒有 ?wild=1 也能掉打火石的判斷（用 camp 的守門條件間接驗證：背包露營鈕）
         await ev(page, "() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.started = true; S.mat.flint = 1; document.getElementById('btnStart').click(); }"); await page.wait_for_timeout(500)
@@ -97,6 +126,7 @@ async def main(url):
         check('訪客／老師：class_id 空、flags 空 → 全部用預設', await ev(page, "() => window.__fa.flagOn('wild', false) === false && window.__fa.flagOn('ch2', true) === true"))
         check('班級控制測試沒有頁面錯誤', not errs, str(errs)); await page.close()
         await chapter_switch(ctx, url)
+        await announcements(ctx, url)
         await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
 print('班級控制測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)

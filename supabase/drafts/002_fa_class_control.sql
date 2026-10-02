@@ -63,6 +63,7 @@ as $$
     'weather', (select jsonb_build_object('id', w.id, 'type', w.type)
                 from public.fa_class_weather w
                 where w.class_id = (select class_id from me) and not w.cancelled
+                  and w.published_at > now() - interval '2 days'  -- 只給近兩天發布的，避免老師取消最新一則後，舊公告又冒出來
                 order by w.id desc limit 1)
   );
 $$;

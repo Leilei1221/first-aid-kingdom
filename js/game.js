@@ -119,7 +119,11 @@ const chBase=(name,...a)=>{for(const [cid,h] of Object.entries(CHH)){if(!chOpen(
 /* ================= 班級控制：老師端設定的功能開關（沒設定就用程式預設）；讀取失敗時用本機快取 ================= */
 let CONTROL=window.FACloud&&FACloud.cachedControl?FACloud.cachedControl():null;  /* {class_id,flags:{ch2,wild,relief},weather:{id,type}|null} */
 const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;return f&&name in f?!!f[name]:!!def;};
-async function pullControl(){if(!window.FACloud||!FACloud.refreshControl)return;try{CONTROL=await FACloud.refreshControl();}catch(e){}}
+async function pullControl(){if(!window.FACloud||!FACloud.refreshControl)return;try{CONTROL=await FACloud.refreshControl();}catch(e){}applyAnnouncement();}
+/* 老師發布的天災：每則公告每位學生只套用一次，排成「自己遊戲的明天」；套用時馬上告訴學生預報（等遊戲閒下來再顯示） */
+let wxNotice=null;
+function applyAnnouncement(){const w=CONTROL&&CONTROL.weather;if(!S||!w||!WX[w.type]||(S.wxSeen||0)>=w.id)return;
+  S.wxSeen=w.id;scheduleWx(w.type);wxNotice=w.type;save();}
 /* ================= 天氣：由老師發布（D5）或除錯入口排定，沒有隨機；沒有排定時整套不作用 ================= */
 const wxToday=()=>S.wx&&S.wx.day===S.day?S.wx.type:null;
 const wxTomorrow=()=>S.wxNext&&S.wxNext.day===S.day+1?S.wxNext.type:null;
@@ -979,6 +983,7 @@ function inputVec(){let x=input.jx,y=input.jy;const k=input.keys,p=input.pad;
   const m=Math.hypot(x,y);if(m>1){x/=m;y/=m;}return [x,y];}
 let last=0,walking=false,saveT=0,exiting=false;const trail=[];
 function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;
+  if(wxNotice&&!busy&&!$('game').hidden){const ty=wxNotice;wxNotice=null;busy=true;say({icon:'☁',who:'天氣預報',html:`<p class="warn">${WX[ty].fore}</p>`}).finally(()=>{busy=false;});}  /* 老師發布的天災預報 */
   if(!$('game').hidden&&!busy&&S&&chClosed(S.scene)&&!loop.reloc){loop.reloc=true;(async()=>{busy=true;try{toast('這一章暫時關閉了，先回到村莊');await go('village',SCENES.village.spawn);}finally{busy=false;loop.reloc=false;}})();}  /* 老師端關閉章節時，人還在裡面 */
   if(!$('game').hidden&&!busy&&heroEl){
     const [vx,vy]=inputVec();
