@@ -51,6 +51,12 @@ async function makeApi(){
     async isTeacher(){return must(await c.rpc('hc_is_allowed_teacher'))===true;},
     async classes(uid){return must(await c.from('hc_classes').select('id,name,grade,academic_year,semester').eq('teacher_id',uid).eq('is_active',true).order('grade').order('name'));},
     async students(cid){return must(await c.from('hc_students').select('id,student_no,seat_no,name,email,login_email').eq('class_id',cid).eq('is_active',true).order('seat_no'));},
+    /* 班級控制（supabase/drafts/002_fa_class_control.sql）：老師只能碰自己班，權限靠 RLS */
+    async flags(cid){return must(await c.from('fa_class_flags').select('flag,enabled').eq('class_id',cid));},
+    async setFlag(cid,flag,enabled){must(await c.from('fa_class_flags').upsert({class_id:cid,flag,enabled},{onConflict:'class_id,flag'}));},
+    async weather(cid){return must(await c.from('fa_class_weather').select('id,type,published_at,cancelled').eq('class_id',cid).order('id',{ascending:false}).limit(5));},
+    async publishWeather(cid,type){must(await c.from('fa_class_weather').insert({class_id:cid,type}));},
+    async cancelWeather(id){must(await c.from('fa_class_weather').update({cancelled:true}).eq('id',id));},
     async failures(emails){if(!emails.length)return [];return must(await c.from('fa_failures').select('email,scenario,choice,created_at').in('email',emails));},
     async saves(emails){if(!emails.length)return [];return must(await c.from('fa_saves').select('email,state,updated_at').in('email',emails));}
   };
@@ -58,14 +64,47 @@ async function makeApi(){
 
 /* ---------- 畫面 ---------- */
 let api=null,user=null,classes=[],rows=[],fails=[],cardTotal=0,names={},scenarioNames={};
+let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,wild:false,relief:false},wxNames={};
+const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
 const say=(t,bad)=>{const e=$('status');e.hidden=false;e.textContent=t;e.style.borderColor=bad?'var(--bad)':'';};
 
 async function loadStatic(){
+  try{const ix=await (await fetch('chapters/index.json')).json();const c2=ix.find(x=>x.id==='ch2');if(c2)defaults.ch2=!!c2.open;}catch(e){}
+  try{const w=await (await fetch('content/weather.json')).json();defaults.wild=!!w.WILD_ON;defaults.relief=!!w.RELIEF_ON;Object.entries(w.WX||{}).forEach(([k,v])=>wxNames[k]=v.name);}catch(e){}
   try{const c=await (await fetch('content/knowledge_cards.json')).json();cardTotal=Object.keys(c.CARDS||{}).length;}catch(e){}
   try{const r=await (await fetch('content/rescue.json')).json();Object.entries(r.SCENARIOS||{}).forEach(([k,v])=>scenarioNames[k]=v.name);}catch(e){}
   for(const u of ['content/characters.json','chapters/ch2/characters.json']){try{const c=await (await fetch(u)).json();Object.entries(c.PEOPLE||{}).forEach(([k,v])=>names[k]=v.name);}catch(e){}}
 }
 
+async function loadControl(cid){
+  ctrl={flags:{},weather:null,error:null};
+  if(!api.flags){ctrl.error='這個版本沒有班級控制。';return;}
+  try{
+    (await api.flags(cid)).forEach(r=>ctrl.flags[r.flag]=!!r.enabled);
+    ctrl.weather=((await api.weather(cid))||[]).find(w=>!w.cancelled)||null;
+  }catch(e){ctrl.error='讀不到班級控制資料表。請先在 Supabase 執行 supabase/drafts/002_fa_class_control.sql。';}
+}
+function renderControl(){
+  const el=$('ctrl');if(!el)return;
+  if(ctrl.error){el.innerHTML=`<h3>班級控制</h3><p class="small">${esc(ctrl.error)}</p>`;return;}
+  const eff=k=>k in ctrl.flags?ctrl.flags[k]:defaults[k];
+  const w=ctrl.weather;
+  el.innerHTML=`<h3>班級控制</h3>
+    ${FLAGS.map(([k,n,note])=>`<div class="fl"><b>${esc(n)}</b><span>${eff(k)?'開啟':'關閉'}${k in ctrl.flags?'':'（預設）'}</span><button type="button" data-flag="${k}" data-on="${eff(k)?0:1}">${eff(k)?'關閉':'開啟'}</button><small>${esc(note)}</small></div>`).join('')}
+    <div class="fl"><b>發布天災</b><span>${w?`目前公告：${esc(wxNames[w.type]||w.type)}（${esc(fmtTime(w.published_at))} 發布）`:'沒有進行中的公告'}</span>
+      <span class="wxbtns">${['typhoon','flood','fog'].map(k=>`<button type="button" data-wx="${k}">發布${esc(wxNames[k]||k)}</button>`).join('')}${w?`<button type="button" data-cancel="${esc(w.id)}">取消目前公告</button>`:''}</span>
+      <small>學生遊戲會把它排成「自己遊戲的明天」天災，每則公告每位學生只套用一次；只套用近兩天內發布的。</small></div>`;
+}
+async function onControlClick(e){
+  const b=e.target.closest('button');if(!b)return;const cid=$('cls').value;
+  try{
+    if(b.dataset.flag){await api.setFlag(cid,b.dataset.flag,b.dataset.on==='1');}
+    else if(b.dataset.wx){if(!confirm(`要對這個班發布「${wxNames[b.dataset.wx]||b.dataset.wx}」嗎？學生遊戲會在下一次讀取設定時收到預報。`))return;await api.publishWeather(cid,b.dataset.wx);}
+    else if(b.dataset.cancel){await api.cancelWeather(b.dataset.cancel);}
+    else return;
+    await loadControl(cid);renderControl();
+  }catch(err){say('儲存失敗：'+(err&&err.message||err),true);}
+}
 async function loadClass(cid){
   say('讀取中…');
   const sts=await api.students(cid);
@@ -75,7 +114,7 @@ async function loadClass(cid){
   try{fails=api.failures?await api.failures(emails):[];}catch(e){fails=[];}  /* 失敗記錄讀不到不影響進度頁 */
   const by={};saves.forEach(r=>by[String(r.email).toLowerCase()]=r);
   rows=sts.map(s=>{const r=by[mail(s)];return {seat:s.seat_no,no:s.student_no,name:s.name,email:mail(s),updated:r?r.updated_at:null,sum:r?summarize(r.state,cardTotal):null};});
-  render();$('status').hidden=true;
+  await loadControl(cid);renderControl();render();$('status').hidden=true;
 }
 
 /* 全班最常犯的錯：每個情境有幾位學生、共幾次，以及最常選的那個答案 */
@@ -125,6 +164,7 @@ async function main(){
   $('cls').innerHTML=classes.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   $('app').hidden=false;
   const go=async()=>{try{await loadClass($('cls').value);}catch(e){say('讀取失敗：'+(e&&e.message||e),true);}};
+  $('ctrl').addEventListener('click',onControlClick);
   $('cls').onchange=go;$('btnRefresh').onclick=go;$('btnCsv').onclick=exportCsv;
   await go();
 }

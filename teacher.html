@@ -43,13 +43,14 @@ summary::-webkit-details-marker{display:none}
 .small{font-size:13px;color:var(--muted)}
 a{color:var(--gold)}
 [hidden]{display:none!important}
-#fails h3{margin:14px 0 6px;font-size:15px}#fails .fl{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px;margin:4px 0;border:1px solid var(--line,#3a4a5a);border-radius:10px}#fails .fl span{color:var(--gold,#E3B95B);font-weight:700}#fails .fl small{flex-basis:100%;opacity:.8}
+#ctrl h3,#fails h3{margin:14px 0 6px;font-size:15px}#ctrl .fl,#fails .fl{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px;margin:4px 0;border:1px solid var(--line,#3a4a5a);border-radius:10px}#ctrl .fl span,#fails .fl span{color:var(--gold,#E3B95B);font-weight:700}#ctrl .fl small,#fails .fl small{flex-basis:100%;opacity:.8}
+#ctrl .fl button{min-height:34px}#ctrl .wxbtns{display:flex;flex-wrap:wrap;gap:6px}
 </style>
 </head>
 <body>
 <main>
   <h1>急救王國：老師端進度</h1>
-  <p class="sub">只讀：只顯示您自己班上學生的遊戲進度，不會修改任何學生的存檔。</p>
+  <p class="sub">進度頁只讀：只顯示您自己班上學生的遊戲進度，不會修改任何學生的存檔。「班級控制」可以設定本班的功能開關與發布天災。</p>
   <div id="status" class="msg">載入中…</div>
   <div id="app" hidden>
     <div class="bar">
@@ -59,6 +60,7 @@ a{color:var(--gold)}
       <span class="small" id="who"></span>
     </div>
     <div class="sum" id="sum"></div>
+    <div id="ctrl"></div>
     <div id="fails"></div>
     <div id="list"></div>
     <p class="small">進度是學生每次行動後自動存到雲端的內容，最多有約 10 秒延遲。「尚未開始」表示這位學生還沒有用學校帳號登入過遊戲。</p>

@@ -3,14 +3,20 @@
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 
-def api_js(user, teacher, classes, students, saves, failures=()):
+def api_js(user, teacher, classes, students, saves, failures=(), ctl_error=False):
     return f"""
+    window.__ctl = {{}}; window.__ctlLog = [];
     window.__faTeacherApi = {{
       async user() {{ return {json.dumps(user)}; }}, signIn() {{}}, async signOut() {{}},
       async isTeacher() {{ return {json.dumps(teacher)}; }},
       async classes(uid) {{ return {json.dumps(classes)}; }},
       async students(cid) {{ return {json.dumps(students)}[cid] || []; }},
       async failures(emails) {{ const all = {json.dumps(list(failures))}; return all.filter(r => emails.includes(r.email)); }},
+      async flags(cid) {{ if ({json.dumps(ctl_error)}) throw new Error('no table'); const s = (window.__ctl[cid] || {{}}).flags || {{}}; return Object.entries(s).map(([flag, enabled]) => ({{flag, enabled}})); }},
+      async setFlag(cid, flag, enabled) {{ const s = window.__ctl[cid] = window.__ctl[cid] || {{flags: {{}}, weather: []}}; s.flags[flag] = enabled; window.__ctlLog.push(['flag', cid, flag, enabled]); }},
+      async weather(cid) {{ return ((window.__ctl[cid] || {{}}).weather || []).slice().reverse(); }},
+      async publishWeather(cid, type) {{ const s = window.__ctl[cid] = window.__ctl[cid] || {{flags: {{}}, weather: []}}; s.weather.push({{id: s.weather.length + 1, type, cancelled: false, published_at: '2026-10-02T06:30:00+00:00'}}); window.__ctlLog.push(['wx', cid, type]); }},
+      async cancelWeather(id) {{ for (const s of Object.values(window.__ctl)) s.weather.forEach(w => {{ if (w.id == id) w.cancelled = true; }}); window.__ctlLog.push(['cancel', id]); }},
       async saves(emails) {{ const all = {json.dumps(saves)}; return all.filter(r => emails.includes(r.email)); }}
     }};"""
 
@@ -46,9 +52,9 @@ async def main(url):
         res.append(ok); print(('✓' if ok else '✗'), name, '' if ok else extra)
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        async def page_for(user, teacher, classes=CLASSES):
+        async def page_for(user, teacher, classes=CLASSES, ctl_error=False):
             ctx = await b.new_context(viewport={'width': 390, 'height': 800}, accept_downloads=True)
-            await ctx.add_init_script(api_js(user, teacher, classes, STUDENTS, SAVES, FAILS))
+            await ctx.add_init_script(api_js(user, teacher, classes, STUDENTS, SAVES, FAILS, ctl_error))
             pg = await ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.goto(url); return pg, errs
         T = {'id': 'u1', 'email': 'teacher@hlhs.hlc.edu.tw'}
@@ -89,6 +95,27 @@ async def main(url):
         check('第二章狀態：未開始／已收到信／進行中／已完成（4★）', [x['label'] for x in r] == ['', '已收到信', '進行中', '已完成'] and r[3]['stars'] == 4, str(r))
         check('CSV 標題含第二章欄位', lines[0].endswith('第二章,第二章星數'), lines[0])
 
+        # --- 班級控制
+        ct = await pg.inner_text('#ctrl')
+        check('班級控制：第二章預設開啟、野外項目與村長救災預設關閉', '第二章（熔岩鍛造鎮）' in ct and '開啟（預設）' in ct and ct.count('關閉（預設）') == 2, ct)
+        await pg.click('button[data-flag="wild"]'); await pg.wait_for_function("document.getElementById('ctrl').innerText.includes('野外項目')")
+        await pg.wait_for_timeout(300)
+        ct = await pg.inner_text('#ctrl'); log = await pg.evaluate("() => window.__ctlLog")
+        check('開啟野外項目：寫入設定、畫面改成「開啟」（不再是預設）', log[-1] == ['flag', 'c1', 'wild', True] and '野外項目\n開啟\n' in ct.replace('\n\n', '\n'), str(log) + ct)
+        await pg.click('button[data-flag="ch2"]'); await pg.wait_for_timeout(300)
+        check('關閉第二章：寫入設定', (await pg.evaluate("() => window.__ctlLog"))[-1] == ['flag', 'c1', 'ch2', False] and '第二章（熔岩鍛造鎮）\n關閉' in (await pg.inner_text('#ctrl')).replace('\n\n', '\n'))
+        pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
+        await pg.click('button[data-wx="typhoon"]'); await pg.wait_for_function("document.getElementById('ctrl').innerText.includes('目前公告：颱風')", timeout=5000)
+        check('發布颱風（確認後）：顯示目前公告、有「取消」鈕', await pg.locator('button[data-cancel]').count() == 1)
+        await pg.click('button[data-cancel]'); await pg.wait_for_function("document.getElementById('ctrl').innerText.includes('沒有進行中的公告')", timeout=5000)
+        check('取消公告：回到沒有公告', await pg.locator('button[data-cancel]').count() == 0)
+        await pg.select_option('#cls', 'c2'); await pg.wait_for_function("document.getElementById('list').innerText.includes('黃別班')")
+        ct = await pg.inner_text('#ctrl')
+        check('切換班級：另一班的設定不受影響（仍是預設）', ct.count('（預設）') == 3, ct)
+        await pg.select_option('#cls', 'c1'); await pg.wait_for_function("document.getElementById('list').innerText.includes('王小明')")
+        pgE, _ = await page_for(T, True, ctl_error=True)
+        await pgE.wait_for_selector('#app:not([hidden])', timeout=20000); await pgE.wait_for_selector('details.st')
+        check('資料表還沒建：班級控制顯示說明，進度頁照常', '002_fa_class_control.sql' in await pgE.inner_text('#ctrl') and await pgE.locator('details.st').count() >= 3)
         pg2, _ = await page_for(T, False)
         await pg2.wait_for_selector('#status:not([hidden])'); await pg2.wait_for_timeout(300)
         check('非老師帳號顯示沒有權限，且不載入名單', '沒有老師端權限' in await pg2.inner_text('#status') and await pg2.locator('#app:not([hidden])').count() == 0)
