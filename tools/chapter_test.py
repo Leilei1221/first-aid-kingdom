@@ -131,14 +131,15 @@ async def main(url):
         # 1) 預設（沒有 chbase）：只有序章，沒有章節
         page, errs, logs = await boot(ctx, url)
         r = await page.evaluate("() => ({ch: Object.keys(window.__fa.CHAPTERS), scenes: Object.keys(window.__fa.SCENES).length})")
-        check('預設只載入序章（11 個場景），第二章登記但關閉', r == {'ch': ['ch2'], 'scenes': 11}, str(r))
+        IDX_OPEN = json.load(open(os.path.join(ROOT, 'chapters/index.json')))[0]['open']
+        check('預設載入序章與第二章（依 chapters/index.json 的 open）', r == {'ch': ['ch2'], 'scenes': 20 if IDX_OPEN else 11}, str(r))
         check('預設沒有頁面錯誤', not errs, str(errs))
         # 第二章關閉時，東方草原東邊的出口擋下並提示「還沒開放」
         await start(page)
         await page.evaluate("() => { window.__fa.go('plain', [1300, 680]); }"); await page.wait_for_timeout(800)
         await page.keyboard.down('ArrowRight'); await page.wait_for_timeout(2500); await page.keyboard.up('ArrowRight'); await page.wait_for_timeout(600)
         txt = await page.inner_text('#dText') if not await page.evaluate("() => document.getElementById('dialog').hidden") else ''
-        check('第二章關閉：東方草原東邊顯示「這一章還沒開放」、留在草原', '還沒開放' in txt and await page.evaluate("() => window.__fa.S.scene") == 'plain', txt)
+        check('東方草原東邊被擋下並留在草原（開放：等收到信；關閉：還沒開放）', ('等收到老鐵的信' if IDX_OPEN else '還沒開放') in txt and await page.evaluate("() => window.__fa.S.scene") == 'plain', txt)
         await page.close()
         # 2) 假章節
         page, errs, logs = await boot(ctx, url, '/tools/fixtures/chapters')

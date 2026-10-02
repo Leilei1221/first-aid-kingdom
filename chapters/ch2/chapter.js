@@ -247,7 +247,7 @@ return {
   /* 序章完成後（核心程式在爺爺對話、目標、頭上驚嘆號處呼叫） */
   goalBase(){
     if(S.f.final&&!S.c.letter)return '序章完成！回家和爺爺說說話，好像有一封信。';
-    if(!S.c.done&&S.step>=10)return S.c.intro?'第二章進行中：到東方草原東邊的漁港，搭船回熔岩鍛造鎮。':'到東方草原東邊的漁港，搭船前往熔岩鍛造鎮。';},
+    if(S.f.final&&S.c.letter&&!S.c.done)return S.c.intro?'第二章進行中：到東方草原東邊的漁港，搭船回熔岩鍛造鎮。':'到東方草原東邊的漁港，搭船前往熔岩鍛造鎮。';},
   newsBase:id=>id==='grandpa'&&S.f.final&&!S.c.letter,
   grandpaFinal(){
     if(!(S.f.final&&!S.c.letter))return;

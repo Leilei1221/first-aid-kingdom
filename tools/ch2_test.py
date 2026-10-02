@@ -158,6 +158,11 @@ async def main(url):
         page, errs = await boot(ctx, url)
         r = await page.evaluate("() => ({ch: window.__fa.CHAPTERS.ch2, reg: Object.keys(window.__fa.REGIONS), n: Object.keys(window.__fa.SCENES).length, hs: Object.keys(window.__fa.S.hearts).filter(k => k.startsWith('ch2_'))})")
         check('?open=ch2：第二章載入、有 20 個場景、5 位角色有好感度欄位', r['ch']['open'] and r['reg'] == ['ch2'] and r['n'] == 20 and len(r['hs']) == 5, str(r))
+        # --- 序章還沒完成（S.f.final = false）時，目標欄不能提早出現第二章的提示
+        await page.evaluate("() => { const S = window.__fa.S; S.f.final = false; S.c.letter = false; window.__fa.go('home', [840, 770]); }"); await page.wait_for_timeout(600)
+        await page.evaluate("() => window.__fa.refresh()"); g = await page.inner_text('#goal')
+        check('序章未完成：目標欄不出現「漁港、搭船」', '漁港' not in g and '搭船' not in g, g)
+        await page.evaluate("() => { window.__fa.S.f.final = true; }")
         # --- 序章接點：爺爺的信
         await page.evaluate("() => window.__fa.go('home', [840, 770])"); await page.wait_for_timeout(600)
         g = await page.inner_text('#goal')
