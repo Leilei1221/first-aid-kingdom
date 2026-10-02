@@ -58,5 +58,6 @@
   "WATER_NEED": 3,
   "RESCUE_FEE": 200,
   "DEBT_LIMIT": 300,
-  "RATION_EAT": 20
+  "RATION_EAT": 20,
+  "STASH_CAP": 20
 }
