@@ -24,6 +24,7 @@
 - `d1` 另含 D2（地區／世界地圖、`S.c`／`S.stashAt`、傷口圖鑑、哨子手電筒雨衣）；51 情境比對相對 integrate 只多傷口圖（24 個對話框）與新欄位。營火與打火石移到 D4。過敏題 V3 文字差異待老師決定（見 `docs/stage-d2-summary.md`）。
 - `d1` 另含 D3（第二章＋渡海，**預設關閉**）：`chapters/ch2/`（chapter.js、scenes、cards 等）；本機測試加 `?open=ch2`（需 `#debug`）；測試 `tools/ch2_test.py`、`CHAPTER=ch2 python3 tools/walk_test.py`。51 情境比對相對 integrate 仍只多傷口圖與新欄位。D3 未做：老師端「救援失敗次數」（要 Supabase 政策，留 D4）、停航（D4 天氣）。第二章要對學生開放需 D5（老師端開關）或把 `chapters/index.json` 的 `open` 改 true（全班一起開）。
 - **D4 在分支 `d4`（本機，未推送、未併 main）**：天氣引擎（老師發布，無隨機）、救援失敗接線、天災與野外事件、營火、村長救災物資、老師端「全班最常犯的錯」。**開關預設全關**：`content/weather.json` 的 `WILD_ON`、`RELIEF_ON`，天災由 D5 老師端發布；待審文字見 `docs/d4-review-checklist.md`。測試：`weather`、`rescue`、`wild`、`camp`、`relief`、`ch2`（含觸電嚴重錯誤）。觸電嚴重錯誤會影響已上線的第二章。救援費目前 200（摘要曾寫 100，待老師定）。
+- **D5 在分支 `d5`（本機，未推送、未併 main；含 D4）**：老師端「班級控制」（章節與功能開關、發布天災）；遊戲讀取 `fa_my_class_control()`；章節開放改為執行時判斷。**要用必須先由老師在 Supabase 執行 `supabase/drafts/002_fa_class_control.sql`**（Claude 不套用）；沒執行前遊戲用預設、老師端顯示說明。測試：`control_test.py`、`teacher_test.py`（28 項）。救援費以 200 為準（老師 10/2 確認）。
 - 老師 10/2 已確認 D1 與「防災包先合併再做 D1」的順序；**D2 摘要待老師確認**。防災包文字（`docs/stash-text-review.md`）仍待審；要部署（推送）須老師說「推」。
 - 第三章素材包在 OneDrive：`健康與護理作業/115/多元選修/急救王國/第三章交付包/`（設計草案、題目與知識卡草稿、場景／角色／物件 PNG，含村長）；轉檔等 D3／D1 之後處理。
 
