@@ -334,6 +334,16 @@
     "block": null,
     "test": "(x,y)=>x<35",
     "need": null
+   },
+   {
+    "to": "ch3_fishport",
+    "at": [
+     760,
+     110
+    ],
+    "block": "往南的石階通向海岸的漁港，等完成第二章再去吧。",
+    "test": "(x,y)=>y>925",
+    "need": "()=>S.c&&S.c.done"
    }
   ]
  },

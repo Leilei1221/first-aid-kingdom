@@ -97,7 +97,7 @@ async def main(url):
                 page = await ctx.new_page()
                 await page.goto(url + (f'?open={CH}' if CH else '') + '#debug')
                 await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
-                await page.evaluate(f"""() => {{ const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.c = Object.assign(S.c || {{}}, {{letter: true}}); S.scene = {json.dumps(sid)}; S.pos = {{x: {sc['spawn'][0]}, y: {sc['spawn'][1]}}}; S.started = true;
+                await page.evaluate(f"""() => {{ const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.c = Object.assign(S.c || {{}}, {{letter: true, done: true}}); S.scene = {json.dumps(sid)}; S.pos = {{x: {sc['spawn'][0]}, y: {sc['spawn'][1]}}}; S.started = true;
                   document.getElementById('btnStart').click(); }}""")
                 await page.wait_for_timeout(600)
                 r = await page.evaluate(WALK_JS, [pts])

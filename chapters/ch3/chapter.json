@@ -1,0 +1,66 @@
+{
+ "id": "ch3",
+ "name": "港口藍堡",
+ "files": {
+  "scenes": "scenes.json",
+  "characters": "characters.json",
+  "ratios": "ratios.json",
+  "walks": "walks.json"
+ },
+ "assets": [
+  "ch3_aed_cabinet",
+  "ch3_aed_device",
+  "ch3_bls_box",
+  "ch3_by_blue",
+  "ch3_by_blue_face",
+  "ch3_by_green",
+  "ch3_by_green_face",
+  "ch3_by_red",
+  "ch3_by_red_face",
+  "ch3_captain",
+  "ch3_captain_face",
+  "ch3_cpr_manikin",
+  "ch3_escape_bag",
+  "ch3_face_shield",
+  "ch3_fisher",
+  "ch3_fisher_down",
+  "ch3_fisher_face",
+  "ch3_fishport",
+  "ch3_fishwife",
+  "ch3_fishwife_face",
+  "ch3_harbor",
+  "ch3_lifeg",
+  "ch3_lifeg_face",
+  "ch3_lighthouse",
+  "ch3_market",
+  "ch3_rescue",
+  "ch3_sailor",
+  "ch3_sailor_face",
+  "ch3_ship_cabin",
+  "ch3_ship_day",
+  "ch3_ship_dusk"
+ ],
+ "region": {
+  "name": "港口藍堡",
+  "pin": [
+   74,
+   56
+  ],
+  "unlock": "()=>S.c&&S.c.done",
+  "center": {
+   "scene": "ch3_harbor",
+   "at": [
+    820,
+    640
+   ]
+  },
+  "home": {
+   "scene": "ch3_harbor",
+   "at": [
+    820,
+    640
+   ]
+  },
+  "travelHint": "港口藍堡在海的另一邊，要從綠葉谷南岸的漁港搭船過去（從礦坑入口往南走）。完成第二章後才能出發。"
+ }
+}

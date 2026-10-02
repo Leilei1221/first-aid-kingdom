@@ -1,0 +1,52 @@
+{
+ "PEOPLE": {
+  "ch3_captain": {
+   "name": "老船長",
+   "img": "ch3_captain",
+   "face": "ch3_captain_face",
+   "hk": 1
+  },
+  "ch3_fishwife": {
+   "name": "漁婦",
+   "img": "ch3_fishwife",
+   "face": "ch3_fishwife_face",
+   "hk": 1
+  },
+  "ch3_fisher": {
+   "name": "漁夫",
+   "img": "ch3_fisher",
+   "face": "ch3_fisher_face",
+   "hk": 1
+  },
+  "ch3_sailor": {
+   "name": "水手",
+   "img": "ch3_sailor",
+   "face": "ch3_sailor_face",
+   "hk": 1
+  },
+  "ch3_lifeg": {
+   "name": "港口救生員",
+   "img": "ch3_lifeg",
+   "face": "ch3_lifeg_face",
+   "hk": 1
+  },
+  "ch3_by_red": {
+   "name": "紅衣路人",
+   "img": "ch3_by_red",
+   "face": "ch3_by_red_face",
+   "hk": 1
+  },
+  "ch3_by_blue": {
+   "name": "藍衣路人",
+   "img": "ch3_by_blue",
+   "face": "ch3_by_blue_face",
+   "hk": 1
+  },
+  "ch3_by_green": {
+   "name": "綠衣路人",
+   "img": "ch3_by_green",
+   "face": "ch3_by_green_face",
+   "hk": 1
+  }
+ }
+}

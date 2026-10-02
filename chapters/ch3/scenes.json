@@ -1,0 +1,294 @@
+{
+ "ch3_fishport": {
+  "name": "南岸漁港",
+  "spawn": [
+   760,
+   110
+  ],
+  "bg": "ch3_fishport",
+  "heroH": 120,
+  "npcs": [
+   {
+    "id": "ch3_fishwife",
+    "x": 573,
+    "y": 440,
+    "flip": true
+   },
+   {
+    "id": "ch3_fisher",
+    "x": 440,
+    "y": 627
+   },
+   {
+    "id": "ch3_sailor",
+    "x": 933,
+    "y": 533,
+    "flip": true
+   },
+   {
+    "id": "ch3_captain",
+    "x": 1130,
+    "y": 540
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch3_board",
+    "x": 1230,
+    "y": 600,
+    "label": "搭船前往藍堡"
+   }
+  ],
+  "exits": [
+   {
+    "to": "mine_out",
+    "at": [
+     810,
+     860
+    ],
+    "block": null,
+    "test": "(x,y)=>y<25",
+    "need": null
+   }
+  ],
+  "region": "base",
+  "outdoor": true
+ },
+ "ch3_harbor": {
+  "name": "港口藍堡",
+  "spawn": [
+   820,
+   640
+  ],
+  "bg": "ch3_harbor",
+  "heroH": 120,
+  "npcs": [
+   {
+    "id": "ch3_lifeg",
+    "x": 1250,
+    "y": 760
+   },
+   {
+    "id": "ch3_sailor",
+    "x": 1000,
+    "y": 430,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "door",
+    "x": 1490,
+    "y": 290,
+    "label": "前往港口市集",
+    "to": "ch3_market",
+    "at": [
+     830,
+     860
+    ]
+   },
+   {
+    "kind": "door",
+    "x": 1390,
+    "y": 790,
+    "label": "進入救生站",
+    "to": "ch3_rescue",
+    "at": [
+     760,
+     860
+    ]
+   },
+   {
+    "kind": "door",
+    "x": 716,
+    "y": 508,
+    "label": "前往燈塔",
+    "to": "ch3_lighthouse",
+    "at": [
+     900,
+     880
+    ]
+   },
+   {
+    "kind": "ch3_board",
+    "x": 830,
+    "y": 440,
+    "label": "搭船回綠葉谷"
+   }
+  ],
+  "exits": [],
+  "outdoor": true
+ },
+ "ch3_market": {
+  "name": "港口市集",
+  "spawn": [
+   830,
+   800
+  ],
+  "bg": "ch3_market",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch3_by_red",
+    "x": 747,
+    "y": 693
+   },
+   {
+    "id": "ch3_by_blue",
+    "x": 933,
+    "y": 573,
+    "flip": true
+   },
+   {
+    "id": "ch3_by_green",
+    "x": 600,
+    "y": 600
+   }
+  ],
+  "things": [],
+  "exits": [
+   {
+    "to": "ch3_harbor",
+    "at": [
+     1440,
+     340
+    ],
+    "block": null,
+    "test": "(x,y)=>y>925",
+    "need": null
+   }
+  ],
+  "outdoor": true
+ },
+ "ch3_rescue": {
+  "name": "救生站",
+  "spawn": [
+   760,
+   840
+  ],
+  "bg": "ch3_rescue",
+  "heroH": 200,
+  "npcs": [
+   {
+    "id": "ch3_lifeg",
+    "x": 693,
+    "y": 627
+   }
+  ],
+  "things": [],
+  "exits": [
+   {
+    "to": "ch3_harbor",
+    "at": [
+     1380,
+     800
+    ],
+    "block": null,
+    "test": "(x,y)=>y>925",
+    "need": null
+   }
+  ]
+ },
+ "ch3_lighthouse": {
+  "name": "燈塔",
+  "spawn": [
+   900,
+   880
+  ],
+  "bg": "ch3_lighthouse",
+  "heroH": 110,
+  "npcs": [],
+  "things": [],
+  "exits": [
+   {
+    "to": "ch3_harbor",
+    "at": [
+     720,
+     520
+    ],
+    "block": null,
+    "test": "(x,y)=>y>925",
+    "need": null
+   }
+  ],
+  "outdoor": true
+ },
+ "ch3_ship_day": {
+  "name": "帆船甲板",
+  "spawn": [
+   800,
+   660
+  ],
+  "bg": "ch3_ship_day",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch3_captain",
+    "x": 507,
+    "y": 440
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch3_hatch",
+    "x": 1080,
+    "y": 580,
+    "label": "到船艙休息"
+   }
+  ],
+  "exits": [],
+  "region": "base"
+ },
+ "ch3_ship_dusk": {
+  "name": "帆船甲板",
+  "spawn": [
+   800,
+   660
+  ],
+  "bg": "ch3_ship_dusk",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch3_captain",
+    "x": 507,
+    "y": 440
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch3_hatch",
+    "x": 1080,
+    "y": 580,
+    "label": "到船艙休息"
+   }
+  ],
+  "exits": [],
+  "region": "base"
+ },
+ "ch3_ship_cabin": {
+  "name": "船艙",
+  "spawn": [
+   870,
+   600
+  ],
+  "bg": "ch3_ship_cabin",
+  "heroH": 190,
+  "npcs": [],
+  "things": [
+   {
+    "kind": "ch3_bed",
+    "x": 1200,
+    "y": 560,
+    "label": "睡覺"
+   },
+   {
+    "kind": "ch3_ladder",
+    "x": 910,
+    "y": 408,
+    "label": "回到甲板"
+   }
+  ],
+  "exits": [],
+  "region": "base"
+ }
+}
