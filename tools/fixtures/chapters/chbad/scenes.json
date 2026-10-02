@@ -1,0 +1,14 @@
+{
+ "oops_no_prefix": {
+  "name": "x",
+  "spawn": [
+   1,
+   1
+  ],
+  "bg": "plain",
+  "heroH": 100,
+  "npcs": [],
+  "things": [],
+  "exits": []
+ }
+}

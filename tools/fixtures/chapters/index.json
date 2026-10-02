@@ -1,0 +1,17 @@
+[
+ {
+  "id": "chtest",
+  "name": "測試章",
+  "open": true
+ },
+ {
+  "id": "chclosed",
+  "name": "關閉章",
+  "open": false
+ },
+ {
+  "id": "chbad",
+  "name": "壞章",
+  "open": true
+ }
+]

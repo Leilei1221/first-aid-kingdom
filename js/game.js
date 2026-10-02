@@ -4,15 +4,51 @@ const startBtn=document.getElementById('btnStart'),startLabel=startBtn.textConte
 startBtn.disabled=true;startBtn.textContent='載入中…';
 const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(u+' '+r.status);return r.json();};
 let C,A={};
+const CHAPTERS={};  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
+const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
+const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
+const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
+const chClosed=id=>{const c=chOf(id);return !!c&&!(CHAPTERS[c]&&CHAPTERS[c].open);};
+async function loadChapters(){
+  let idx;try{idx=await getJSON(`${CH_BASE}/index.json`);}catch(e){return [];}
+  const loaded=[];
+  for(const e of idx){
+    CHAPTERS[e.id]={id:e.id,name:e.name,open:false};
+    if(!e.open)continue;
+    try{
+      const meta=await getJSON(`${CH_BASE}/${e.id}/chapter.json`),f=meta.files||{};
+      const get=async n=>f[n]?getJSON(`${CH_BASE}/${e.id}/${f[n]}`):null;
+      const d={scenes:await get('scenes'),signs:await get('signs'),characters:await get('characters'),cards:await get('cards'),
+        events:await get('events'),items:await get('items'),ratios:await get('ratios'),dialogues:await get('dialogues'),walks:await get('walks')};
+      const bad=[];const pre=k=>{if(!k.startsWith(e.id+'_'))bad.push(k);};
+      Object.keys(d.scenes||{}).forEach(pre);Object.keys(d.signs||{}).forEach(pre);Object.keys((d.characters||{}).PEOPLE||{}).forEach(pre);
+      Object.keys((d.cards||{}).CARDS||{}).forEach(pre);Object.keys(d.walks||{}).forEach(pre);
+      ['say','quizzes','text'].forEach(g=>Object.keys((d.dialogues||{})[g]||{}).forEach(pre));
+      ((d.events||{}).EVENTS||[]).forEach(v=>pre(v.id));Object.keys((d.events||{}).VICTIMS||{}).forEach(pre);
+      Object.keys((d.items||{}).ITEMS||{}).forEach(pre);Object.keys((d.ratios||{}).RATIO||{}).forEach(pre);
+      if(bad.length)throw new Error(`章節 ${e.id} 有 id 沒有 ${e.id}_ 前綴：${bad.join(', ')}`);
+      Object.assign(C.scenes,d.scenes||{});Object.assign(C.signs,d.signs||{});Object.assign(C.walks,d.walks||{});
+      Object.assign(C.characters.PEOPLE,(d.characters||{}).PEOPLE||{});Object.assign(C.cards.CARDS,(d.cards||{}).CARDS||{});
+      if(d.events){C.quests.EVENTS.push(...(d.events.EVENTS||[]));Object.assign(C.quests.VICTIMS,d.events.VICTIMS||{});}
+      if(d.items)Object.assign(C.items.ITEMS,d.items.ITEMS||{});
+      if(d.ratios)Object.assign(C.ratios.RATIO,d.ratios.RATIO||{});
+      ['say','quizzes','text'].forEach(g=>Object.assign(C.dialogues[g],((d.dialogues||{})[g])||{}));
+      CHAPTERS[e.id].open=true;loaded.push({id:e.id,assets:meta.assets||[]});
+    }catch(err){console.error('章節載入失敗，已略過：',e.id,err);}
+  }
+  return loaded;}
 try{
   const [items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,walks,manifest]=await Promise.all(
     ['items','balance','characters','crafting_and_farm','knowledge_cards','quests_and_events','sprite_ratios','scenes','signs','dialogues'].map(n=>getJSON(`content/${n}.json`))
     .concat([getJSON('data/walks.json'),getJSON('assets/manifest.json')]));
   C={items,balance,characters,crafting,cards,quests,ratios,scenes,signs,dialogues,walks};
   manifest.forEach(n=>A[n]=`assets/${n}.webp`);
+  const imgs=manifest.map(n=>A[n]);
+  /* 章節：chapters/index.json 列出各章與開關；開放的章節才載入（格式見 docs/chapter-pack-format.md）。章節載入失敗不影響序章 */
+  for(const ch of await loadChapters())(ch.assets||[]).forEach(n=>{A[n]=`${CH_BASE}/${ch.id}/assets/${n}.webp`;imgs.push(A[n]);});
   let done=0;
-  await Promise.all(manifest.map(n=>new Promise(r=>{const im=new Image();
-    im.onload=im.onerror=()=>{startBtn.textContent=`載入中… ${++done}/${manifest.length}`;r();};im.src=A[n];})));
+  await Promise.all(imgs.map(u=>new Promise(r=>{const im=new Image();
+    im.onload=im.onerror=()=>{startBtn.textContent=`載入中… ${++done}/${imgs.length}`;r();};im.src=u;})));
 }catch(err){
   console.error(err);startBtn.textContent='載入失敗，請重新整理（不能直接雙擊檔案開啟）';return;
 }
@@ -28,7 +64,8 @@ document.getElementById('titleHero').src=A.hero;
 const mk=src=>{const f=new Function('S','return ('+src+')');return (...a)=>f(S)(...a);};
 function compileScenes(raw){const out={};
   for(const [id,s] of Object.entries(raw))out[id]=Object.assign({},s,{exits:(s.exits||[]).map(e=>({
-    test:mk(e.test),to:e.toFn?mk(e.toFn):e.to,at:e.at,need:e.need?mk(e.need):undefined,block:e.block||undefined}))});
+    test:mk(e.test),to:e.toFn?mk(e.toFn):e.to,at:e.at,
+    need:chClosed(e.to)?()=>false:(e.need?mk(e.need):undefined),block:chClosed(e.to)?'這一章還沒開放，等老師開放之後再來探險吧。':(e.block||undefined)}))});
   return out;}
 function compileSigns(raw){const out={};
   for(const [id,list] of Object.entries(raw))out[id]=list.map(g=>({x:g.x,y:g.y,
@@ -66,6 +103,7 @@ function migrate(o){
   o.gifted=o.gifted||{};if(!o.spr){o.spr=[];for(let i=0;i<(o.sprinklers||0);i++)o.spr.push(i);}o.f=o.f||{};o.story=o.story||{};o.rescue=o.rescue||{};['hunt','guard','cook','soldier'].forEach(k=>{if(o.hearts[k]==null)o.hearts[k]=0;});o.sprinklers=o.sprinklers||0;o.bin=o.bin||0;if(!o.forage){o.forage={};o.forageDay=0;}
   Object.values(o.trees||{}).forEach(t=>{if(t.regrow&&t.regrow>1e6)t.regrow=o.day+1;});
   if(!Array.isArray(o.stash))o.stash=[];
+  if(!SCENES[o.scene]){o.scene='village';o.pos={x:SCENES.village.spawn[0],y:SCENES.village.spawn[1]};}  /* 存檔所在的章節已關閉或不存在：回村莊 */
   o.v=2;return o;}
 function save(){if(window.__loggingOut)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(window.FACloud)FACloud.queueSave(S);}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&(o.v===1||o.v===2))return migrate(o);}}catch(e){}return null;}
@@ -315,6 +353,7 @@ async function doAction(){
 }
 async function go(to,at){
   if(typeof to==='function')to=to();
+  if(!SCENES[to]){console.error('找不到場景：'+to);to='village';at=SCENES.village.spawn;}
   $('fade').classList.add('on');await sleep(RM?0:280);
   S.scene=to;S.pos={x:at[0],y:at[1]};buildScene();save();
   await sleep(RM?0:60);$('fade').classList.remove('on');
@@ -917,5 +956,5 @@ $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fulls
 $('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
 initCloud();
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={SCENES,CHAPTERS,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();

@@ -1,0 +1,10 @@
+{
+ "id": "chtest",
+ "files": {
+  "scenes": "scenes.json",
+  "characters": "characters.json",
+  "dialogues": "dialogues.json",
+  "walks": "walks.json"
+ },
+ "assets": []
+}

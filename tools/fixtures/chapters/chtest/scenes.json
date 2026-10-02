@@ -1,0 +1,60 @@
+{
+ "chtest_a": {
+  "name": "測試場景",
+  "spawn": [
+   400,
+   450
+  ],
+  "bg": "plain",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "chtest_npc",
+    "x": 800,
+    "y": 500
+   }
+  ],
+  "things": [],
+  "exits": [
+   {
+    "to": "chtest_b",
+    "at": [
+     400,
+     450
+    ],
+    "block": null,
+    "test": "(x,y)=>x<30",
+    "need": null
+   }
+  ]
+ },
+ "chtest_b": {
+  "name": "測試場景",
+  "spawn": [
+   400,
+   450
+  ],
+  "bg": "plain",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "chtest_npc",
+    "x": 800,
+    "y": 500
+   }
+  ],
+  "things": [],
+  "exits": [
+   {
+    "to": "chclosed_x",
+    "at": [
+     400,
+     450
+    ],
+    "block": null,
+    "test": "(x,y)=>x<30",
+    "need": null
+   }
+  ]
+ }
+}

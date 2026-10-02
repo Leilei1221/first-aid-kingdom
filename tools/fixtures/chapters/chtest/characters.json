@@ -1,0 +1,10 @@
+{
+ "PEOPLE": {
+  "chtest_npc": {
+   "name": "測試村民",
+   "img": "guard",
+   "face": "guard_face",
+   "hk": 1
+  }
+ }
+}
