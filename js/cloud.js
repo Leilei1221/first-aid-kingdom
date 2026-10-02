@@ -4,7 +4,7 @@
  * 遊戲存檔本身（S）完全不加欄位，所以不影響原有的存檔格式與 migrate()。 */
 (function(){
 const CFG=window.FA_CONFIG||{};
-const META='fa-kingdom-p1-v1-meta',CPKEY='fa-kingdom-cp-v1';
+const META='fa-kingdom-p1-v1-meta',CPKEY='fa-kingdom-cp-v1',CTRL='fa-kingdom-ctrl-v1';
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -25,7 +25,8 @@ function makeRemote(client){return {
   async loadCheckpoint(e,day){const {data,error}=await client.from('fa_checkpoints').select('state').eq('email',e).lte('day',day).order('day',{ascending:false}).limit(1);
     if(error)throw error;return data&&data[0]?data[0].state:null;},
   async clearCheckpoints(e){const {error}=await client.from('fa_checkpoints').delete().eq('email',e);if(error)throw error;},
-  async failure(e,scenario,choice){const {error}=await client.from('fa_failures').insert({email:e,scenario,choice});if(error)throw error;}
+  async failure(e,scenario,choice){const {error}=await client.from('fa_failures').insert({email:e,scenario,choice});if(error)throw error;},
+  async control(){const {data,error}=await client.rpc('fa_my_class_control');if(error)throw error;return data;}
 };}
 
 function loadLib(){return new Promise((res,rej)=>{
@@ -127,10 +128,19 @@ async function restore(day){
 async function clearCheckpoints(){LS.del(CPKEY);if(email&&remote){try{await remote.clearCheckpoints(email);}catch(e){}}}
 async function failure(scenario,choice){if(email&&remote){try{await remote.failure(email,scenario,choice);}catch(e){}}}
 
+/* ---------- 班級控制（老師端設定的功能開關與天災公告，見 supabase/drafts/002_fa_class_control.sql） ----------
+ * 讀得到就更新本機快取；讀不到（沒網路、資料表還沒建、不是在學學生）就用上次的快取，從沒讀過就是 null（遊戲用程式預設）。
+ * 還沒登入的啟動初期，先用這台裝置上次的快取；登入後只認自己的快取。 */
+function cachedControl(){const c=LS.get(CTRL);if(!c||!c.data)return null;if(email&&c.email!==email)return null;return clone(c.data);}
+async function refreshControl(){
+  if(!email||!remote||!remote.control)return cachedControl();
+  try{const d=await remote.control();if(d&&typeof d==='object')LS.set(CTRL,{email,data:d,at:Date.now()});}catch(e){}
+  return cachedControl();}
+
 /* ---------- 登入／登出 ---------- */
 async function signIn(){if(remote)await remote.signIn();}
-async function signOut(){await flush();try{await remote.signOut();}catch(e){}LS.del(META);LS.del(CPKEY);email=null;pending=null;conflict=false;setStatus('off');}
+async function signOut(){await flush();try{await remote.signOut();}catch(e){}LS.del(META);LS.del(CPKEY);LS.del(CTRL);email=null;pending=null;conflict=false;setStatus('off');}
 
-window.FACloud={init,sync,decide,queueSave,flush,checkpoint,restore,clearCheckpoints,failure,signIn,signOut,
+window.FACloud={init,sync,decide,queueSave,flush,checkpoint,restore,clearCheckpoints,failure,signIn,signOut,cachedControl,refreshControl,
   email:()=>email,status:()=>status,onStatus:f=>listeners.push(f)};
 })();

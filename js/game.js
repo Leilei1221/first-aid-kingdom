@@ -110,10 +110,14 @@ const mapAvail=()=>Object.values(REGIONS).some(regionOpen);
 const CHH={};
 const hookOf=sceneId=>CHH[chOf(sceneId)]||null;
 const chBase=(name,...a)=>{for(const h of Object.values(CHH)){const r=h[name]&&h[name](...a);if(r!==undefined&&r!==null&&r!==false)return r;}};
+/* ================= 班級控制：老師端設定的功能開關（沒設定就用程式預設）；讀取失敗時用本機快取 ================= */
+let CONTROL=window.FACloud&&FACloud.cachedControl?FACloud.cachedControl():null;  /* {class_id,flags:{ch2,wild,relief},weather:{id,type}|null} */
+const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;return f&&name in f?!!f[name]:!!def;};
+async function pullControl(){if(!window.FACloud||!FACloud.refreshControl)return;try{CONTROL=await FACloud.refreshControl();}catch(e){}}
 /* ================= 天氣：由老師發布（D5）或除錯入口排定，沒有隨機；沒有排定時整套不作用 ================= */
 const wxToday=()=>S.wx&&S.wx.day===S.day?S.wx.type:null;
 const wxTomorrow=()=>S.wxNext&&S.wxNext.day===S.day+1?S.wxNext.type:null;
-const wild=()=>WILD_ON||WILD_FORCE;  /* 野外項目（溺水、裝溪水、營火、阿鹿的支線）：內容審過後在 content/weather.json 的 WILD_ON 開啟 */
+const wild=()=>flagOn('wild',WILD_ON)||WILD_FORCE;  /* 野外項目（溺水、裝溪水、營火、阿鹿的支線）：內容審過後在 content/weather.json 的 WILD_ON 開啟 */
 const storyOf=id=>{const s=STORIES[id];return s&&(!s.draft||wild())?s:null;};  /* draft 的支線在 WILD 開啟前不出現 */
 const isOutdoor=id=>{const s=C.scenes[id];return s&&s.outdoor!=null?!!s.outdoor:OUTDOOR.includes(id);};
 const stormy=()=>['typhoon','flood'].includes(wxToday())||['typhoon','flood'].includes(wxTomorrow());  /* 船長停航 */
@@ -486,6 +490,7 @@ async function bed(){
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>早安！體力恢復了。</p>'+html});
 }
 function nextDay(){
+  pullControl();  /* 每天早上順便更新老師端的設定（背景進行，不等結果） */
   S.day++;let grown=0,dry=0,wxMsg='';
   if(S.wxNext&&S.wxNext.day===S.day){S.wx=S.wxNext;S.wxNext=null;wxMsg+=`<p class="bad">今天${WX[S.wx.type].name}來襲！</p>`;S.wxHit={};if(S.wx.type==='flood')startRelief('flood');}
   if(S.relief&&S.day>S.relief.until){wxMsg+=`<p class="small">${T('chief.closed')}</p>`;S.relief=null;}
@@ -1043,6 +1048,7 @@ async function initCloud(){
   let raw=null;try{raw=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   const r=await FACloud.sync(raw&&(raw.v===1||raw.v===2)?raw:null,askConflict);
   if(r.action==='use-cloud'){const c=S.ctrl;S=migrate(r.state);if(c)S.ctrl=c;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  await pullControl();
   btn.disabled=false;btn.textContent=S.started?'繼續冒險':startLabel;renderAuth();}
 /* 救援失敗：顯示正確知識卡 → 回到當天早上的存檔點 → 扣救援費 → 記錄失敗。呼叫端在 await 之後要 return，不要繼續原本的流程。 */
 async function rescueFail({scenario,choice,intro,cardKey}){
@@ -1059,7 +1065,7 @@ async function rescueFail({scenario,choice,intro,cardKey}){
 }
 
 /* ================= 村長與災後救災物資（D4）：地震、山洪災後當天與隔天，村長在村莊發放乾糧與開水；救災物資不能賣、不累積 ================= */
-const reliefOn=()=>RELIEF_ON||RELIEF_FORCE;
+const reliefOn=()=>flagOn('relief',RELIEF_ON)||RELIEF_FORCE;
 const CHIEF_AT={id:'chief',x:920,y:560};
 const reliefActive=()=>!!(reliefOn()&&S.relief&&S.day<=S.relief.until);
 const isRelief=k=>String(k).endsWith('@r');  /* 救災乾糧：'ration@到期日@r'，其他地方都當自己的物品，只有商店不收 */
@@ -1164,5 +1170,5 @@ try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},flagOn,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
