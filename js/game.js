@@ -1054,7 +1054,7 @@ async function rescueFail({scenario,choice,intro,cardKey}){
 /* ================= 天災與野外事件（D4）：天災由老師發布（D5）或除錯入口排定；野外項目（溺水、裝溪水）在 WILD 開啟前不出現 ================= */
 async function retreatIndoor(){const h=curRegion().home||BASE.home;await go(h.scene,curRegion()===BASE?SCENES.home.spawn:h.at);}
 async function wxEnter(){
-  const t=wxToday();S.wxHit=S.wxHit||{};
+  const t=wxToday();if(t)S.wxHit=S.wxHit||{};  /* 沒有天災時不動存檔 */
   if(t==='typhoon'&&isOutdoor(S.scene)&&!S.wxHit[S.scene]){S.wxHit[S.scene]=true;
     const i=await say({p:'hero',html:'<p class="bad">狂風暴雨！樹枝被吹得劈啪作響，招牌在搖晃……</p>',buttons:[{label:'馬上回到室內避難',primary:true},{label:'趁現在趕快把事情做完'}]});
     if(i===0){await retreatIndoor();return;}
