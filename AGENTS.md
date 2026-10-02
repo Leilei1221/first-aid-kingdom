@@ -16,6 +16,14 @@
 - 精簡、低維護，不引入不必要的框架；沒有建置步驟。
 - 對外發布動作（建 repo、推送、開啟服務、寫入資料庫）先問老師。不要把金鑰、service_role key 放進 repo。
 
+## 本機分支進度（2026-10-02，**尚未推送、未合併 main**；以本節為準）
+- `main` = `origin/main`（已含 music-ready 的設定視窗修正）。
+- `chief`：村長圖與角色資料、`docs/chief-dialogue-draft.md`（對話待老師審）。基於舊 main，可獨立合併。
+- `integrate`：main ＋ `stash` 防災包（已解衝突，專項測試全過；與上線版比對只差有意改的進城確認與新欄位 `stash`）。
+- `d1`（基於 integrate）：D1 章節框架（`chapters/index.json`、`tools/chapter_test.py`、假章節在 `tools/fixtures/chapters/`），與 integrate 比對 0 差異；另有 `docs/chapter-pack-format.md`、`docs/stage-d1-summary.md`、`docs/stage-d2-summary.md`。
+- 老師 10/2 已確認 D1 與「防災包先合併再做 D1」的順序；**D2 摘要待老師確認**。防災包文字（`docs/stash-text-review.md`）仍待審；要部署（推送）須老師說「推」。
+- 第三章素材包在 OneDrive：`健康與護理作業/115/多元選修/急救王國/第三章交付包/`（設計草案、題目與知識卡草稿、場景／角色／物件 PNG，含村長）；轉檔等 D3／D1 之後處理。
+
 ## 最新狀態（2026-10-01 晚，交接用；與下方舊敘述衝突時以本節為準）
 
 ### 已上線（main = origin/main，GitHub Pages）
