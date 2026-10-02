@@ -3,7 +3,7 @@
  * 章節開放時才載入；核心程式透過回傳的掛接點呼叫它。 */
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
-const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
+const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,orderQuiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
 const CHECKS=[{"id": "c_town", "scene": "ch2_town", "x": 900, "y": 430, "type": "ext", "ok": true, "where": "廣場消防隊門口（滅火器）"}, {"id": "c_smithy", "scene": "ch2_smithy", "x": 1200, "y": 470, "type": "ext", "ok": false, "where": "鐵匠鋪（滅火器）"}, {"id": "c_inn", "scene": "ch2_inn", "x": 420, "y": 450, "type": "alarm", "ok": true, "where": "旅館門口（警報器）"}, {"id": "c_inn2e", "scene": "ch2_inn2", "x": 347, "y": 627, "ix": 450, "iy": 720, "painted": true, "type": "ext", "ok": true, "where": "旅館二樓走廊（滅火器）"}, {"id": "c_inn2a", "scene": "ch2_inn2", "x": 331, "y": 407, "ix": 520, "iy": 580, "painted": true, "type": "alarm", "ok": false, "where": "旅館二樓走廊（警報器）"}];
 const FIRES=[[1250, 430], [1360, 520], [1160, 400]];
 function goal2(){const c=S.c;
@@ -31,12 +31,6 @@ async function coolGame(p,label){
         root.closest('.box').querySelectorAll('#dBtns button')[0].onclick=()=>{clearInterval(iv);fin('stop');};}});
     if(res>=15)return true;
     await say({p,html:`<p class="bad">才沖 ${res||0} 分鐘就停了，不夠久！</p><p>燙傷的熱會繼續往皮膚深處傷害，要用流動的冷水沖約 15 到 30 分鐘。</p>`,buttons:[{label:'再沖一次',primary:true}]});}}
-async function orderQuiz(p,title,steps,explain){
-  for(;;){const order=steps.map((x,i)=>i).sort(()=>Math.random()-.5);let got=[],ok=true;
-    const r=await say({p,who:title,html:`<p class="q">請依照正確順序點選：</p><div id="oq">${order.map(i=>`<button type="button" class="btn" data-o="${i}" style="margin:4px 0;width:100%">${steps[i]}</button>`).join('')}</div><p id="oqs" class="small"></p>`,buttons:[],
-      onRender:(root,fin)=>root.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{const i=+b.dataset.o;if(i!==got.length){ok=false;fin('wrong');return;}got.push(i);b.disabled=true;b.textContent=`${got.length}. ${steps[i]}`;root.querySelector('#oqs').textContent='正確，繼續！';if(got.length===steps.length)setTimeout(()=>fin('ok'),400);})});
-    if(r==='ok'){await say({p,html:`<p class="good">順序完全正確！</p><p>${explain}</p>`});return true;}
-    await say({p,html:`<p class="bad">順序不對喔。</p><p>${explain}</p>`,buttons:[{label:'再試一次',primary:true}]});}}
 async function extGame(p){
   await orderQuiz(p,'滅火器操作',['拉：拉開安全插銷','瞄：瞄準火焰底部','壓：壓下握把','掃：左右掃射'],'口訣「拉、瞄、壓、掃」。要瞄準火焰底部（燃燒的東西），不是火焰頂端或煙。');
   await quiz(p,'滅火時要瞄準哪裡？',['火焰的頂端','火焰底部（正在燃燒的東西）','上方的濃煙'],1,'要瞄準火焰底部，才能把燃燒中的東西覆蓋住。');}

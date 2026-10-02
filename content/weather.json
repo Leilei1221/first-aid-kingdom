@@ -21,5 +21,7 @@
       "name": "濃霧",
       "fore": "明天森林會起大霧，進入山林要特別小心。"
     }
-  }
+  },
+  "WILD_ON": false,
+  "DROWN_CHANCE": 0.35
 }

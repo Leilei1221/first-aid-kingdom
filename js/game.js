@@ -8,6 +8,7 @@ const CHAPTERS={};
 const CH_MODS={};  /* 章節 id → 章節程式的工廠函式，核心程式定義好之後才呼叫（見檔案最後的 FA） */
 const REGIONS={};  /* 章節宣告的地區（chapter.json 的 region）；綠葉谷（base）固定存在，見下方 BASE */  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
+const WILD_FORCE=DEBUG&&new URLSearchParams(location.search).get('wild')==='1';  /* 只有 #debug 的 ?wild=1 能在本機強制開啟野外項目 */
 const FORCE_OPEN=DEBUG?(new URLSearchParams(location.search).get('open')||'').split(','):[];
 const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
 const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
@@ -93,7 +94,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,SCENARIOS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,SCENARIOS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -111,6 +112,8 @@ const chBase=(name,...a)=>{for(const h of Object.values(CHH)){const r=h[name]&&h
 /* ================= 天氣：由老師發布（D5）或除錯入口排定，沒有隨機；沒有排定時整套不作用 ================= */
 const wxToday=()=>S.wx&&S.wx.day===S.day?S.wx.type:null;
 const wxTomorrow=()=>S.wxNext&&S.wxNext.day===S.day+1?S.wxNext.type:null;
+const wild=()=>WILD_ON||WILD_FORCE;  /* 野外項目（溺水、裝溪水、營火、阿鹿的支線）：內容審過後在 content/weather.json 的 WILD_ON 開啟 */
+const storyOf=id=>{const s=STORIES[id];return s&&(!s.draft||wild())?s:null;};  /* draft 的支線在 WILD 開啟前不出現 */
 const isOutdoor=id=>{const s=C.scenes[id];return s&&s.outdoor!=null?!!s.outdoor:OUTDOOR.includes(id);};
 const stormy=()=>['typhoon','flood'].includes(wxToday())||['typhoon','flood'].includes(wxTomorrow());  /* 船長停航 */
 /* 排定「明天」的天災；之後老師端（D5）發布的天災也走這裡 */
@@ -188,7 +191,9 @@ async function faint(reason){
   const wk=curRegion(),wh=wk.home||BASE.home;
   S.scene=wh.scene;S.pos={x:wh.at[0],y:wh.at[1]};buildScene();S.sta=Math.round(STA_MAX*.6);
   S.coins-=MED_FEE;refresh();$('fade').classList.remove('on');checkpoint();
-  if(reason==='mushroom'){
+  if(reason==='exhaust'){
+    await say({p:wk===BASE?'grandpa':(wk.shopkeeper||'grandpa'),html:'<p>你終於醒了！你的體力完全耗盡，倒在路邊，是大家把你抬回來的。醫生說你太累了，要好好休息。</p><p class="small">體力不足的時候不要勉強行動，身上可以帶些方糖和開水。</p>'});}
+  else if(reason==='mushroom'){
     await play((wk.wake&&wk.wake.mushroom)||'faint.mushroomWake');
     S.cards.mushroom=true;S.cards.faint=true;
     await play('faint.mushroomCards');}
@@ -319,7 +324,7 @@ function npcHasNews(id){
   if(S.event&&S.event.day===S.day&&!S.event.done&&EVENTS.find(e=>e.id===S.event.id).who===id&&S.step>=7)return true;
   if(S.scene==='ruin'&&VICTIMS[id]&&!S.rescue[id])return true;
   if(id==='hunt')return !S.f.hunter;if(id==='guard')return S.scene==='gate'&&!S.f.guard;
-  if(STORIES[id]&&S.hearts[id]>=3&&!S.story[id]&&S.step>=7)return true;
+  if(storyOf(id)&&S.hearts[id]>=3&&!S.story[id]&&S.step>=7)return true;
   if(id==='grandpa'&&((S.step>=10&&!S.f.p3)||(S.castleDone&&!S.f.final)))return true;
   if(id==='grandpa')return S.step===0||S.step===6||S.step===9&&kitCount('ration')>0;
   if(id==='wood')return S.step===1||(S.step===5&&!S.flagWoodDone);
@@ -357,6 +362,7 @@ function interactables(){const s=sc(),L=[];
   if(s.rocks)rocksOf(s).forEach((r,i)=>{if(rockState(i).hp>0)L.push({kind:'rock',x:r[0],y:r[1],label:S.tools.pick||S.tools.pick2?'敲礦石':'需要十字鎬',i});});
   if(s.plots&&S.step>=10){L.push({kind:'bench',x:600,y:300,label:S.bench?'使用工作台':'建造工作台'});if(S.harvester)L.push({kind:'bin',x:1450,y:390,label:`收納箱（${S.bin}）`});}
   if(s.plots)(S.spr||[]).forEach(si=>L.push({kind:'spr',x:SPRINKLER_SLOTS[si].x,y:SPRINKLER_SLOTS[si].y,label:'移動灑水器',si}));
+  if(S.scene==='river'&&wild())L.push({kind:'riverwater',x:560,y:505,label:'裝溪水'});
   {const h=hookOf(S.scene);if(h&&h.things)L.push(...h.things(S.scene));}
   (S.forage[S.scene]||[]).forEach((f,i)=>L.push({kind:'pick',x:f.x,y:f.y,label:'撿起來',i}));
   return L;}
@@ -392,6 +398,7 @@ async function doAction(){
     else if(it.kind==='well')await well();
     else if(it.kind==='fire')await boil();
     else if(it.kind==='gatedoor')await gateDoor();
+    else if(it.kind==='riverwater')await riverWater();
     else if(hookOf(S.scene)&&hookOf(S.scene).acts&&hookOf(S.scene).acts[it.kind])await hookOf(S.scene).acts[it.kind](it);
     if(S.pendingFaint){const r=S.pendingFaint;S.pendingFaint=null;await faint(r);}
   }catch(e){if(!e||!e.rescueAbort)throw e;}  /* 救援失敗：整段流程到此結束 */
@@ -405,6 +412,8 @@ async function go(to,at){
   await sleep(RM?0:60);$('fade').classList.remove('on');
   if(to==='forest'&&S.step===3&&(S.earned>=60||S.matLv+S.kitLv>0))S.step=4;
   if(to==='forest'&&S.step===4){await sleep(RM?0:300);await accident();}
+  await wxEnter();
+  if(S.pendingFaint&&!go._f){const r=S.pendingFaint;S.pendingFaint=null;go._f=true;try{await faint(r);}finally{go._f=false;}}
 }
 function hit(e){e.classList.remove('hit');void e.offsetWidth;e.classList.add('hit');}
 async function chop(t){
@@ -541,7 +550,7 @@ async function gift(id){
   else{addHeart(id,1);await say({p:id,html:`<p>${L.normTxt||'謝謝你！'}</p>`});}
 }
 async function chatMenu(id,text){
-  const st=STORIES[id];
+  const st=storyOf(id);
   if(st&&S.hearts[id]>=3&&!S.story[id]&&S.step>=7){
     for(const t of st.text)await say({p:id,html:`<p>${t}</p>`});
     const c=CARDS[st.card];S.cards[st.card]=true;S.story[id]=true;
@@ -761,7 +770,15 @@ async function merchantMenu(){
 
 /* 問答 */
 /* 問答。fatal={scenario,bad:[選項編號]}：選到嚴重錯誤的選項 → 救援失敗（顯示正確知識卡、回到早上），並用 RESCUE_ABORT 中止呼叫端整段流程 */
+/* 依序點選步驟（燒燙傷、滅火器、救溺…共用） */
+async function orderQuiz(p,title,steps,explain){
+  for(;;){const order=steps.map((x,i)=>i).sort(()=>Math.random()-.5);let got=[],ok=true;
+    const r=await say({p,who:title,html:`<p class="q">請依照正確順序點選：</p><div id="oq">${order.map(i=>`<button type="button" class="btn" data-o="${i}" style="margin:4px 0;width:100%">${steps[i]}</button>`).join('')}</div><p id="oqs" class="small"></p>`,buttons:[],
+      onRender:(root,fin)=>root.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{const i=+b.dataset.o;if(i!==got.length){ok=false;fin('wrong');return;}got.push(i);b.disabled=true;b.textContent=`${got.length}. ${steps[i]}`;root.querySelector('#oqs').textContent='正確，繼續！';if(got.length===steps.length)setTimeout(()=>fin('ok'),400);})});
+    if(r==='ok'){await say({p,html:`<p class="good">順序完全正確！</p><p>${explain}</p>`});return true;}
+    await say({p,html:`<p class="bad">順序不對喔。</p><p>${explain}</p>`,buttons:[{label:'再試一次',primary:true}]});}}
 const RESCUE_ABORT={rescueAbort:true};
+window.addEventListener('unhandledrejection',e=>{if(e.reason&&e.reason.rescueAbort)e.preventDefault();});  /* 救援失敗的中止訊號沒人接時（例如除錯直接呼叫）不要當成錯誤 */
 async function quiz(p,q,opts,ans,explain,w,fatal){
   for(;;){const i=await say({p,wound:w,hideCap:true,html:`<p class="q">${q}</p>`,buttons:opts.map(o=>({label:o}))});
     if(fatal&&i!==ans&&fatal.bad.includes(i)){const sc=SCENARIOS[fatal.scenario];await rescueFail({scenario:fatal.scenario,choice:opts[i],intro:sc.intro,cardKey:sc.card});throw RESCUE_ABORT;}
@@ -1034,6 +1051,52 @@ async function rescueFail({scenario,choice,intro,cardKey}){
   save();if(window.FACloud)FACloud.flush();
 }
 
+/* ================= 天災與野外事件（D4）：天災由老師發布（D5）或除錯入口排定；野外項目（溺水、裝溪水）在 WILD 開啟前不出現 ================= */
+async function retreatIndoor(){const h=curRegion().home||BASE.home;await go(h.scene,curRegion()===BASE?SCENES.home.spawn:h.at);}
+async function wxEnter(){
+  const t=wxToday();S.wxHit=S.wxHit||{};
+  if(t==='typhoon'&&isOutdoor(S.scene)&&!S.wxHit[S.scene]){S.wxHit[S.scene]=true;
+    const i=await say({p:'hero',html:'<p class="bad">狂風暴雨！樹枝被吹得劈啪作響，招牌在搖晃……</p>',buttons:[{label:'馬上回到室內避難',primary:true},{label:'趁現在趕快把事情做完'}]});
+    if(i===0){await retreatIndoor();return;}
+    await quiz('hero','被困在戶外，暫時回不了家，要躲在哪裡？',['大樹下面，可以擋雨','廣告招牌旁邊','就近進入堅固的建築物；遠離大樹、招牌、電線和河邊'],2,CARDS.typhoon.text,undefined,{scenario:'typhoon',bad:[0,1]});S.cards.typhoon=true;
+    if(kitCount('raincoat')<1){S.sta=Math.max(0,S.sta-20);refresh();
+      await say({p:'hero',html:'<p>沒有雨衣，全身都濕透了，開始不停發抖……</p><p class="small">體力 -20</p>'});
+      await quiz('hero','全身濕透、一直發抖，該怎麼辦？',['繼續工作，動一動就不冷了','到避風處換下濕衣服、擦乾、保暖，喝點溫熱的飲料','喝一點酒暖暖身子'],1,CARDS.hypothermia.text,undefined,{scenario:'hypothermia',bad:[0,2]});S.cards.hypothermia=true;
+      if(S.sta<=0)S.pendingFaint='exhaust';}
+    else await say({p:'hero',html:'<p>還好有穿雨衣，身體保持乾燥。</p>'});}
+  if(t==='flood'&&S.scene==='river'&&!S.wxHit.river){S.wxHit.river=true;
+    await say({p:'hero',html:'<p class="bad">溪水變得又混濁又急，水面漂著樹枝，上游傳來低沉的轟隆聲……</p>'});
+    await quiz('hero','看到這些徵兆，該怎麼做？',['走到橋上看清楚一點','沿著溪谷往下游跑','立刻往溪流兩側的高處撤離'],2,CARDS.flood.text,undefined,{scenario:'flood',bad:[0,1]});S.cards.flood=true;
+    await say({p:'hero',html:'<p>你爬上河谷旁的高地。不久，一道混著泥沙的洪水轟隆沖過河谷……</p><p class="small">今天河谷太危險，先回村子吧。</p>'});
+    await go('village',[1540,380]);}
+  if(t==='fog'&&S.scene==='forest'&&!S.wxHit.forest){S.wxHit.forest=true;
+    await say({p:'hero',html:'<p>濃霧越來越厚，四周的樹看起來都一樣……回村子的路在哪裡？</p>'});
+    await quiz('hero','在濃霧中迷路了，第一步該怎麼做？',['憑感覺一直往前走，總會走出去','停下來、保持冷靜，留在原地，發出求救訊號','往看起來比較亮的地方跑'],1,CARDS.lost.text);S.cards.lost=true;
+    const has=kitCount('whistle')>0;
+    const i=await say({p:'hero',html:has?'<p>背包裡有哨子。</p>':'<p class="small">如果有哨子就好了……</p>',buttons:has?[{label:'吹哨子，三短聲一組',primary:true},{label:'大聲喊救命'}]:[{label:'大聲喊救命',primary:true}]});
+    if(has&&i===0){await say({p:'wood',html:'<p>我聽到哨子聲了！你在那裡別動，我過去找你！</p>'});}
+    else{S.sta=Math.max(0,S.sta-15);refresh();await say({p:'wood',html:'<p>……喊了好久，喉嚨都啞了，我才聽到你的聲音。下次記得帶哨子！</p><p class="small">體力 -15</p>'});if(S.sta<=0)S.pendingFaint='exhaust';}
+    S.cards.signal=true;await say({p:'hero',html:`<div class="card"><b>${CARDS.signal.title}</b><p>${CARDS.signal.text}</p></div>`});
+    await go('village',[890,860]);}
+  if(!t&&S.scene==='river'&&S.f.p3&&!S.f.drown&&wild()&&Math.random()<DROWN_CHANCE){S.f.drown=true;try{
+    await say({p:'kid',html:'<p class="bad">救命啊！小芽在溪邊玩水，腳一滑被沖進溪裡了！</p>'});
+    const i=await say({p:'hero',html:'<p class="q">你不太會游泳，要怎麼救她？</p>',buttons:[{label:'立刻跳下水去救'},{label:'大聲呼救、叫人打 119，找樹枝伸給她、拋出能漂浮的東西'}]});
+    if(i===0){await rescueFail({scenario:'drowning',choice:'立刻跳下水去救',intro:SCENARIOS.drowning.intro,cardKey:SCENARIOS.drowning.card});throw RESCUE_ABORT;}
+    await say({p:'hero',html:'<p class="good">你把一根長樹枝伸過去，小芽抓住後被拉上了岸！</p>'});
+    await orderQuiz('hero','救溺五步驟',['叫：大聲呼救','叫：打 119','伸：用竹竿、樹枝伸給他','拋：拋出能漂浮的東西','划：利用船具划過去'],CARDS.cross.text);
+    S.cards.cross=true;addHeart('kid',1);
+  }catch(e){if(e&&e.rescueAbort)S.f.drown=false;throw e;}}  /* 救援失敗後這件事要能重來 */
+}
+function wxTick(){if(busy||$('game').hidden)return;const t=wxToday();
+  if(t==='typhoon'&&['home','shop','ch2_inn2','ch2_smithy'].includes(S.scene)&&!S.wxEye&&S.wx.day===S.day){S.wxEye=S.day;busy=true;stopInput();
+    (async()=>{try{await say({p:'hero',html:'<p>咦？外面的風雨突然停了，天空好像還露出了一點藍色……颱風走了嗎？</p>',buttons:[{label:'太好了，出門看看！'},{label:'再等等，先聽聽收音機的消息'}]}).then(async i=>{
+      await say({p:curRegion()===BASE?'grandpa':(curRegion().shopkeeper||'grandpa'),html:`<p class="${i===1?'good':'bad'}">${i===1?'做得對！':'等一下！'}</p><p>這是颱風眼經過，風雨暫停只是暫時的，另一半的暴風很快就會來！</p>`});S.cards.typhoon=true;});}finally{busy=false;save();refresh();}})();}}
+setInterval(wxTick,15000);
+async function riverWater(){
+  if(matFree()<=0){await say({p:'hero',html:'<p class="warn">素材袋已經滿了。</p>'});return;}
+  if(wxToday()==='flood'){await say({p:'hero',html:'<p class="bad">溪水暴漲，太危險了！</p>'});return;}
+  if(!await useSta(2))return;S.mat.rawwater=(S.mat.rawwater||0)+1;toast('裝了一桶溪水（要煮沸才能喝）');
+  if(!S.cards.riverwater){S.cards.riverwater=true;await say({p:'hero',html:`<div class="card"><b>${CARDS.riverwater.title}</b><p>${CARDS.riverwater.text}</p></div><p class="good">獲得知識卡</p>`});}}
 /* ================= 啟動 ================= */
 async function startScene(){busy=false;if(S.step===0&&S.day===1)checkpoint();if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}}
 S=load()||newState();
@@ -1047,9 +1110,9 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,curRegion,regionOf,hearts,
+  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,orderQuiz,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
