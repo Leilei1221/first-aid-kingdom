@@ -81,6 +81,21 @@ chapters/ch3/
 - 住處放一個 `{"kind":"stash","x":..,"y":..,"label":"防災包"}`，防災包就能放在這裡。防災包是**一個物件**：位置 `S.stashAt`（`base`＝爺爺家、地區 id、`carry`＝帶在身上）；章節的出發流程（例如搭船）呼叫 `stashDepart()` 詢問「要帶上防災包嗎」。
 - 傷口圖：對話與題目可帶 `"wound":"bee"`（key 見 `content/wounds.json`，圖是 `assets/w_<key>.webp`）。
 
+### 章節程式（選用）：`chapter.js`
+
+`chapter.json` 加 `"script":"chapter.js"`，檔案 `export default function(FA){ ... return {掛接點} }`。只在章節開放時載入；載入或初始化失敗時只停用該章。`FA` 提供 `S`（存檔）、`say`、`quiz`、`play`、`lines`、`go`、`toast`、`nextDay`、`addHeart`、`kitCount`、`takeKit`、`stashDepart` 等；章節程式不直接碰核心變數。可回傳的掛接點：
+
+| 掛接點 | 作用 |
+|---|---|
+| `build(sceneId,H,{sprite,npcEls})` | 場景建好後加動態圖（火、煙、受困者） |
+| `things(sceneId)` | 額外的互動物件 `[{kind,x,y,label,...}]` |
+| `acts` | `{kind: async(it)=>...}`：場景 `things` 裡自訂 `kind` 的動作（kind 要有 `ch2_` 前綴，避免和核心的 `door`、`board` 等撞名） |
+| `talk(id)` | 跟 NPC 說話；有處理就回傳 Promise，沒處理回傳 `undefined` |
+| `goal()`／`news(id)` | 章節地區內的目標文字、NPC 頭上驚嘆號 |
+| `goalBase()`／`newsBase(id)`／`grandpaFinal()` | 綠葉谷（序章）完成後的接點：目標、爺爺的驚嘆號、爺爺的信 |
+
+其他欄位：角色加 `"heart":true` 會自動有好感度欄位；場景加 `"region":"base"` 表示它雖屬這章但算綠葉谷地區（如漁港）；礦坑場景用 `rocks:[[x,y],...]` 與 `ore:{img,rubble,mat,txt}`（礦石種類）；`items.json` 可含 `MATS`（素材，key 要有前綴）。
+
 ## 4. 交付檢查清單（Co-work 自查）
 
 - [ ] 所有 id 都有 `ch3_` 前綴，沒有與序章重複。
