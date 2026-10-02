@@ -130,6 +130,22 @@ async def story_tests(ctx, url):
     await talk(page, 'ch2_appr')  # 五項都完成後，跟消防隊長以外的人說話就會出現救援報告
     check('救援報告：第二章完成、5 顆星', await st(page, 'S.c.done === true && S.c.stars === 5'), await st(page, 'JSON.stringify(S.c)'))
     check('第二章劇情沒有頁面錯誤', not errs, str(errs)); await page.close()
+async def electric_fatal(ctx, url):
+    page, errs = await boot(ctx, url)
+    await page.evaluate("() => { const S = window.__fa.S; S.c.letter = true; S.c.inn = true; S.coins = 500; }")
+    await goto(page, 'ch2_smithy', 835, 860)
+    await page.evaluate("() => { window.__fa.talk('ch2_appr'); }"); await page.wait_for_selector('#dBtns button')
+    await page.click('#dBtns button:first-child')  # 過去看看
+    for _ in range(12):
+        txt = await page.inner_text('#dText')
+        if '第一步該怎麼做' in txt: break
+        await page.click('#dBtns button:first-child'); await page.wait_for_timeout(200)
+    await page.locator('#dBtns button').nth(0).click()  # 立刻抓住他的手把他拉開 ＝ 嚴重錯誤
+    texts = await drive(page, limit=12)
+    allt = '\n'.join(texts)
+    check('觸電時直接抓手拉開：救援失敗（電流也通過你的身體）', '電流也通過你的身體' in allt, allt[:200])
+    check('救援失敗：扣救援費 200、觸電事件沒有被標成完成', await st(page, 'S.coins') == 300 and await st(page, '!S.c.elec'), await st(page, 'JSON.stringify([S.coins, S.c.elec])'))
+    check('觸電測試沒有頁面錯誤', not errs, str(errs)); await page.close()
 async def stash_trip(ctx, url):
     page, errs = await boot(ctx, url)
     await page.evaluate("() => { const S = window.__fa.S; S.c.letter = true; S.kit = []; S.stash = ['ration@50', 'ration@50', 'ration@50', 'water', 'water', 'water']; S.coins = 200; S.day = 3; }")
@@ -203,6 +219,7 @@ async def main(url):
         await page.close()
         await plain_exit_tests(ctx, url)
         await story_tests(ctx, url)
+        await electric_fatal(ctx, url)
         await stash_trip(ctx, url)
         await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
