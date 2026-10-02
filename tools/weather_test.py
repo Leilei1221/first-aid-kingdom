@@ -16,7 +16,9 @@ async def boot(ctx, url, extra=''):
     await page.wait_for_timeout(500)
     return page, errs
 async def go(page, scene, x, y):
-    await page.evaluate(f"() => window.__fa.go({json.dumps(scene)}, [{x}, {y}])"); await page.wait_for_timeout(700)
+    # 這裡只測天氣效果：先把各場景的天災事件標成「已觸發」，免得跳出對話（事件本身在 wild_test.py 測）
+    await page.evaluate("() => { const S = window.__fa.S; S.wxHit = Object.assign(S.wxHit || {}, {village: true, forest: true, river: true, farm: true, ch2_town: true}); }")
+    await page.evaluate(f"() => {{ window.__fa.go({json.dumps(scene)}, [{x}, {y}]); }}"); await page.wait_for_timeout(900)
     await page.evaluate("() => window.__fa.refresh()")
 async def cls(page): return await page.evaluate("() => [...document.getElementById('view').classList].filter(c => ['rain','storm','fog'].includes(c)).sort()")
 async def main(url):
@@ -49,7 +51,7 @@ async def main(url):
         check('再隔一天：颱風結束', await page.evaluate("() => window.__fa.wxToday()") is None)
         await go(page, 'village', 1045, 330)
         check('颱風結束後效果關閉', await cls(page) == [], str(await cls(page)))
-        await page.evaluate("() => window.__fa.go('ch2_port', [1000, 600])"); await page.wait_for_timeout(700)
+        await page.evaluate("() => { window.__fa.go('ch2_port', [1000, 600]); }"); await page.wait_for_timeout(700)
         await page.evaluate("() => { window.__fa.talk('ch2_capt'); }"); await page.wait_for_selector('#dText')
         txt = await page.inner_text('#dText')
         check('天氣好了：船長賣票', '買票上船' in await page.inner_text('#dBtns'), txt)
