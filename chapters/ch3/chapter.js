@@ -3,6 +3,7 @@
  * 帶在身上的防災包視為旅行行李、颱風或豪雨時停航、每晚睡醒建立存檔點。
  * D2-1：第 1 節（安全、反應、呼吸判斷、求救）。知識卡與題目全是 draft，文字照老師審核中的草稿，章節開放前必須審過。
  * CPR 按壓、吹氣、AED、章末事件尚未加入，等老師審核。 */
+import * as R from './rhythm.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {RM,STA_MAX,$,say,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
@@ -70,11 +71,57 @@ async function lesson1(){
   await say({p:'hero',html:'<p class="good">第 1 節完成！</p><p class="small">接下來的壓胸、人工呼吸與 AED 練習，之後才會開放。</p>'});
 }
 
+/* ---------- 第 2 節：救生站假人（知識卡 K2-1～K2-3、題目 Q2-1～Q2-8、按壓節拍＋換手；數字計算在 rhythm.js） ---------- */
+const MANI={x:1110,y:640};
+const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
+let LAST=null;  /* 最近一次練習的記錄（不存檔；本階段只記錄、不判定 E4） */
+async function rhythmGame(){
+  const T=Object.assign({},R.DEFAULTS,DEBUG&&window.__ch3Tune||{});
+  const taps=[];let fatigueMs=0,swapped=false,after=0;
+  const r=await say({p:'hero',who:'按壓練習',html:`<p class="small">跟著節拍燈點「壓」（或按空白鍵）；目標每分鐘 100 至 120 下。手臂累了就換手。</p>
+    <div style="display:flex;gap:14px;align-items:center;justify-content:center;margin:8px 0">
+      <div id="rb" style="width:34px;height:34px;border-radius:50%;background:#5BD18B;opacity:.25;transition:opacity .12s"></div>
+      <button id="rp" type="button" class="btn primary" style="min-width:150px;min-height:64px;font-size:1.5em;touch-action:manipulation">壓</button>
+      <div id="rr" style="min-width:96px;font-weight:bold">—</div></div>
+    <div style="height:12px;background:#E4DCCB;border-radius:6px;overflow:hidden"><div id="rf" style="height:100%;width:0;background:#C0392B;transition:width .1s"></div></div>
+    <p class="small" id="rm">手臂狀態：還有力氣</p>
+    <div style="display:flex;gap:8px"><button id="rs" type="button" class="btn" disabled style="flex:1">換手</button><button id="re" type="button" class="btn" style="flex:1">結束練習</button></div>`,buttons:[],
+    onRender:(root,fin)=>{
+      const $q=id=>root.querySelector('#'+id),done=v=>{clearInterval(tick);clearInterval(beat);document.removeEventListener('keydown',key);fin(v);};
+      const tap=()=>{const t=performance.now();if(taps.length){const g=t-taps[taps.length-1];if(g<=T.pauseGapMs)fatigueMs+=g;}
+        taps.push(t);if(swapped&&++after>=T.afterSwap)return done('done');
+        const b=R.rateBand(R.recentRate(taps)),rate=R.recentRate(taps);
+        $q('rr').textContent=rate==null?'—':`${rate} 下／分`;$q('rr').style.color=b==='ok'?'#2F7D4F':'#C0392B';
+        if(b)$q('rr').textContent+=b==='slow'?'・太慢':b==='fast'?'・太快':'・剛好';};
+      const key=e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)tap();}};
+      $q('rp').addEventListener('pointerdown',e=>{e.preventDefault();tap();});
+      document.addEventListener('keydown',key);
+      $q('re').onclick=()=>done('stop');
+      $q('rs').onclick=()=>{swapped=true;fatigueMs=0;after=0;$q('rs').disabled=true;$q('rm').innerHTML='<span class="good">換手！新的施救者接手，趕快接著壓。</span>';};
+      const beat=setInterval(()=>{const b=$q('rb');b.style.opacity=1;setTimeout(()=>b.style.opacity=.25,120);},60000/R.GUIDE_BPM);
+      const tick=setInterval(()=>{const f=Math.min(1,fatigueMs/(T.fatigueSec*1000));$q('rf').style.width=Math.round(f*100)+'%';
+        if(!swapped){$q('rs').disabled=f<1;$q('rm').textContent=f>=1?'手臂痠了，該換手了！':'手臂狀態：還有力氣';}
+        if(taps.length&&performance.now()-taps[taps.length-1]>T.pauseGapMs&&!swapped)$q('rm').textContent='中斷了，快繼續壓！';},100);}});
+  return {taps,stats:R.stats(taps,T),why:r};}
+async function lesson2(){
+  const go1=await say({p:'hero',html:'<p>救生站裡擺著一具 CPR 練習假人。</p>',buttons:[{label:'開始練習',primary:true},{label:'先離開'}]});
+  if(go1!==0)return;
+  await ask('ch3_q2_1');await ask('ch3_q2_3');await ask('ch3_q2_4');await showCard('ch3_k2_1');
+  await ask('ch3_q2_2');await ask('ch3_q2_5');await showCard('ch3_k2_2');
+  await say({p:'hero',html:'<p>換你練習了。跟著節拍燈按壓，累了就換手。</p>',buttons:[{label:'開始',primary:true}]});
+  const g=await rhythmGame();LAST=g.stats;if(DEBUG)window.__ch3Last=g;
+  const st=g.stats,sec=ms=>(ms/1000).toFixed(1);
+  await say({p:'hero',html:st.n<2?'<p>這次沒有按壓紀錄。</p>':`<p><b>練習紀錄</b>（遊戲內的實際時間）</p><p>按壓 ${st.n} 下，平均 ${st.avgRate==null?'—':st.avgRate} 下／分（目標 100 至 120）<br>最長一次中斷：${sec(st.longestPauseMs)} 秒<br>按壓時間占比：${st.ratio==null?'—':Math.round(st.ratio*100)}%</p><p class="small">這些數字目前只是紀錄，之後會用在章末評分。</p>`});
+  await ask('ch3_q2_6');await ask('ch3_q2_7');await ask('ch3_q2_8');await showCard('ch3_k2_3');
+  await say({p:'hero',html:'<p class="good">第 2 節完成！</p><p class="small">下一步是人工呼吸與 AED，之後才會開放。</p>'});
+}
+
 return {
-  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:lesson1},
+  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:lesson1,ch3_mani:lesson2},
   build(sceneId,H,{sprite}){
-    if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}},
-  things(sceneId){return sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:[];},
+    if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}
+    if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;}},
+  things(sceneId){return sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'}]:[];},
   talk(id){if(id==='ch3_captain')return captTalk();}
 };
 }
