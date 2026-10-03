@@ -6,6 +6,7 @@
 ```
 index.html            介面與樣式
 js/game.js            遊戲邏輯
+preview.html          老師預覽入口（不放連結）：點場景直接進去看，不存進度、不連雲端；網址 index.html?preview=場景id
 content/*.json        所有內容資料（知識卡、事件、對話、數值、場景…），審核與修改都在這裡
   dialogues.json      劇情與教學對話（say）、小測驗（quizzes）、目標與提示文字（text）
 data/walks.json       各場景可行走遮罩

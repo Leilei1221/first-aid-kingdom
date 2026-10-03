@@ -10,6 +10,9 @@ const REGIONS={};  /* 章節宣告的地區（chapter.json 的 region）；綠�
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
 const WILD_FORCE=DEBUG&&new URLSearchParams(location.search).get('wild')==='1';  /* 只有 #debug 的 ?wild=1 能在本機強制開啟野外項目 */
 const RELIEF_FORCE=DEBUG&&new URLSearchParams(location.search).get('relief')==='1';  /* 本機測試用：?relief=1 */
+/* 老師預覽（preview.html 進來；?preview=場景id）：全部章節強制開放、用獨立的存檔 key、不連雲端，所以不會碰到任何人的進度。 */
+const PREVIEW=new URLSearchParams(location.search).get('preview');
+if(PREVIEW)window.FACloud=undefined;
 const FORCE_OPEN=DEBUG?(new URLSearchParams(location.search).get('open')||'').split(','):[];
 const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
 const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
@@ -20,10 +23,10 @@ async function loadChapters(){
   for(const e of idx){
     /* 章節一律載入；「開放」在執行時判斷（老師端設定 → 沒設定用 index.json 的 open），所以老師開關章節不用重新整理 */
     const ch={id:e.id,name:e.name,def:!!e.open,loaded:false};
-    Object.defineProperty(ch,'open',{enumerable:true,get(){return ch.loaded&&(FORCE_OPEN.includes(ch.id)||flagOn(ch.id,ch.def));}});  /* FORCE_OPEN：只有 #debug 的 ?open=ch2 才會強制開放（本機測試用） */
+    Object.defineProperty(ch,'open',{enumerable:true,get(){return ch.loaded&&(!!PREVIEW||FORCE_OPEN.includes(ch.id)||flagOn(ch.id,ch.def));}});  /* FORCE_OPEN：只有 #debug 的 ?open=ch2 才會強制開放（本機測試用） */
     CHAPTERS[e.id]=ch;
     const cached=(window.FACloud&&FACloud.cachedControl&&FACloud.cachedControl()||{}).flags||{};
-    const preload=ch.def||FORCE_OPEN.includes(e.id)||cached[e.id]===true;  /* 預載圖片只給可能開放的章節，沒開放的章節等到真的進去才載 */
+    const preload=ch.def||!!PREVIEW||FORCE_OPEN.includes(e.id)||cached[e.id]===true;  /* 預載圖片只給可能開放的章節，沒開放的章節等到真的進去才載 */
     try{
       const meta=await getJSON(`${CH_BASE}/${e.id}/chapter.json`),f=meta.files||{};
       /* 章節程式（選用）：只在章節開放時載入；default export 是 (FA)=>掛接點 */
@@ -66,7 +69,7 @@ try{
 }
 startBtn.disabled=false;startBtn.textContent=startLabel;
 const WALKS=C.walks;
-const KEY='fa-kingdom-p1-v1',MW=1672,MH=941,CELL=8;
+const KEY=PREVIEW?'fa-kingdom-preview':'fa-kingdom-p1-v1',MW=1672,MH=941,CELL=8;
 const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 document.documentElement.style.setProperty('--world',`url(${A.world})`);
 document.getElementById('titleHero').src=A.hero;
@@ -142,6 +145,9 @@ function autoWater(){let n=0;(S.spr||[]).map(i=>SPRINKLER_SLOTS[i]).forEach(sl=>
 let S=null,busy=true;
 function newState(){return migrate({v:1,scene:'home',pos:{x:1010,y:690},coins:0,earned:0,matCap:10,matLv:0,kit:[],kitCap:4,kitLv:0,
   step:0,trees:{},chests:{},cards:{},hearts:{grandpa:0,kid:0,wood:0,shopkeeper:0},req:[0,2,1],reqNext:3,started:false,ctrl:'joy',warned:{}});}
+/* 老師預覽的起始狀態：第二章已完成、錢與背包夠用，直接站在指定場景 */
+function previewState(sceneId){const o=newState();Object.assign(o,{step:10,coins:500,day:5,kitCap:14,started:true});o.f=Object.assign({},o.f,{p3:true,final:true});o.c=Object.assign({},o.c,{letter:true,done:true});
+  const sc=SCENES[sceneId];if(sc){o.scene=sceneId;o.pos={x:sc.spawn[0],y:sc.spawn[1]};}return o;}
 function migrate(o){
   if(!o.mat)o.mat={wood:o.wood||0,stone:0,gold:0,wheat:0,seed:0};delete o.wood;
   if(o.day==null)o.day=1;if(o.sta==null)o.sta=STA_MAX;
@@ -1170,11 +1176,12 @@ async function riverWater(){
   if(!S.cards.riverwater){S.cards.riverwater=true;await say({p:'hero',html:`<div class="card"><b>${CARDS.riverwater.title}</b><p>${CARDS.riverwater.text}</p></div><p class="good">獲得知識卡</p>`});}}
 /* ================= 啟動 ================= */
 async function startScene(){busy=false;if(S.step===0&&S.day===1)checkpoint();if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}}
-S=load()||newState();
+S=PREVIEW?previewState(PREVIEW):(load()||newState());
 if(S.started)$('btnStart').textContent='繼續冒險';
 $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen().then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>toast('這台裝置不支援全螢幕'));else toast('這台裝置不支援全螢幕');}catch(e){toast('這台裝置不支援全螢幕');}};
 $('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
+if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 initCloud();
 async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`});}  /* 連續幾句同一個人說的話（章節程式用） */
 /* ================= 章節程式用的核心功能（FA）：章節程式只能透過它存取遊戲，不直接碰核心變數 ================= */
