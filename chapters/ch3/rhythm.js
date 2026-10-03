@@ -22,3 +22,10 @@ export function stats(taps,{pauseGapMs=DEFAULTS.pauseGapMs}={}){
   const compTaps=n-1-pauses.length;
   return {n,totalMs:total,compMs:comp,ratio:total>0?comp/total:null,pauses,longestPauseMs:pauses.length?Math.max(...pauses):0,
     avgRate:comp>0?Math.round(60000*compTaps/comp):null};}
+
+/* ---------- 吹氣（第 3 節）：按住「吹氣」讓胸部起伏條上升，放開時依高度判定 ----------
+ * 草稿只說「吹到胸部明顯起伏即可，避免吹太少或吹太多」，沒有數字；「每次約 1 秒」待老師核對原文，所以這裡不用秒數判定。
+ * 目標區與上升速度只是遊戲手感的參數，老師試玩後再調。 */
+export const BREATH={low:40,high:70,perSec:50};
+export const breathLevel=(heldMs,perSec=BREATH.perSec)=>Math.min(100,Math.max(0,heldMs/1000*perSec));
+export const breathBand=(level,{low,high}=BREATH)=>level<low?'low':level>high?'high':'ok';

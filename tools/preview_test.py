@@ -33,6 +33,23 @@ async def main(url):
             await page.wait_for_function("document.getElementById('game') && !document.getElementById('game').hidden", timeout=60000); await page.wait_for_timeout(700)
             body = await page.inner_text('body')
             check(f'?preview={sid}：場景名「{name}」', name in body, body[:80])
+        # --- 預覽進場景時，章節的圖與互動點要出得來（章節程式要先掛上去才開始）
+        for sid, img in [('ch3_market', 'ch3_fisher_down'), ('ch3_rescue', 'ch3_cpr_manikin'), ('ch3_rescue', 'ch3_face_shield')]:
+            await page.goto(f'{root}/index.html?preview={sid}')
+            await page.wait_for_function("document.getElementById('game') && !document.getElementById('game').hidden", timeout=60000); await page.wait_for_timeout(900)
+            check(f'?preview={sid}：場景裡有 {img} 的圖', await page.evaluate("(k) => !!document.querySelector('img[src*=' + JSON.stringify(k) + ']')", img))
+        await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
+        page2 = await ctx.new_page(); page2.on('pageerror', lambda e: errs.append(str(e)))
+        await page2.goto(f'{root}/index.html?preview=ch3_market#debug')
+        page, page_old = page2, page
+        await page.wait_for_function("window.__fa && !document.getElementById('game').hidden", timeout=60000); await page.wait_for_timeout(900)
+        await page.evaluate("() => { window.__fa.S.pos = {x: 790, y: 650}; }"); await page.wait_for_timeout(300)
+        check('?preview=ch3_market：走近倒地者有「查看倒地的人」', await page.inner_text('#act') == '查看倒地的人')
+        await page.evaluate("() => { window.__fa.S.pos = {x: 747, y: 725}; }"); await page.wait_for_timeout(300)
+        check('走近路人：互動鈕「對話」', await page.inner_text('#act') == '對話', await page.inner_text('#act'))
+        await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(500)
+        txt = await page.inner_text('#dText') if not await page.evaluate("() => document.getElementById('dialog').hidden") else ''
+        check('跟沒有對白的路人說話：會出現對話框（……、之後才會加入），不是沒反應', '……' in txt and '之後才會加入' in txt, txt)
         # --- 不碰一般存檔
         saved = await page.evaluate("() => localStorage.getItem('fa-kingdom-p1-v1')")
         check('預覽後，一般存檔（含學生進度）原封不動', saved == SENTINEL, str(saved)[:80])

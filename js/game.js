@@ -1181,7 +1181,6 @@ if(S.started)$('btnStart').textContent='繼續冒險';
 $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen().then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>toast('這台裝置不支援全螢幕'));else toast('這台裝置不支援全螢幕');}catch(e){toast('這台裝置不支援全螢幕');}};
 $('btnStart').onclick=()=>{if($('btnStart').disabled)return;S.started=true;document.body.classList.add('playing');$('title').hidden=true;$('game').hidden=false;buildScene();save();startScene();};
 requestAnimationFrame(loop);
-if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 initCloud();
 async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`});}  /* 連續幾句同一個人說的話（章節程式用） */
 /* ================= 章節程式用的核心功能（FA）：章節程式只能透過它存取遊戲，不直接碰核心變數 ================= */
@@ -1191,6 +1190,8 @@ try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER
   kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
+/* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
+if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
 if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},flagOn,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
