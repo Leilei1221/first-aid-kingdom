@@ -1,10 +1,11 @@
 /* 第三章「港口藍堡」章節程式（D1：航行）。
  * 航行規則沿用第二章：船票 30 金幣、兩晚、每晚 1 包乾糧＋1 瓶開水（自己帶，沒有就向船長買，沒錢扣體力）、
  * 帶在身上的防災包視為旅行行李、颱風或豪雨時停航、每晚睡醒建立存檔點。
- * 教學內容（知識卡、題目、CPR／AED 小遊戲）尚未加入，等老師審核。 */
+ * D2-1：第 1 節（安全、反應、呼吸判斷、求救）。知識卡與題目全是 draft，文字照老師審核中的草稿，章節開放前必須審過。
+ * CPR 按壓、吹氣、AED、章末事件尚未加入，等老師審核。 */
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
-const {RM,STA_MAX,$,say,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint}=FA;
+const {RM,STA_MAX,$,say,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
 const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const FISHPORT='ch3_fishport',HARBOR='ch3_harbor',CABIN='ch3_ship_cabin';
 const deckOf=left=>left>=2?'ch3_ship_day':'ch3_ship_dusk';  /* 第一天白天、第二天黃昏 */
@@ -45,8 +46,35 @@ async function bed(){
   await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});
   await go(to,ARRIVE[to]);
 }
+/* ---------- 第 1 節：市集倒地者（知識卡 K1-1～K1-3、題目 Q1-1～Q1-7；資料在 dialogues.json、cards.json） ---------- */
+const DOWN={x:790,y:575},PASSERS=['ch3_by_red','ch3_by_blue','ch3_by_green'],PNAME={ch3_by_red:'紅衣路人',ch3_by_blue:'藍衣路人',ch3_by_green:'綠衣路人'};
+let QZ=null;
+const quizzes=async()=>QZ||(QZ=(await (await fetch(new URL('dialogues.json',import.meta.url))).json()).quizzes);
+const showCard=async k=>{const first=!S.cards[k];S.cards[k]=true;await say({p:'hero',html:`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>${first?'<p class="good">獲得知識卡</p>':''}`});};
+const ask=async key=>{const z=(await quizzes())[key];await quiz('hero',z.q,z.opts,z.ans,z.explain);};
+const askOrder=async key=>{const z=(await quizzes())[key];await orderQuiz('hero',z.title,z.steps,z.explain);};
+async function assign(job,left){  /* 指派路人：點選要請誰；對錯標準就是 Q1-5（指定特定的人），這裡不另設判定 */
+  const i=await say({p:'hero',html:`<p>用手指向一個人：「你，${job}！」</p>`,buttons:left.map(id=>({label:PNAME[id]}))});
+  const id=left[i];await say({p:id,html:`<p>（點點頭，立刻照做。）</p>`});return id;}
+async function lesson1(){
+  const go1=await say({p:'hero',html:'<p>有人倒在港口市集的空地上，旁邊圍了幾個人，沒有人動手。</p>',buttons:[{label:'上前查看',primary:true},{label:'先離開'}]});
+  if(go1!==0)return;
+  await ask('ch3_q1_1');await showCard('ch3_k1_1');
+  await ask('ch3_q1_2');await ask('ch3_q1_3');await showCard('ch3_k1_2');
+  await ask('ch3_q1_4');
+  await say({p:'hero',html:'<p>傷者沒有反應，也沒有正常呼吸。圍觀的人只是看著。</p>'});
+  await ask('ch3_q1_5');
+  const a=await assign('請打 119',PASSERS);
+  await assign('請去拿 AED',PASSERS.filter(x=>x!==a));
+  await ask('ch3_q1_6');await askOrder('ch3_q1_7');await showCard('ch3_k1_3');
+  await say({p:'hero',html:'<p class="good">第 1 節完成！</p><p class="small">接下來的壓胸、人工呼吸與 AED 練習，之後才會開放。</p>'});
+}
+
 return {
-  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder},
+  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:lesson1},
+  build(sceneId,H,{sprite}){
+    if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}},
+  things(sceneId){return sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:[];},
   talk(id){if(id==='ch3_captain')return captTalk();}
 };
 }

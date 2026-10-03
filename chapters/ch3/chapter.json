@@ -5,7 +5,9 @@
   "scenes": "scenes.json",
   "characters": "characters.json",
   "ratios": "ratios.json",
-  "walks": "walks.json"
+  "walks": "walks.json",
+  "cards": "cards.json",
+  "dialogues": "dialogues.json"
  },
  "assets": [
   "ch3_aed_cabinet",
