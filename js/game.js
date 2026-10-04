@@ -8,11 +8,12 @@ const CHAPTERS={};
 const CH_MODS={};  /* 章節 id → 章節程式的工廠函式，核心程式定義好之後才呼叫（見檔案最後的 FA） */
 const REGIONS={};  /* 章節宣告的地區（chapter.json 的 region）；綠葉谷（base）固定存在，見下方 BASE */  /* 章節 id → {id,name,open}；沒開放的章節只留這筆紀錄，用來擋住入口 */
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
-const WILD_FORCE=DEBUG&&new URLSearchParams(location.search).get('wild')==='1';  /* 只有 #debug 的 ?wild=1 能在本機強制開啟野外項目 */
-const RELIEF_FORCE=DEBUG&&new URLSearchParams(location.search).get('relief')==='1';  /* 本機測試用：?relief=1 */
-/* 老師預覽（preview.html 進來；?preview=場景id）：全部章節強制開放、用獨立的存檔 key、不連雲端，所以不會碰到任何人的進度。 */
+/* 老師預覽（preview.html 進來；?preview=場景id）：全部章節強制開放、用獨立的存檔 key、不連雲端，所以不會碰到任何人的進度。
+   預覽還可以加 &wild=1（野外項目）、&relief=1（村長救災物資）、&wx=typhoon／flood／fog（排一則「明天」的天災，睡一覺就發生）。 */
 const PREVIEW=new URLSearchParams(location.search).get('preview');
 if(PREVIEW)window.FACloud=undefined;
+const WILD_FORCE=(DEBUG||!!PREVIEW)&&new URLSearchParams(location.search).get('wild')==='1';  /* 只有 #debug 或老師預覽的 ?wild=1 能強制開啟野外項目 */
+const RELIEF_FORCE=(DEBUG||!!PREVIEW)&&new URLSearchParams(location.search).get('relief')==='1';  /* 本機測試或老師預覽：?relief=1 */
 const FORCE_OPEN=DEBUG?(new URLSearchParams(location.search).get('open')||'').split(','):[];
 const CH_BASE=(DEBUG&&new URLSearchParams(location.search).get('chbase'))||'chapters';  /* 只有 #debug 才能換章節資料夾（測試用） */
 const chOf=id=>Object.keys(CHAPTERS).find(c=>(id||'').startsWith(c+'_'))||null;
@@ -147,7 +148,9 @@ function newState(){return migrate({v:1,scene:'home',pos:{x:1010,y:690},coins:0,
   step:0,trees:{},chests:{},cards:{},hearts:{grandpa:0,kid:0,wood:0,shopkeeper:0},req:[0,2,1],reqNext:3,started:false,ctrl:'joy',warned:{}});}
 /* 老師預覽的起始狀態：第二章已完成、錢與背包夠用，直接站在指定場景 */
 function previewState(sceneId){const o=newState();Object.assign(o,{step:10,coins:500,day:5,kitCap:14,started:true});o.f=Object.assign({},o.f,{p3:true,final:true});o.c=Object.assign({},o.c,{letter:true,done:true});
-  const sc=SCENES[sceneId];if(sc){o.scene=sceneId;o.pos={x:sc.spawn[0],y:sc.spawn[1]};}return o;}
+  const sc=SCENES[sceneId];if(sc){o.scene=sceneId;o.pos={x:sc.spawn[0],y:sc.spawn[1]};}
+  const wx=new URLSearchParams(location.search).get('wx');if(wx&&WX[wx])o.wxNext={type:wx,day:o.day+1};
+  return o;}
 function migrate(o){
   if(!o.mat)o.mat={wood:o.wood||0,stone:0,gold:0,wheat:0,seed:0};delete o.wood;
   if(o.day==null)o.day=1;if(o.sta==null)o.sta=STA_MAX;

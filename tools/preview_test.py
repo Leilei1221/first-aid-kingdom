@@ -50,6 +50,33 @@ async def main(url):
         await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(500)
         txt = await page.inner_text('#dText') if not await page.evaluate("() => document.getElementById('dialog').hidden") else ''
         check('跟沒有對白的路人說話：會出現對話框（……、之後才會加入），不是沒反應', '……' in txt and '之後才會加入' in txt, txt)
+        # --- 野外項目、救災物資、天災（預覽參數）
+        async def preview(q):
+            pg = await ctx.new_page(); await pg.goto(f'{root}/index.html?preview={q}#debug')
+            await pg.wait_for_function("window.__fa && !document.getElementById('game').hidden", timeout=60000); await pg.wait_for_timeout(700); return pg
+        pg = await preview('river&wild=1')
+        await pg.evaluate("() => { window.__fa.S.pos = {x: 560, y: 520}; }"); await pg.wait_for_timeout(300)
+        check('?preview=river&wild=1：河邊有「裝溪水」（野外項目開啟）', await pg.inner_text('#act') == '裝溪水', await pg.inner_text('#act'))
+        await pg.close()
+        pg = await preview('river')
+        await pg.evaluate("() => { window.__fa.S.pos = {x: 560, y: 520}; }"); await pg.wait_for_timeout(300)
+        check('?preview=river（沒有 wild=1）：河邊沒有「裝溪水」', await pg.inner_text('#act') != '裝溪水')
+        await pg.close()
+        pg = await preview('home&wx=typhoon')
+        r = await pg.evaluate("() => { const S = window.__fa.S, d = S.day; const next = JSON.stringify(S.wxNext); window.__fa.nextDay(); return {next, d, day: S.day, wx: S.wx && S.wx.type}; }")
+        check('?preview=home&wx=typhoon：排了明天的颱風，睡一覺（換日）就發生', r['wx'] == 'typhoon' and f'"day":{r["d"] + 1}' in r['next'], str(r))
+        await pg.close()
+        pg = await preview('home&wx=flood&relief=1')
+        r = await pg.evaluate("() => { const S = window.__fa.S; window.__fa.nextDay(); return {wx: S.wx && S.wx.type, relief: !!S.relief}; }")
+        check('?preview=home&wx=flood&relief=1：山洪來襲後啟動村長救災物資', r == {'wx': 'flood', 'relief': True}, str(r))
+        await pg.close()
+        pg = await preview('home&wx=flood')
+        r = await pg.evaluate("() => { const S = window.__fa.S; window.__fa.nextDay(); return {wx: S.wx && S.wx.type, relief: !!S.relief}; }")
+        check('?preview=home&wx=flood（沒有 relief=1）：山洪會來，但不啟動救災物資', r == {'wx': 'flood', 'relief': False}, str(r))
+        await pg.close()
+        pg = await preview('home&wx=bogus')
+        check('?preview=home&wx=不存在的天災：不排任何天災', await pg.evaluate("() => window.__fa.S.wxNext == null"))
+        await pg.close()
         # --- 不碰一般存檔
         saved = await page.evaluate("() => localStorage.getItem('fa-kingdom-p1-v1')")
         check('預覽後，一般存檔（含學生進度）原封不動', saved == SENTINEL, str(saved)[:80])
