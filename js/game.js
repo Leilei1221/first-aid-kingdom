@@ -526,7 +526,7 @@ function nextDay(){
   if(S.step>=7&&Math.random()<.6){const pool=EVENTS.filter(e=>!e.after||S.cards[e.after]);const ev=pool[Math.floor(Math.random()*pool.length)];S.event={id:ev.id,day:S.day};evMsg+=`<p class="warn">聽說${PEOPLE[ev.who].name}好像出了點小意外……</p>`;}
   if(S.quake&&S.castleDone){S.quake=false;evMsg+='<p class="small">落石之城修復完成了。</p>';}
   const exp=S.kit.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length,expS=S.stash.filter(k=>base(k)==='ration'&&expiry(k)===S.day-1).length;
-  return `${wxMsg}${grown?`<p>有 ${grown} 塊田的小麥長大了。</p>`:''}${dry?`<p class="warn">有 ${dry} 塊田昨天沒澆水，所以沒有長大。</p>`:''}${exp?`<p class="bad">背包裡有 ${exp} 包乾糧過期了，已經不能吃。</p>`:''}${expS?`<p class="bad">家裡的防災包有 ${expS} 包乾糧過期了，已經不能吃。</p>`:''}${auto?`<p>自動灑水器幫 ${auto} 塊田澆好水了。</p>`:''}${harv?`<p>自動收割機收了小麥 ×${harv}，放在收納箱裡。</p>`:''}${evMsg}<p class="small">委託板有新的工作，路邊也出現了新的東西可以撿。</p>`;
+  return `${wxMsg}${grown?`<p>有 ${grown} 塊田的小麥長大了。</p>`:''}${dry?`<p class="warn">有 ${dry} 塊田昨天沒澆水，所以沒有長大。</p>`:''}${exp?`<p class="bad">背包裡有 ${exp} 包乾糧過期了，已經不能吃。</p>`:''}${expS?`<p class="bad">家裡的防災包有 ${expS} 包乾糧過期了，已經不能吃。</p>`:''}${auto?`<p>自動灑水器幫 ${auto} 塊田澆好水了。</p>`:''}${harv?`<p>自動收割機收了小麥 ×${harv}，放在收納箱裡。</p>`:''}${S.harvester&&S.bin>0?`<p>收納箱裡現在有小麥 ×${S.bin}。要到農田最右邊的收納箱拿出來，才會放進素材袋，之後才能賣或做乾糧。</p>`:''}${evMsg}<p class="small">委託板有新的工作，路邊也出現了新的東西可以撿。</p>`;
 }
 async function pickUp(i){
   const f=S.forage[S.scene][i],P=PICK[f.t];
