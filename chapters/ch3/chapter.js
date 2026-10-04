@@ -69,7 +69,7 @@ async function lesson1(){
   const a=await assign('請打 119',PASSERS);
   await assign('請去拿 AED',PASSERS.filter(x=>x!==a));
   await ask('ch3_q1_6');await askOrder('ch3_q1_7');await showCard('ch3_k1_3');
-  await say({p:'hero',html:'<p class="good">第 1 節完成！</p><p class="small">接下來的壓胸、人工呼吸與 AED 練習，之後才會開放。</p>'});
+  await say({p:'hero',html:'<p class="good">第 1 節完成！</p><p class="small">接下來到港口的救生站，練習壓胸（第 2 節）、人工呼吸與 AED（第 3 節）。</p>'});
 }
 
 /* ---------- 第 2 節：救生站假人（知識卡 K2-1～K2-3、題目 Q2-1～Q2-8、按壓節拍＋換手；數字計算在 rhythm.js） ---------- */
@@ -114,7 +114,7 @@ async function lesson2(){
   const st=g.stats,sec=ms=>(ms/1000).toFixed(1);
   await say({p:'hero',html:st.n<2?'<p>這次沒有按壓紀錄。</p>':`<p><b>練習紀錄</b>（遊戲內的實際時間）</p><p>按壓 ${st.n} 下，平均 ${st.avgRate==null?'—':st.avgRate} 下／分（目標 100 至 120）<br>最長一次中斷：${sec(st.longestPauseMs)} 秒<br>按壓時間占比：${st.ratio==null?'—':Math.round(st.ratio*100)}%</p><p class="small">這些數字目前只是紀錄，之後會用在章末評分。</p>`});
   await ask('ch3_q2_6');await ask('ch3_q2_7');await ask('ch3_q2_8');await showCard('ch3_k2_3');
-  await say({p:'hero',html:'<p class="good">第 2 節完成！</p><p class="small">下一步是人工呼吸與 AED，之後才會開放。</p>'});
+  await say({p:'hero',html:'<p class="good">第 2 節完成！</p><p class="small">下一步：在救生站，假人旁的面罩練習人工呼吸、牆邊練習 AED（第 3 節）。</p>'});
 }
 
 /* ---------- 第 3 節：人工呼吸 30:2（假人旁的 CPR 面罩）與 AED（牆上的壁掛箱）。兩個練習各自獨立 ---------- */
@@ -159,7 +159,7 @@ async function lesson3Breath(){
   await ask('ch3_q3_1');await ask('ch3_q3_2');await showCard('ch3_k3_1');
   await say({p:'hero',html:'<p>換你練習了：打開呼吸道，吹 2 次氣。</p>',buttons:[{label:'開始',primary:true}]});
   const g=await breathGame();if(DEBUG)window.__ch3Breath=g;
-  await say({p:'hero',html:g.good>=2?`<p class="good">人工呼吸練習完成！</p><p class="small">一共吹了 ${g.attempts.length} 次，其中 ${g.good} 次吹到胸部明顯起伏。</p>`:'<p>這次沒有練完。想再練的話，隨時可以再來。</p>'});
+  await say({p:'hero',html:g.good>=2?`<p class="good">人工呼吸練習完成！</p><p class="small">${S.cards.ch3_k3_3?'':'接著可以到牆邊練習 AED。'}一共吹了 ${g.attempts.length} 次，其中 ${g.good} 次吹到胸部明顯起伏。</p>`:'<p>這次沒有練完。想再練的話，隨時可以再來。</p>'});
 }
 async function lesson3Aed(){
   const go1=await say({p:'hero',html:'<p>牆上掛著一個 AED。</p>',buttons:[{label:'開始練習',primary:true},{label:'先離開'}]});
@@ -179,6 +179,14 @@ return {
     if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;
       const m=sprite('shadow','',MASK.x,MASK.y,Math.round(H*.2),RATIO.ch3_face_shield);m.querySelector('img').src=A.ch3_face_shield;}},
   things(sceneId){return sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'}]:[];},
+  goalBase:()=>onShip()?'在船上度過兩個晚上：到艙口進船艙，在床上睡覺。':undefined,  /* 船上的場景算綠葉谷地區，目標要走這個接點 */
+  goal(){  /* 畫面上方「目標」：依知識卡判斷做到哪一節，告訴玩家下一步去哪裡 */
+    if(onShip())return '在船上度過兩個晚上：到艙口進船艙，在床上睡覺。';
+    if(!S.cards.ch3_k1_3)return '到港口市集，查看倒在地上的人（第 1 節）。';
+    if(!S.cards.ch3_k2_3)return '到港口的救生站，在假人旁練習按壓（第 2 節）。';
+    if(!S.cards.ch3_k3_1)return '在救生站，假人旁的面罩可以練習人工呼吸（第 3 節）。';
+    if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習（第 3 節）。';
+    return '第 3 節都練完了！港口市集的整合演練（第 4 節）之後才會加入。';},
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */
 };
