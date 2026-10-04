@@ -49,6 +49,7 @@ async function bed(){
   await go(to,ARRIVE[to]);
 }
 /* ---------- 第 1 節：市集倒地者（知識卡 K1-1～K1-3、題目 Q1-1～Q1-7；資料在 dialogues.json、cards.json） ---------- */
+{const q=new URLSearchParams(location.search);if(q.get('preview')&&q.get('lessons')==='1')['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3','ch3_k4_4'].forEach(k=>{S.cards[k]=true;});}  /* 老師預覽用：不影響一般進入 */
 const DOWN={x:790,y:575},PASSERS=['ch3_by_red','ch3_by_blue','ch3_by_green'],PNAME={ch3_by_red:'紅衣路人',ch3_by_blue:'藍衣路人',ch3_by_green:'綠衣路人'};
 let QZ=null;
 const quizzes=async()=>QZ||(QZ=(await (await fetch(new URL('dialogues.json',import.meta.url))).json()).quizzes);
@@ -119,21 +120,22 @@ async function lesson2(){
 
 /* ---------- 第 3 節：人工呼吸 30:2（假人旁的 CPR 面罩）與 AED（牆上的壁掛箱）。兩個練習各自獨立 ---------- */
 const MASK={x:1010,y:700},AED_AT={x:1192,y:512};
-async function breathGame(){
-  const att=[];let open=false,good=0,t0=null,tick=null;
-  await say({p:'hero',who:'人工呼吸練習',html:`<p class="small">先壓額抬下巴打開呼吸道；再按住「吹氣」，讓胸部起伏到綠色範圍內放開（也可以按住空白鍵）。要吹 2 次。</p>
+async function breathGame(opt={}){  /* opt.finale：章末版——沒有步驟提示、不能中途結束，沒先壓額抬下巴就吹的那一次不算 */
+  const fin0=!!opt.finale;const att=[];let open=false,good=0,t0=null,tick=null;
+  await say({p:'hero',who:'人工呼吸練習',html:`<p class="small">${fin0?'按住「吹氣」，讓胸部起伏到綠色範圍內放開（也可以按住空白鍵）。':'先壓額抬下巴打開呼吸道；再按住「吹氣」，讓胸部起伏到綠色範圍內放開（也可以按住空白鍵）。要吹 2 次。'}</p>
     <div style="height:22px;background:#E4DCCB;border-radius:11px;position:relative;overflow:hidden;margin:8px 0"><div style="position:absolute;left:${R.BREATH.low}%;width:${R.BREATH.high-R.BREATH.low}%;top:0;bottom:0;background:rgba(91,209,139,.55)"></div><div id="bf" style="height:100%;width:0;background:#4A9BD9;opacity:.9"></div></div>
-    <p class="small" id="bm">先壓額抬下巴。</p>
-    <div style="display:flex;gap:8px"><button id="ba" type="button" class="btn" style="flex:1">壓額抬下巴</button><button id="bh" type="button" class="btn primary" disabled style="flex:1;touch-action:manipulation">按住吹氣</button></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button id="bd" type="button" class="btn" disabled style="flex:1">回到壓胸</button><button id="be" type="button" class="btn" style="flex:1">結束練習</button></div>`,buttons:[],
+    <p class="small" id="bm">${fin0?'':'先壓額抬下巴。'}</p>
+    <div style="display:flex;gap:8px"><button id="ba" type="button" class="btn" style="flex:1">壓額抬下巴</button><button id="bh" type="button" class="btn primary" ${fin0?'':'disabled'} style="flex:1;touch-action:manipulation">按住吹氣</button></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button id="bd" type="button" class="btn" disabled style="flex:1">回到壓胸</button><button id="be" type="button" class="btn" style="flex:1;${fin0?'display:none':''}">結束練習</button></div>`,buttons:[],
     onRender:(root,fin)=>{
       const $q=id=>root.querySelector('#'+id),msg=h=>{$q('bm').innerHTML=h;};
       const done=v=>{clearInterval(tick);document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);fin(v);};
-      const start=()=>{if(!open||t0!=null||good>=2)return;t0=performance.now();msg('吹氣中……到綠色範圍就放開。');tick=setInterval(()=>{$q('bf').style.width=R.breathLevel(performance.now()-t0)+'%';},40);};
-      const stop=()=>{if(t0==null)return;const lv=R.breathLevel(performance.now()-t0),band=R.breathBand(lv);t0=null;clearInterval(tick);$q('bf').style.width=lv+'%';att.push({level:Math.round(lv),band});
-        if(band==='ok'){good++;msg(`<span class="good">胸部明顯起伏，很好！</span>（${good}/2）`);}
+      const start=()=>{if((!open&&!fin0)||t0!=null||good>=2)return;t0=performance.now();msg('吹氣中……到綠色範圍就放開。');tick=setInterval(()=>{$q('bf').style.width=R.breathLevel(performance.now()-t0)+'%';},40);};
+      const stop=()=>{if(t0==null)return;const lv=R.breathLevel(performance.now()-t0),band=R.breathBand(lv);t0=null;clearInterval(tick);$q('bf').style.width=lv+'%';att.push({level:Math.round(lv),band,noAirway:!open});
+        if(fin0&&!open)msg('<span class="bad">沒有先打開呼吸道，這次不算。</span>');
+        else if(band==='ok'){good++;msg(`<span class="good">胸部明顯起伏，很好！</span>（${good}/2）`);}
         else msg(`<span class="bad">${band==='low'?'吹得太少，胸部沒有明顯起伏。':'吹太多了。吹到胸部明顯起伏就好，不是越用力越好。'}</span>再試一次。`);
-        if(good>=2){$q('bh').disabled=true;$q('bd').disabled=false;msg('<span class="good">2 次都吹好了！</span>吹氣完立刻回到壓胸，不要拖延。');}};
+        if(good>=2){$q('bh').disabled=true;$q('bd').disabled=false;msg(fin0?'<span class="good">2 次都吹好了。</span>':'<span class="good">2 次都吹好了！</span>吹氣完立刻回到壓胸，不要拖延。');}};
       const kd=e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)start();}},ku=e=>{if(e.code==='Space'){e.preventDefault();stop();}};
       document.addEventListener('keydown',kd);document.addEventListener('keyup',ku);
       $q('ba').onclick=()=>{open=true;$q('ba').disabled=true;$q('bh').disabled=false;msg('呼吸道打開了。按住「吹氣」。');};
@@ -181,11 +183,84 @@ async function lesson4(){
   await say({p:'hero',html:'<p>接下來是分工練習：現場有人倒下，你要怎麼分配？</p>',buttons:[{label:'開始',primary:true}]});
   await ask('ch3_d1');await ask('ch3_d2');await ask('ch3_d3');
   await askOrder('ch3_q4_5');await ask('ch3_q4_6');await showCard('ch3_k4_4');
-  await say({p:'hero',html:'<p class="good">第 4 節完成！</p><p class="small">港口市集的整合演練（章末）之後才會加入。</p>'});
+  await say({p:'hero',html:'<p class="good">第 4 節完成！</p><p class="small">接下來回港口市集，查看倒在地上的人，進行章末整合演練。</p>'});
+}
+
+/* ---------- 章末整合演練（第 4 節 4b）：判斷 → 分工 → 壓胸＋吹氣 → AED 送到 → 續壓與換手 → 救護人員接手 → 結算 ----------
+ * 沒有逐步提示：沒有「太慢／太快」文字、沒有「該換手了」文字、吹氣沒有步驟說明。
+ * 完成、星數、心跳之匣記在現有的 S.c（各章進度）：S.c.ch3_done、S.c.ch3_stars、S.c.ch3_box，不新增存檔欄位。
+ * 嚴重錯誤（E1～E7）只記錄，不觸發救援失敗；記在 window.__ch3Finale（只有 #debug）。 */
+async function askScored(key,rec){  /* 同核心的 quiz（答錯顯示說明、可再選），另外記錄答錯幾次與選到的嚴重錯誤 */
+  const z=(await quizzes())[key];let wrong=0;
+  for(;;){
+    const i=await say({p:'hero',hideCap:true,html:`<p class="q">${z.q}</p>`,buttons:z.opts.map(o=>({label:o}))});
+    const ok=i===z.ans;
+    if(!ok){wrong++;if(z.severe&&(!z.severeOpts||z.severeOpts.includes(i)))rec.errs.push({key,code:z.severe,opt:i});}
+    await say({p:'hero',html:`<p class="${ok?'good':'bad'}">${ok?'處置正確！':'這個做法不對。'}</p><p>${z.explain}</p>`,buttons:[{label:ok?'繼續':'再選一次',primary:true}]});
+    if(ok)return wrong;}}
+async function finaleCompress(ses,T,{count,untilSwap}){  /* 一段按壓：count 下就結束；或換手後再壓 afterSwap 下就結束。回傳 'done' 或 'stop'（停止急救） */
+  let n=0;
+  return say({p:'hero',who:'章末演練',html:`<div style="display:flex;gap:14px;align-items:center;justify-content:center;margin:8px 0">
+      <div id="rb" style="width:34px;height:34px;border-radius:50%;background:#5BD18B;opacity:.25;transition:opacity .12s"></div>
+      <button id="rp" type="button" class="btn primary" style="min-width:150px;min-height:64px;font-size:1.5em;touch-action:manipulation">壓</button></div>
+    <div style="height:12px;background:#E4DCCB;border-radius:6px;overflow:hidden"><div id="rf" style="height:100%;width:0;background:#C0392B;transition:width .1s"></div></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button id="rs" type="button" class="btn" disabled style="flex:1">換手</button><button id="re" type="button" class="btn" style="flex:1">停止急救</button></div>`,buttons:[],
+    onRender:(root,fin)=>{
+      const $q=id=>root.querySelector('#'+id),done=v=>{clearInterval(tick);clearInterval(beat);document.removeEventListener('keydown',key);fin(v);};
+      const tap=()=>{const t=performance.now(),L=ses.taps;if(L.length){const g=t-L[L.length-1];if(g<=T.pauseGapMs)ses.fatigueMs+=g;}
+        L.push(t);ses.sinceSwap++;n++;
+        if(untilSwap?(ses.swaps>=1&&ses.sinceSwap>=T.afterSwap):n>=count)done('done');};
+      const key=e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)tap();}};
+      $q('rp').addEventListener('pointerdown',e=>{e.preventDefault();tap();});document.addEventListener('keydown',key);
+      $q('re').onclick=()=>done('stop');
+      $q('rs').onclick=()=>{ses.swaps++;ses.fatigueMs=0;ses.sinceSwap=0;$q('rs').disabled=true;};
+      const beat=setInterval(()=>{const b=$q('rb');b.style.opacity=1;setTimeout(()=>b.style.opacity=.25,120);},60000/R.GUIDE_BPM);
+      const tick=setInterval(()=>{const f=Math.min(1,ses.fatigueMs/(T.fatigueSec*1000));$q('rf').style.width=Math.round(f*100)+'%';$q('rs').disabled=f<1;},100);}});}
+async function finale(){
+  const T=Object.assign({},R.DEFAULTS,R.FINALE,DEBUG&&window.__ch3Tune||{});
+  const ses={taps:[],segs:[],fatigueMs:0,swaps:0,sinceSwap:0,cut(){if(ses.taps.length)ses.segs.push(ses.taps);ses.taps=[];}};
+  const rec={errs:[],judgeWrong:[],d1Wrong:null,breath:null,aedErrors:null,stopped:false};
+  const go1=await say({p:'hero',who:'章末演練',html:'<p>市集的人群圍了過來，有人倒在地上。這是章末演練，不會有逐步提示。</p>',buttons:[{label:'開始',primary:true},{label:'先離開'}]});
+  if(go1!==0)return;
+  for(const k of ['ch3_q1_1','ch3_q1_2','ch3_q1_3'])rec.judgeWrong.push(await askScored(k,rec));
+  rec.d1Wrong=await askScored('ch3_d1',rec);
+  const a=await assign('請打 119',PASSERS);const b=await assign('請去拿 AED',PASSERS.filter(x=>x!==a));
+  const run=async()=>{
+    if(await finaleCompress(ses,T,{count:T.compress})==='stop')return false;
+    rec.breath=await breathGame({finale:true});
+    if(await finaleCompress(ses,T,{count:T.compress})==='stop')return false;
+    ses.cut();  /* 接下來路人接手壓胸，你操作 AED：不算你的中斷時間 */
+    await say({p:b,html:'<p>（把 AED 放在傷者旁邊。）</p>'});
+    await askScored('ch3_d2',rec);rec.aedErrors=(await aedGame()).errors;for(const e of ['E2','E4','E5'])rec.aedErrors.filter(x=>x.code===e).forEach(x=>rec.errs.push({key:'aed:'+x.step,code:x.code}));rec.aedErrors=rec.aedErrors.length;
+    if(await finaleCompress(ses,T,{untilSwap:true})==='stop')return false;
+    return true;};
+  const completed=await run();rec.stopped=!completed;if(rec.stopped)rec.errs.push({key:'stop',code:'E6'});
+  ses.cut();
+  if(completed)await say({p:'hero',html:'<p>救護人員到了，接手急救。</p>'});
+  const st=R.combine(ses.segs.map(x=>R.stats(x,T)));
+  if(st.longestPauseMs>T.pauseLimitMs)rec.errs.push({key:'pause',code:'E4'});
+  const sc=R.scoreFinale({judgeWrong:rec.judgeWrong,d1Wrong:rec.d1Wrong,stats:st,breath:rec.breath,aedErrors:rec.aedErrors==null?1:rec.aedErrors,stopped:rec.stopped},T.pauseLimitMs);
+  S.c=S.c||{};let box=false;
+  if(completed){S.c.ch3_done=true;S.c.ch3_stars=Math.max(S.c.ch3_stars||0,sc.total);if(!S.c.ch3_box){S.c.ch3_box=true;box=true;}}
+  if(DEBUG)window.__ch3Finale={rec,stats:st,score:sc,completed};
+  const mark=ok=>ok?'★':'☆',sec=ms=>(ms/1000).toFixed(1),br=rec.breath?rec.breath.attempts.slice(0,2).filter(x=>x.band==='ok'&&!x.noAirway).length:0;
+  await say({p:'hero',who:'章末演練結果',html:`<p><b>${completed?'演練完成':'演練中途停止'}</b>　${'★'.repeat(sc.total)+'☆'.repeat(5-sc.total)}（${sc.total}/5）</p>
+    <p>${mark(sc.stars.judge)} 判斷：三題第一次答對 ${rec.judgeWrong.filter(w=>w===0).length}/3<br>
+    ${mark(sc.stars.assign)} 求救與分工：分工題${rec.d1Wrong===0?'第一次就答對':`答錯 ${rec.d1Wrong} 次`}<br>
+    ${mark(sc.stars.quality)} 壓胸品質：平均 ${st.avgRate==null?'—':st.avgRate} 下／分（目標 100 至 120），最長一次中斷 ${sec(st.longestPauseMs)} 秒，按壓時間占比 ${st.ratio==null?'—':Math.round(st.ratio*100)}%<br>
+    ${mark(sc.stars.breathAed)} 人工呼吸與 AED：兩次吹氣第一次吹好 ${br}/2，AED 選過 ${rec.aedErrors==null?'—':rec.aedErrors} 次錯誤做法<br>
+    ${mark(sc.stars.keep)} 持續：${completed?'做到救護人員接手':'中途停止了急救'}</p>`});
+  if(box)await say({p:'hero',who:'神器',html:`<div style="text-align:center"><img src="${A.ch3_bls_box}" alt="心跳之匣" style="height:96px"></div><p class="good">獲得神器：心跳之匣（BLS 基礎急救包）</p>`});
+}
+async function downAct(){  /* 市集倒地的人：第 1～4 節都做完就多一個「章末演練」 */
+  const done=['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3','ch3_k4_4'].every(k=>S.cards[k]);
+  if(!done)return lesson1();
+  const i=await say({p:'hero',html:'<p>有人倒在港口市集的空地上。</p>',buttons:[{label:'章末演練',primary:true},{label:'複習第 1 節'},{label:'先離開'}]});
+  if(i===0)return finale();if(i===1)return lesson1();
 }
 
 return {
-  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:lesson1,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed},
+  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed},
   build(sceneId,H,{sprite}){
     if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}
     if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;
@@ -199,7 +274,8 @@ return {
     if(!S.cards.ch3_k3_1)return '在救生站，假人旁的面罩可以練習人工呼吸（第 3 節）。';
     if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習（第 3 節）。';
     if(!S.cards.ch3_k4_4)return '到港口，找救生員請教專線與防災（第 4 節）。';
-    return '第 4 節都完成了！港口市集的整合演練（章末）之後才會加入。';},
+    if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
+    return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`;},
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id==='ch3_lifeg'&&S.scene===HARBOR)return lesson4();
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */

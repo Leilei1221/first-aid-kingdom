@@ -11,7 +11,7 @@ SENTINEL = json.dumps({'v': 1, 'sentinel': 'student-save', 'scene': 'home', 'coi
 async def main(url):
     root = url.rsplit('/', 1)[0]
     html = (pathlib.Path(__file__).parent.parent / 'preview.html').read_text(encoding='utf-8')
-    links = re.findall(r'href="index\.html\?preview=([a-z0-9_]+)"', html)
+    links = re.findall(r'href="index\.html\?preview=([a-z0-9_]+)[&"]', html)
     check('preview.html：有場景連結且包含市集、救生站', len(links) >= 6 and {'ch3_market', 'ch3_rescue'} <= set(links), str(links))
     check('preview.html 不被搜尋引擎收錄（noindex）', 'name="robots" content="noindex"' in html)
     async with async_playwright() as p:
