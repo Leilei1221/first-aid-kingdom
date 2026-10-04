@@ -169,7 +169,19 @@ async function lesson3Aed(){
   const g=await aedGame();if(DEBUG)window.__ch3Aed=g;
   await say({p:'hero',html:`<p class="good">AED 練習完成！</p><p class="small">${g.errors.length?`練習中選過 ${g.errors.length} 次錯誤的做法，說明都看過了。`:'每一步都選對了。'}</p>`});
   await ask('ch3_q3_6');await ask('ch3_q3_7');await askOrder('ch3_q3_8');
-  await say({p:'hero',html:'<p class="good">第 3 節完成！</p><p class="small">下一步是港口市集的整合演練，之後才會開放。</p>'});
+  await say({p:'hero',html:'<p class="good">第 3 節完成！</p><p class="small">下一步：到港口找救生員（第 4 節）。</p>'});
+}
+
+/* ---------- 第 4 節：港口救生員（專線、防災、技能要回實體練習，加上分工決策題 D-1～D-3） ---------- */
+async function lesson4(){
+  const go1=await say({p:'hero',html:'<p>港口的救生員在這裡。</p>',buttons:[{label:'請教救生員（第 4 節）',primary:true},{label:'先離開'}]});
+  if(go1!==0)return;
+  await ask('ch3_q4_1');await showCard('ch3_k4_1');
+  await ask('ch3_q4_2');await ask('ch3_q4_3');await showCard('ch3_k4_2');
+  await say({p:'hero',html:'<p>接下來是分工練習：現場有人倒下，你要怎麼分配？</p>',buttons:[{label:'開始',primary:true}]});
+  await ask('ch3_d1');await ask('ch3_d2');await ask('ch3_d3');
+  await askOrder('ch3_q4_5');await ask('ch3_q4_6');await showCard('ch3_k4_4');
+  await say({p:'hero',html:'<p class="good">第 4 節完成！</p><p class="small">港口市集的整合演練（章末）之後才會加入。</p>'});
 }
 
 return {
@@ -186,8 +198,10 @@ return {
     if(!S.cards.ch3_k2_3)return '到港口的救生站，在假人旁練習按壓（第 2 節）。';
     if(!S.cards.ch3_k3_1)return '在救生站，假人旁的面罩可以練習人工呼吸（第 3 節）。';
     if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習（第 3 節）。';
-    return '第 3 節都練完了！港口市集的整合演練（第 4 節）之後才會加入。';},
+    if(!S.cards.ch3_k4_4)return '到港口，找救生員請教專線與防災（第 4 節）。';
+    return '第 4 節都完成了！港口市集的整合演練（章末）之後才會加入。';},
   talk(id){if(id==='ch3_captain')return captTalk();
+    if(id==='ch3_lifeg'&&S.scene===HARBOR)return lesson4();
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */
 };
 }
