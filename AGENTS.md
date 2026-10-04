@@ -16,31 +16,52 @@
 - 精簡、低維護，不引入不必要的框架；沒有建置步驟。
 - 對外發布動作（建 repo、推送、開啟服務、寫入資料庫）先問老師。不要把金鑰、service_role key 放進 repo。
 
-## ★ 目前狀態（2026-10-03 交班；與下方所有舊敘述衝突時，以本節為準）
+## ★ 目前狀態（2026-10-04 交班；與下方所有舊敘述衝突時，以本節為準）
 
-**一切都已推到 `origin/main`（`3e1510c`），本機沒有未推送的工作。** 舊分支（stash、chief、integrate、d1、d4、d5、ch3 等）都已併入 main，可忽略。
+**一切都已推到 `origin/main`（`b4e1a05`），本機沒有未推送的工作。** 舊分支（stash、chief、integrate、d1、d4、d5、ch3 等）都已併入 main，可忽略。
 
 ### 已上線（GitHub Pages）
-序章；防災包搬家；第二章（熔岩鍛造鎮）＋渡海（**預設開放**）；章節框架（`chapters/`）；世界地圖、傷口圖鑑；救援失敗（嚴重錯誤→正確知識卡→回早上存檔點）；天氣引擎；天災與野外事件；營火；村長救災物資；**老師端「班級控制」**；第三章骨架（8 場景＋航行，**預設關閉、無教學內容**）。
+序章；防災包搬家；第二章（熔岩鍛造鎮）＋渡海（**預設開放**）；章節框架（`chapters/`）；世界地圖、傷口圖鑑；救援失敗（嚴重錯誤→正確知識卡→回早上存檔點，救援費 **200 金幣**）；天氣引擎；天災與野外事件；營火；村長救災物資；**老師端「班級控制」**（2026-10-04 老師已在 Supabase 執行 `002_fa_class_control.sql`，老師端看得到開關；**尚未實測按下開關對學生端的效果**）；**老師預覽**（`preview.html`，見下）。
+- **第三章（港口藍堡）內容已做完，但全部 draft、章節預設關閉、學生看不到**：第 1～4 節＋章末整合演練。狀態、參數、待審項目都寫在 **`chapters/ch3/REVIEW.md`（先讀它）**。
 - 觸電題（第二章阿焰）選「直接抓手／潑水」會變成救援失敗（已上線）。
-- 救援費 **200 金幣**（老師確認）。
+
+### 第三章現況（`chapters/ch3/`）
+| 節 | 位置 | 內容 |
+|---|---|---|
+| 第 1 節 | 港口市集，倒地的漁夫 | 判斷（安全、反應、呼吸）、求救；Q1-1～Q1-7、K1-1～3、指派路人 |
+| 第 2 節 | 救生站，CPR 假人 | 按壓位置與深度速率；Q2-1～Q2-8、K2-1～3；按壓節拍遊戲（疲勞、換手），只記錄「最長中斷」「按壓時間占比」 |
+| 第 3 節 | 救生站，面罩與牆邊 AED | 30:2 與 AED；Q3-1～Q3-8、K3-1～3；吹氣小遊戲、5 步 AED 練習 |
+| 第 4 節 | 港口，救生員 | 專線、居家儲備、技能要回實體練習；Q4-1、2、3、5、6、D-1～3、K4-1、2、4（海嘯警報 K4-3、Q4-4 沒做） |
+| 章末 | 市集倒地者（第 1～4 節都做完才出現選項） | 判斷→分工→壓 30＋吹氣 2→再壓 30→AED→續壓換手→救護人員接手；五面向各 1 星；第一次完成取得「心跳之匣」 |
+- 資料：`cards.json`、`dialogues.json`（題目 `ch3_q*`、`ch3_d*`，每題有 `draft`、`note`、`severe`／`severeOpts`）；程式：`chapter.js`；計算：`rhythm.js`（節拍、吹氣、章末合併與星數）、`aed.js`（AED 步驟）。
+- **遊戲參數不是醫學數字**，都在 `rhythm.js` 最上方：節拍燈 110 下／分、疲勞條 30 秒、停 1.5 秒算中斷、吹氣條綠色範圍 40～70、每輪壓 30 下、換手後再壓 12 下。`FINALE.pauseLimitMs`＝10 秒是**老師的課堂規則**（只用在章末「壓胸品質」那顆星）。
+- 完成狀態記在既有 `S.c`：`ch3_done`、`ch3_stars`、`ch3_box`；**沒有新增頂層存檔欄位**。
+- **嚴重錯誤（E1–E7）只記錄、不觸發救援失敗**（記在 `window.__ch3Finale`，只有 #debug）：救援失敗說明草稿沒有，**不能自己寫**，要老師提供。
+- 畫面上方「目標」依進度指路；沒有對白的 NPC 按「對話」只顯示「……（這位角色的對話之後才會加入。）」。
+
+### 老師預覽（不放連結、知道網址的人都能開）
+`/first-aid-kingdom/preview.html`：點場景直接進去，**全部章節視為開放、不存進度、不連雲端、用獨立存檔 key（`fa-kingdom-preview`）、不碰一般存檔**。程式：`js/game.js` 的 `PREVIEW`（`?preview=場景id`）；章末演練捷徑 `?preview=ch3_market&lessons=1`（標記第 1～4 節已做完，由 `chapters/ch3/chapter.js` 處理）。測試：`tools/preview_test.py`。
 
 ### 開關（預設都關，除第二章）
 | 開關 | 位置 | 控制 |
 |---|---|---|
-| 章節 | `chapters/index.json` 的 `open`；老師端 `ch2`／`ch3` | ch2 預設開、ch3 預設關 |
+| 章節 | `chapters/index.json` 的 `open`；老師端 `ch2`／`ch3` | ch2 預設開、ch3 預設關（**以班級為單位**） |
 | `WILD_ON` | `content/weather.json`；老師端 `wild` | 打火石與營火、溺水救援、河谷裝溪水、阿鹿高山症支線 |
 | `RELIEF_ON` | 同上；老師端 `relief` | 村長救災物資 |
 | 天災 | 老師端發布（颱風／豪雨／濃霧）；本機 `__fa.scheduleWx('typhoon')` | 無隨機，只由老師發布 |
 本機測試網址參數（需 `#debug`＋`localStorage fa-debug=1`）：`?open=ch2,ch3`、`?wild=1`、`?relief=1`。
 
 ### 老師（蕾蕾）要做的事（我不能代做）
-1. **在 Supabase SQL Editor 執行 `supabase/drafts/002_fa_class_control.sql`**（flag 檢查式已含 `ch2/ch3/wild/relief`）。沒執行前，老師端「班級控制」顯示說明、遊戲用預設。我沒有權限也不應套用，**真實的函式與 RLS 我沒測過**（測試用模擬雲端）。
-2. 審文字（未審前對應開關保持關閉）：`docs/d4-review-checklist.md`（D4 九張知識卡、題目、救援失敗敘述、村長 6 句）；`docs/stash-text-review.md`（防災包 A1–A4、B1、C）；`chapters/ch3/REVIEW.md`（第三章 23 項，**「中斷過久」判定要在做按壓小遊戲前決定**）。
-3. 看 `docs/ch3-layout/` 8 張預覽圖，確認第三章 NPC 與互動點位置。
+1. **試老師端的開關**：先對一個測試班按一個無害的開關（例如「野外項目」開再關），確認沒有錯誤、狀態有變。真實的函式與 RLS 我沒在真的資料庫測過（測試用模擬雲端）。
+2. 審文字（未審前對應開關保持關閉）：`chapters/ch3/REVIEW.md`（待審清單、嚴重錯誤代碼對不上的地方、星數規則、我新寫的過場文字）；`docs/d4-review-checklist.md`（D4）；`docs/stash-text-review.md`（防災包 A1–A4、B1、C）。
+3. **解決「一週份 vs 三天份」**：第三章 K4-2、Q4-2 教一週、每日 3 公升，但線上遊戲現行 `water`／`food` 文字寫「至少三天份」。第三章開放前一定要先審 `docs/stash-text-review.md`。
+4. **核對 AHA 原文**（我讀不到 cpr.heart.org／ahajournals.org，403）：吹氣「每次約 1 秒」、AED 貼片「前外側或前後位置」、按壓時間占比（搜尋摘要只有「至少 60%」，未核對，不採用）。
+5. 決定：嚴重錯誤要不要觸發救援失敗（要的話提供每項說明與正確知識卡）；海嘯警報支線要不要做；老師端要不要顯示第三章星數。
+6. 試玩預覽，告訴我哪裡要調（星數規則、節奏參數、倒地者與假人位置、「練習 AED」互動點離牆上箱子有點遠）。
 
 ### 下一步（等老師回覆後）
-- 第三章教學內容：知識卡、題目、CPR 按壓節拍／吹氣／AED／找 AED／指派分工小遊戲、章末市集倒地事件、心跳之匣。**文字一律照草稿（OneDrive `急救王國/第三章交付包/docs/`）搬、標 draft，審過才開；不要自己編醫療內容或秒數。**
+- 老師審完文字後：把第三章的 `draft` 標記拿掉，並用老師端對一個班開啟 `ch3` 試跑。
+- 嚴重錯誤的救援失敗（需老師提供說明）；NPC 對白（草稿沒有，需老師提供）；老師端顯示第三章星數（要改 `js/teacher.js` 與 `tools/teacher_test.py`）。
 - 防災包文字定稿；D4 待審文字定稿後把 `draft` 標記拿掉、開對應開關。
 - 可選清理：第二章與第三章的航行程式（`chapters/ch2/chapter.js`、`chapters/ch3/chapter.js`）重複，之後可整理成共用。
 
@@ -50,11 +71,13 @@
 - 第三章遮罩可重跑：`tools/ch3_masks.py`；版面檢查：`python3 tools/layout_test.py ch3`。
 
 ### 測試（全部在 `tools/`，先 `python3 -m http.server 8765`；用 `python3 -u` 才看得到即時輸出）
-`stash`、`ration`、`sugar`、`credit`、`shop_event`、`chapter`（含假章節）、`ch2`、`ch3`、`weather`、`rescue`、`wild`、`camp`、`relief`、`control`（班級控制與章節執行時開關）、`cloud`（18 項）、`wall`、`teacher`（用 `teacher.html` 網址，28 項）、`walk_test.py`（章節用 `CHAPTER=ch2|ch3`）、`compare_run.py`（51 情境比對）。
+`stash`、`ration`、`sugar`、`credit`、`shop_event`、`chapter`（含假章節）、`ch2`、`ch3`、`ch3_goal`、`ch3_lesson1`～`ch3_lesson4`、`ch3_finale`（第三章各節與章末演練）、`preview`、`weather`、`rescue`、`wild`、`camp`、`relief`、`control`（班級控制與章節執行時開關）、`cloud`（18 項）、`wall`、`teacher`（用 `teacher.html` 網址，28 項）、`walk_test.py`（章節用 `CHAPTER=ch2|ch3`）、`compare_run.py`（51 情境比對）。
 - **推送前一定跑 51 情境比對**（用 `git worktree` 放 scratchpad、獨立埠，測完 `git worktree remove`），報告差異，**等老師說「推」才推**。
 - 測試寫法陷阱：`page.evaluate` 會等 Promise，遊戲對話要等人點才結束，所以呼叫 `__fa.talk/say/go` 要用 `() => { ...; }` 不回傳；`drive()` 判斷對話結束要再等 450ms 避開場景切換。
 - `walk_test` 在「家、森林南出口、農田南出口、草原北出口、草原通往漁港」會卡住，是測試工具的路徑規劃限制，不是程式錯誤。
-- 已知：macOS 沒有 `timeout`；背景比對要等真正結束（`until [ -f out.json ]` 迴圈）。
+- 已知：macOS 沒有 `timeout`；背景比對要等真正結束（用完成標記檔 `until [ -f ... ]` 迴圈；背景啟動指令結束只代表「開始跑了」）。
+- 已知：整套測試跑時 `cloud` 測試偶爾因載入逾時失敗（疑為網路字型），單獨重跑會過；同一檔案在比對進行中不要修改。
+- 瀏覽器分頁測試本機改過的 JS 時，舊檔可能被快取：用 `fetch(url,{cache:'reload'})` 再重新整理。
 
 ### 工作守則（務必遵守）
 - 每個階段動工前先出摘要（列「要老師決定」並給建議），等確認；老師說「按你的建議做」就做完整個階段，每步獨立提交附測試。
