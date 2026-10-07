@@ -1,5 +1,5 @@
-"""第三章第 4 節（專線、防災、分工決策題）：港口救生員入口、題目、知識卡、嚴重錯誤只標記。
-用法：`python3 -m http.server 8765` 之後 `python3 -u tools/ch3_lesson4_test.py http://localhost:8765/index.html`"""
+"""第三章 NPC 對話：港口救生員（選單、聊聊依進度）、救生站救生員、港口水手、南岸水手（選單與四個話題）。
+用法：`python3 -m http.server 8765` 之後 `python3 -u tools/ch3_npc_test.py http://localhost:8765/index.html`"""
 import asyncio, json, sys, pathlib
 from playwright.async_api import async_playwright
 fails = 0
@@ -86,36 +86,76 @@ async def answer_until(page, stop_selector, max_steps=100):
         elif await btns.count(): await btns.nth(0).click()
         await page.wait_for_timeout(150)
     return texts
+async def say_text(page):
+    """目前對話框的文字（空字串＝沒有對話）"""
+    return '' if await hidden(page) else await page.inner_text('#dText')
+async def talk_at(page, scene, x, y):
+    await goto(page, scene, x, y)
+    await page.evaluate("([x, y]) => { window.__fa.S.pos = {x, y}; }", [x, y]); await page.wait_for_timeout(300)
+    await act(page); await page.wait_for_selector('#dBtns button')
+async def next_btn(page, label=None):
+    btns = page.locator('#dBtns button:not([disabled])')
+    if label: await page.locator('#dBtns button', has_text=label).first.click()
+    else: await btns.nth(0).click()
+    await page.wait_for_timeout(250)
+async def collect_lines(page, n):
+    """連續按「繼續」，收集 n 句"""
+    out = []
+    for _ in range(n):
+        out.append(await say_text(page)); await next_btn(page)
+    return out
 async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
         await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
         page, errs = await boot(ctx, url)
-        c4 = ['ch3_k4_1', 'ch3_k4_2', 'ch3_k4_4']
-        cards = json.load(open(pathlib.Path(__file__).parent.parent / 'chapters/ch3/cards.json', encoding='utf-8'))['CARDS']
-        check('資料：沒有海嘯警報（K4-3、Q4-4）', 'ch3_k4_3' not in cards and 'ch3_q4_4' not in QZ)
-        check('資料：第 4 節題目與分工題都在（Q4-1、2、3、5、6、D-1～3）', all(k in QZ for k in ['ch3_q4_1', 'ch3_q4_2', 'ch3_q4_3', 'ch3_q4_5', 'ch3_q4_6', 'ch3_d1', 'ch3_d2', 'ch3_d3']))
-        check('嚴重錯誤只標記：Q4-1 E1、D-1 E1、E2、D-2 E4、D-3 E1', QZ['ch3_q4_1']['severe'] == 'E1' and QZ['ch3_d1']['severe'] == 'E1、E2' and QZ['ch3_d2']['severe'] == 'E4' and QZ['ch3_d3']['severe'] == 'E1')
-        await goto(page, 'ch3_harbor', 1250, 800)
-        await page.evaluate("() => { window.__fa.S.pos = {x: 1250, y: 800}; }"); await page.wait_for_timeout(300)
-        lab = await page.inner_text('#act'); check('港口走近救生員：互動鈕「對話」', lab == '對話', lab)
-        coins = await st(page, 'S.coins')
-        await act(page); await page.wait_for_selector('#dBtns button')
-        first = await page.inner_text('#dText'); check('開場：救生員的選單（請教救生員（第 4 節）／聊聊／先離開）', '藍堡港口的救生員' in first and await page.locator('#dBtns button').all_inner_texts() == ['請教救生員（第 4 節）', '聊聊', '先離開'], first)
-        await page.locator('#dBtns button', has_text='先離開').click(); await page.wait_for_timeout(500)
-        check('選先離開：沒有第 4 節知識卡', await st(page, "Object.keys(S.cards).filter(k => k.startsWith('ch3_k4')).length") == 0)
-        await act(page); await page.wait_for_selector('#dBtns button')
-        t = '\n'.join(await answer_until(page, '#nothing'))
-        for key in ['ch3_q4_1', 'ch3_q4_2', 'ch3_q4_3', 'ch3_d1', 'ch3_d2', 'ch3_d3', 'ch3_q4_6']: check(f'{key} 題目出現', QZ[key]['q'] in t)
-        check('排序題 Q4-5 出現並答對', '[排序]' in t and '順序完全正確' in t)
-        check('三張知識卡都獲得', await st(page, "%s.every(k => S.cards[k])" % json.dumps(c4)))
-        check('第 4 節完成、指向整合演練', '第 4 節完成' in t and '整合演練' in t)
-        check('E1／E2／E4 本階段只標記：金幣不變、仍在港口', await st(page, 'S.coins') == coins and await st(page, 'S.scene') == 'ch3_harbor')
-        await goto(page, 'ch3_rescue', 760, 840)
-        await page.evaluate("() => { window.__fa.S.pos = {x: 693, y: 690}; }"); await page.wait_for_timeout(300)
-        await act(page); await page.wait_for_selector('#dText')
-        txt = await page.inner_text('#dText'); check('救生站裡的救生員：說假人的話，沒有第 4 節', '假人是給大家練習用的' in txt and '第 4 節' not in txt, txt)
-        check('第 4 節測試沒有頁面錯誤', not errs, str(errs))
+        # --- 港口救生員：選單與「聊聊」
+        for label, c3 in [('還沒做章末演練', None), ('章末完成、5 顆星', {'ch3_done': True, 'ch3_stars': 5}), ('章末完成、3 顆星', {'ch3_done': True, 'ch3_stars': 3})]:
+            await page.evaluate("(c) => { const S = window.__fa.S; delete S.c.ch3_done; delete S.c.ch3_stars; if (c) Object.assign(S.c, c); }", c3)
+            await talk_at(page, 'ch3_harbor', 1250, 800)
+            menu = await page.locator('#dBtns button').all_inner_texts()
+            check(f'港口救生員（{label}）：選單「請教救生員（第 4 節）／聊聊／先離開」', menu == ['請教救生員（第 4 節）', '聊聊', '先離開'], str(menu))
+            await next_btn(page, '聊聊'); t1 = await say_text(page)
+            if label == '還沒做章末演練':
+                check('聊聊（還沒做章末）：別當那個只看著的人', '別當那個只看著的人' in t1, t1)
+                await next_btn(page); t2 = await say_text(page)
+                check('聊聊（還沒做章末）：救生站有假人和 AED', '假人和 AED' in t2, t2)
+                await next_btn(page)
+            elif c3['ch3_stars'] == 5:
+                check('聊聊（4 顆星以上）：處理得很好、心跳之匣', '處理得很好' in t1 and '心跳之匣' in t1, t1); await next_btn(page)
+            else:
+                check('聊聊（3 顆星以下）：再練幾次', '再練幾次' in t1, t1); await next_btn(page)
+            await page.wait_for_selector('#dBtns button')
+            check('聊完回到選單', await page.locator('#dBtns button').all_inner_texts() == ['請教救生員（第 4 節）', '聊聊', '先離開'])
+            await next_btn(page, '先離開'); await page.wait_for_timeout(300)
+            check('先離開：對話關閉', await hidden(page))
+        # --- 救生站的救生員
+        await talk_at(page, 'ch3_rescue', 693, 690)
+        t = await collect_lines(page, 2)
+        check('救生站救生員：假人、別怕弄壞它', '假人是給大家練習用的' in t[0] and '別怕弄壞它' in t[1], str(t))
+        await page.wait_for_timeout(400); check('救生站救生員：兩句後結束', await hidden(page))
+        # --- 港口水手
+        await talk_at(page, 'ch3_harbor', 1000, 480)
+        t = await collect_lines(page, 2)
+        check('港口水手：天氣停航、告示牌搭船', '會停航' in t[0] and '告示牌' in t[1], str(t))
+        # --- 南岸水手：選單與四個話題
+        sailor = await page.evaluate("() => { const n = window.__fa.SCENES.ch3_fishport.npcs.find(n => n.id === 'ch3_sailor'); return [n.x, n.y]; }")
+        await talk_at(page, 'ch3_fishport', sailor[0], sailor[1] + 50)
+        menu = await page.locator('#dBtns button').all_inner_texts()
+        check('南岸水手：選單五項', menu == ['去藍堡怎麼走', '看浪況', '天氣與颱風季', '救生衣與落水', '先離開'], str(menu))
+        expect = {'去藍堡怎麼走': (['找老船長買票', '乾糧和水自己帶比較划算'], 1),
+                  '看浪況': (['白色浪花', '寧可多等一天'], 2),
+                  '天氣與颱風季': (['天氣預報', '停航就是停航', '看起來沒事', '只是暫時的'], 2),
+                  '救生衣與落水': (['穿好救生衣', '自己不要跳下去', '打 118 找海巡'], 2)}
+        for topic, (keys, n) in expect.items():
+            await next_btn(page, topic)
+            t = '\n'.join(await collect_lines(page, n))
+            check(f'南岸水手「{topic}」：台詞完整（{len(keys)} 個關鍵句）', all(k in t for k in keys), t)
+            await page.wait_for_selector('#dBtns button')
+            check(f'「{topic}」說完回到選單', await page.locator('#dBtns button').count() == 5)
+        await next_btn(page, '先離開'); await page.wait_for_timeout(300)
+        check('南岸水手：先離開，對話關閉', await hidden(page))
+        check('NPC 對話測試沒有頁面錯誤', not errs, str(errs))
         await page.close(); await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
-print('第三章第 4 節測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)
+print('第三章 NPC 對話測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)

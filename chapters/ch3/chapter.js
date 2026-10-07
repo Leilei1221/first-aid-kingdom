@@ -7,7 +7,7 @@ import * as R from './rhythm.js';
 import * as AED from './aed.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
-const {RM,STA_MAX,$,say,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
+const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
 const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const FISHPORT='ch3_fishport',HARBOR='ch3_harbor',CABIN='ch3_ship_cabin';
 const deckOf=left=>left>=2?'ch3_ship_day':'ch3_ship_dusk';  /* 第一天白天、第二天黃昏 */
@@ -175,9 +175,7 @@ async function lesson3Aed(){
 }
 
 /* ---------- 第 4 節：港口救生員（專線、防災、技能要回實體練習，加上分工決策題 D-1～D-3） ---------- */
-async function lesson4(){
-  const go1=await say({p:'hero',html:'<p>港口的救生員在這裡。</p>',buttons:[{label:'請教救生員（第 4 節）',primary:true},{label:'先離開'}]});
-  if(go1!==0)return;
+async function lesson4(){  /* 入口在救生員的選單（lifegHarbor），選「請教救生員（第 4 節）」才進來 */
   await ask('ch3_q4_1');await showCard('ch3_k4_1');
   await ask('ch3_q4_2');await ask('ch3_q4_3');await showCard('ch3_k4_2');
   await say({p:'hero',html:'<p>接下來是分工練習：現場有人倒下，你要怎麼分配？</p>',buttons:[{label:'開始',primary:true}]});
@@ -259,6 +257,34 @@ async function downAct(){  /* 市集倒地的人：第 1～4 節都做完就多�
   if(i===0)return finale();if(i===1)return lesson1();
 }
 
+/* ---------- NPC 對話（2026-10-07 老師同意的擬稿；沒有醫療數字，只用遊戲現有規則與已審核內容） ---------- */
+const LIFEG='ch3_lifeg',SAILOR='ch3_sailor';
+async function lifegHarbor(){
+  for(;;){
+    const i=await say({p:LIFEG,html:'<p>我是藍堡港口的救生員。想聊聊，還是想請教急救和防災的事？</p>',buttons:[{label:'請教救生員（第 4 節）',primary:true},{label:'聊聊'},{label:'先離開'}]});
+    if(i===0)return lesson4();
+    if(i!==1)return;
+    const c=S.c||{};
+    if(c.ch3_done){
+      await lines(LIFEG,[(c.ch3_stars||0)>=4?'聽說市集那邊的事你處理得很好。心跳之匣交給你，我放心多了。':'第一次就走完全程很不容易。哪裡不順，就再練幾次，會越來越熟的。']);
+    }else{
+      await lines(LIFEG,['港口人來人往，市集尤其擠。真的有人倒下的時候，旁邊的人常常只是看著。你要是遇到了，別當那個只看著的人。','救生站裡有練習用的假人和 AED，想練習隨時過來。']);
+    }
+  }}
+const lifegStation=()=>lines(LIFEG,['這具假人是給大家練習用的。按壓、吹氣、AED，都可以在這裡一步一步練。','別怕弄壞它，壞了我再修。']);
+const sailorHarbor=()=>lines(SAILOR,['海上的天氣說變就變。颱風或豪雨要來的時候，船長會停航，到時候只能在港口等天氣好轉。','要回綠葉谷的話，到告示牌那邊搭船就行。']);
+const SAILOR_TOPICS=[
+  ['去藍堡怎麼走',['要去藍堡的話，找老船長買票。船上要過兩個晚上，乾糧和水自己帶比較划算。']],
+  ['看浪況',['出海前先看海：浪越來越大、海面一直冒白色浪花、浪一波接一波的時候，就不是出船的好時機。','看不懂的時候別硬撐，問問老船長或港口的人，寧可多等一天。']],
+  ['天氣與颱風季',['出船前要先看天氣預報。颱風季節，或是颱風、豪雨快來的時候，我們就不出船，船長說停航就是停航。','就算海面看起來很平靜，也不能因為「看起來沒事」就出海。風雨突然變小，也可能只是暫時的。']],
+  ['救生衣與落水',['上船、在碼頭邊做事，都要穿好救生衣。不要一個人跑到岸邊或礁石上玩水、釣魚。','萬一有人掉進海裡，大聲呼救，把救生圈或浮具拋給他，自己不要跳下去。碼頭或海上出事，要打 118 找海巡。']]];
+async function sailorPort(){
+  for(;;){
+    const i=await say({p:SAILOR,html:'<p>要出海的話，有什麼想先問的嗎？</p>',buttons:SAILOR_TOPICS.map((t,k)=>({label:t[0],primary:k===0})).concat([{label:'先離開'}])});
+    if(i>=SAILOR_TOPICS.length)return;
+    await lines(SAILOR,SAILOR_TOPICS[i][1]);
+  }}
+
 return {
   acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed},
   build(sceneId,H,{sprite}){
@@ -277,7 +303,8 @@ return {
     if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
     return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`;},
   talk(id){if(id==='ch3_captain')return captTalk();
-    if(id==='ch3_lifeg'&&S.scene===HARBOR)return lesson4();
+    if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
+    if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */
 };
 }
