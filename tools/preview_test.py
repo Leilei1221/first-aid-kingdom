@@ -92,7 +92,7 @@ async def main(url):
         # 一般進入時第三章仍關閉（用 debug 掛鉤看）
         await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
         page = await ctx.new_page(); await page.goto(f'{root}/index.html#debug'); await page.wait_for_function("window.__fa", timeout=60000)
-        check('一般進入：第三章仍然關閉、第二章開放', await page.evaluate("() => ({c3: window.__fa.CHAPTERS.ch3.open, c2: window.__fa.CHAPTERS.ch2.open})") == {'c3': False, 'c2': True})
+        check('一般進入（沒登入）：第二、第三章依預設規則開放（第三章仍要先完成第二章）；預覽沒有影響一般規則', await page.evaluate("() => ({c3: window.__fa.CHAPTERS.ch3.open, c2: window.__fa.CHAPTERS.ch2.open})") == {'c3': True, 'c2': True})
         await page.close(); await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
 print('老師預覽測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)

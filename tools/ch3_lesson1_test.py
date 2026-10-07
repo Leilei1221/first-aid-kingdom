@@ -57,7 +57,7 @@ async def main(url):
         # --- 章節關閉：看不到倒地者與互動點
         page, errs = await boot(ctx, url, opened=False)
         r = await page.evaluate("() => ({open: window.__fa.CHAPTERS.ch3.open, cards: Object.keys(window.__fa.S.cards).filter(k => k.startsWith('ch3_'))})")
-        check('章節關閉時：ch3 不開放、沒有第三章知識卡', r == {'open': False, 'cards': []}, str(r))
+        check('沒登入、沒加 ?open：第三章依「不屬於任何班的人，章節預設開放」是開放的，但還沒有任何第三章知識卡（班級學生被後台關閉的情況由 control_test 驗證）', r == {'open': True, 'cards': []}, str(r))
         await page.close()
         # --- 章節開放
         page, errs = await boot(ctx, url)
