@@ -112,9 +112,10 @@ async def main(url):
         # --- 港口救生員：選單與「聊聊」
         for label, c3 in [('還沒做章末演練', None), ('章末完成、5 顆星', {'ch3_done': True, 'ch3_stars': 5}), ('章末完成、3 顆星', {'ch3_done': True, 'ch3_stars': 3})]:
             await page.evaluate("(c) => { const S = window.__fa.S; delete S.c.ch3_done; delete S.c.ch3_stars; if (c) Object.assign(S.c, c); }", c3)
+            await page.evaluate("() => { const S = window.__fa.S; S.c.ch3_met = true; ['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].forEach(k => S.cards[k] = true); }")
             await talk_at(page, 'ch3_harbor', 1250, 800)
             menu = await page.locator('#dBtns button').all_inner_texts()
-            check(f'港口救生員（{label}）：選單「請教救生員（第 4 節）／聊聊／先離開」', menu == ['請教救生員（第 4 節）', '聊聊', '先離開'], str(menu))
+            check(f'港口救生員（{label}）：選單「請教救生員／聊聊／先離開」', menu == ['請教救生員', '聊聊', '先離開'], str(menu))
             await next_btn(page, '聊聊'); t1 = await say_text(page)
             if label == '還沒做章末演練':
                 check('聊聊（還沒做章末）：別當那個只看著的人', '別當那個只看著的人' in t1, t1)
@@ -126,7 +127,7 @@ async def main(url):
             else:
                 check('聊聊（3 顆星以下）：再練幾次', '再練幾次' in t1, t1); await next_btn(page)
             await page.wait_for_selector('#dBtns button')
-            check('聊完回到選單', await page.locator('#dBtns button').all_inner_texts() == ['請教救生員（第 4 節）', '聊聊', '先離開'])
+            check('聊完回到選單', await page.locator('#dBtns button').all_inner_texts() == ['請教救生員', '聊聊', '先離開'])
             await next_btn(page, '先離開'); await page.wait_for_timeout(300)
             check('先離開：對話關閉', await hidden(page))
         # --- 救生站的救生員

@@ -22,7 +22,7 @@ async function captTalk(){
     buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'}]});
   if(i!==0)return;
   await stashDepart();  /* 防災包是旅行行李：放在這個地區就問要不要帶上 */
-  S.coins-=FARE;S.voyage={to:toHarbor?HARBOR:FISHPORT,left:2};
+  S.coins-=FARE;S.voyage={to:toHarbor?HARBOR:FISHPORT,left:2,sick:false,mob:false};
   await go(deckOf(2),[800,660]);
   await say({p:'ch3_captain',html:'<p>起錨！出發囉——！</p><p class="small">可以在甲板上走動，累了就到船艙休息。</p>'});
 }
@@ -41,12 +41,19 @@ async function hatch(){const v=S.voyage;if(!v)return;await go(CABIN,[870,600]);}
 async function ladder(){const v=S.voyage;await go(deckOf(v?v.left:2),[1000,600]);}
 async function bed(){
   const v=S.voyage;if(!v)return;
+  if(!v.sick){await say({p:'hero',html:'<p>船搖來搖去，胃裡一陣翻騰，頭好暈……好像暈船了。</p>'});
+    await quiz('hero','暈船了，怎麼做比較好？',['躲進船艙看書轉移注意力','到通風的甲板上，看著遠方的地平線','大吃一頓就不會暈了'],1,CARDS.ch2_seasick.text);S.cards.ch2_seasick=true;v.sick=true;return;}
+  if(v.left===1&&!v.mob){await say({p:'ch3_captain',html:'<p class="bad">有人落水了！一位船員被大浪捲下船！</p>'});
+    const i=await say({p:'hero',html:'<p class="q">你要怎麼做？</p>',buttons:[{label:'立刻跳下海去救他'},{label:'大聲呼救，把救生圈拋給他'}]});
+    await say({p:'ch3_captain',html:`<p class="${i===1?'good':'bad'}">${i===1?'做得好！船員抓住了救生圈，被拉回船上了。':'別跳！在海上跳下去，只會多一個需要救的人！快拋救生圈！'}</p><p>他在水裡很冷靜，一直用<b>仰漂</b>的方式浮著等我們。</p>`});
+    await say({p:'ch3_captain',html:`<div class="card"><b>${CARDS.ch2_overboard.title}</b><p>${CARDS.ch2_overboard.text}</p></div>`});S.cards.ch2_overboard=true;v.mob=true;return;}
   const msg=voyageMeal();
   $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,STA_MAX-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
   if(v.left>0){await say({icon:'⚓',who:`第 ${S.day} 天・海上`,html:`<p>${msg.join('。')}。</p><p>在船艙睡了一晚，船還在海上航行。</p>`+html});return;}
   const to=v.to;S.voyage=null;
   await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});
   await go(to,ARRIVE[to]);
+  if(to===HARBOR){S.c=S.c||{};if(!S.c.ch3_intro){S.c.ch3_intro=true;await lines(SAILOR,['你就是老團長的孫子吧？一路辛苦了！','你爺爺的老朋友在廣場的另一頭等你，是港口的救生員。往右下方走，救生站旁邊就是了。']);}}
 }
 /* ---------- 第 1 節：市集倒地者（知識卡 K1-1～K1-3、題目 Q1-1～Q1-7；資料在 dialogues.json、cards.json） ---------- */
 {const q=new URLSearchParams(location.search);if(q.get('preview')&&q.get('lessons')==='1')['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3','ch3_k4_4'].forEach(k=>{S.cards[k]=true;});}  /* 老師預覽用：不影響一般進入 */
@@ -70,7 +77,7 @@ async function lesson1(){
   const a=await assign('請打 119',PASSERS);
   await assign('請去拿 AED',PASSERS.filter(x=>x!==a));
   await ask('ch3_q1_6');await askOrder('ch3_q1_7');await showCard('ch3_k1_3');
-  await say({p:'hero',html:'<p class="good">第 1 節完成！</p><p class="small">接下來到港口的救生站，練習壓胸（第 2 節）、人工呼吸與 AED（第 3 節）。</p>'});
+  await say({p:'hero',html:'<p class="good">第 1 節完成！</p><p class="small">接下來到港口的救生站，練習壓胸、人工呼吸與 AED。</p>'});
 }
 
 /* ---------- 第 2 節：救生站假人（知識卡 K2-1～K2-3、題目 Q2-1～Q2-8、按壓節拍＋換手；數字計算在 rhythm.js） ---------- */
@@ -115,7 +122,7 @@ async function lesson2(){
   const st=g.stats,sec=ms=>(ms/1000).toFixed(1);
   await say({p:'hero',html:st.n<2?'<p>這次沒有按壓紀錄。</p>':`<p><b>練習紀錄</b>（遊戲內的實際時間）</p><p>按壓 ${st.n} 下，平均 ${st.avgRate==null?'—':st.avgRate} 下／分（目標 100 至 120）<br>最長一次中斷：${sec(st.longestPauseMs)} 秒<br>按壓時間占比：${st.ratio==null?'—':Math.round(st.ratio*100)}%</p><p class="small">這些數字目前只是紀錄，之後會用在章末評分。</p>`});
   await ask('ch3_q2_6');await ask('ch3_q2_7');await ask('ch3_q2_8');await showCard('ch3_k2_3');
-  await say({p:'hero',html:'<p class="good">第 2 節完成！</p><p class="small">下一步：在救生站，假人旁的面罩練習人工呼吸、牆邊練習 AED（第 3 節）。</p>'});
+  await say({p:'hero',html:'<p class="good">第 2 節完成！</p><p class="small">下一步：在救生站，假人旁的面罩練習人工呼吸、牆邊練習 AED。</p>'});
 }
 
 /* ---------- 第 3 節：人工呼吸 30:2（假人旁的 CPR 面罩）與 AED（牆上的壁掛箱）。兩個練習各自獨立 ---------- */
@@ -171,7 +178,7 @@ async function lesson3Aed(){
   const g=await aedGame();if(DEBUG)window.__ch3Aed=g;
   await say({p:'hero',html:`<p class="good">AED 練習完成！</p><p class="small">${g.errors.length?`練習中選過 ${g.errors.length} 次錯誤的做法，說明都看過了。`:'每一步都選對了。'}</p>`});
   await ask('ch3_q3_6');await ask('ch3_q3_7');await askOrder('ch3_q3_8');
-  await say({p:'hero',html:'<p class="good">第 3 節完成！</p><p class="small">下一步：到港口找救生員（第 4 節）。</p>'});
+  await say({p:'hero',html:'<p class="good">第 3 節完成！</p><p class="small">下一步：到港口找救生員。</p>'});
 }
 
 /* ---------- 第 4 節：港口救生員（專線、防災、技能要回實體練習，加上分工決策題 D-1～D-3） ---------- */
@@ -261,10 +268,18 @@ async function downAct(){  /* 市集倒地的人：第 1～4 節都做完就多�
 /* ---------- NPC 對話（2026-10-07 老師同意的擬稿；沒有醫療數字，只用遊戲現有規則與已審核內容） ---------- */
 const LIFEG='ch3_lifeg',SAILOR='ch3_sailor';
 async function lifegHarbor(){
+  S.c=S.c||{};
+  if(!S.c.ch3_met){
+    S.c.ch3_met=true;
+    await lines(LIFEG,['你來了！我就是你爺爺的老朋友，他早就寫信說你會來。','藍堡的港口人來人往，這裡的人都得會急救才行。市集那邊人最多，你先過去看看。']);
+  }
   for(;;){
-    const i=await say({p:LIFEG,html:'<p>我是藍堡港口的救生員。想聊聊，還是想請教急救和防災的事？</p>',buttons:[{label:'請教救生員（第 4 節）',primary:true},{label:'聊聊'},{label:'先離開'}]});
-    if(i===0)return lesson4();
-    if(i!==1)return;
+    const ready=['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
+    const labels=ready?['請教救生員','聊聊','先離開']:['聊聊','先離開'];
+    const i=await say({p:LIFEG,html:ready?'<p>想聊聊，還是想請教急救和防災的事？</p>':'<p>港口人多，想聊聊嗎？市集和救生站都可以去看看。</p>',buttons:labels.map((l,k)=>({label:l,primary:k===0}))});
+    const lab=labels[i];
+    if(lab==='請教救生員')return lesson4();
+    if(lab!=='聊聊')return;
     const c=S.c||{};
     if(c.ch3_done){
       await lines(LIFEG,[(c.ch3_stars||0)>=4?'聽說市集那邊的事你處理得很好。心跳之匣交給你，我放心多了。':'第一次就走完全程很不容易。哪裡不順，就再練幾次，會越來越熟的。']);
@@ -296,11 +311,12 @@ return {
   goalBase:()=>onShip()?'在船上度過兩個晚上：到艙口進船艙，在床上睡覺。':undefined,  /* 船上的場景算綠葉谷地區，目標要走這個接點 */
   goal(){  /* 畫面上方「目標」：依知識卡判斷做到哪一節，告訴玩家下一步去哪裡 */
     if(onShip())return '在船上度過兩個晚上：到艙口進船艙，在床上睡覺。';
-    if(!S.cards.ch3_k1_3)return '到港口市集，查看倒在地上的人（第 1 節）。';
-    if(!S.cards.ch3_k2_3)return '到港口的救生站，在假人旁練習按壓（第 2 節）。';
-    if(!S.cards.ch3_k3_1)return '在救生站，假人旁的面罩可以練習人工呼吸（第 3 節）。';
-    if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習（第 3 節）。';
-    if(!S.cards.ch3_k4_4)return '到港口，找救生員請教專線與防災（第 4 節）。';
+    if(!(S.c&&S.c.ch3_met)&&!Object.keys(S.cards).some(k=>k.startsWith('ch3_k')))return '到港口廣場的另一頭，救生站旁，找爺爺的老朋友——港口救生員。';
+    if(!S.cards.ch3_k1_3)return '到港口市集，查看倒在地上的人。';
+    if(!S.cards.ch3_k2_3)return '到港口的救生站，在假人旁練習按壓。';
+    if(!S.cards.ch3_k3_1)return '在救生站，假人旁的面罩可以練習人工呼吸。';
+    if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習。';
+    if(!S.cards.ch3_k4_4)return '到港口，找救生員請教專線與防災。';
     if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
     return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`;},
   talk(id){if(id==='ch3_captain')return captTalk();
