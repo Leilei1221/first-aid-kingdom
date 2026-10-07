@@ -1050,7 +1050,7 @@ $('btnMap').onclick=worldMap;$('btnBag').onclick=bag;$('btnCards').onclick=cards
 const checkpoint=()=>{if(window.FACloud)try{FACloud.checkpoint(S);}catch(e){}};
 const CLOUD_TXT={ok:'已同步到雲端',loading:'同步中…',offline:'目前連不上雲端，進度先存在這台裝置，之後會自動補傳',conflict:'另一台裝置也在使用這個帳號，雲端同步已暫停（重新整理頁面可選擇要用哪一份進度）',off:'未登入，進度只存在這台裝置',nolib:'目前無法連線雲端，進度只存在這台裝置'};
 function cloudLine(){if(!window.FACloud)return '進度只存在這台裝置。';const m=FACloud.email();return (m?`已登入：${m}<br>`:'')+'雲端：'+(CLOUD_TXT[FACloud.status()]||'');}
-async function doSignOut(){window.__loggingOut=true;try{if(window.FACloud)await FACloud.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}location.reload();}
+async function doSignOut(keep){window.__loggingOut=true;try{if(window.FACloud)await FACloud.signOut();}catch(e){}if(!keep)try{localStorage.removeItem(KEY);}catch(e){}location.reload();}
 function summary(o){return `第 ${o.day||1} 天，序章進度 ${o.step||0}，金幣 ${o.coins||0}`;}
 async function askConflict({local,cloud}){
   const i=await say({p:'hero',who:'進度不一致',html:`<p>雲端的進度和這台裝置的進度不一樣，要用哪一個？</p><p>雲端：${summary(cloud)}</p><p>這台裝置：${summary(local)}</p><p class="small">沒選的那一份會被覆蓋。</p>`,
@@ -1062,7 +1062,8 @@ function renderAuth(){
   if(!window.FACloud||st==='nolib'){box.innerHTML='<span class="small">目前無法連線雲端，進度只會存在這台裝置。</span>';return;}
   if(!mail){box.innerHTML='<button type="button" id="btnLogin">用 Google 登入（進度存雲端）</button><div class="small">也可以不登入直接玩，進度只會存在這台裝置。</div>';
     $('btnLogin').onclick=()=>FACloud.signIn();return;}
-  box.innerHTML=`<span>已登入：${mail}</span> <span class="small">${CLOUD_TXT[st]||''}</span> <button type="button" id="btnLogout">登出（換帳號）</button>`;
+  box.innerHTML=`<span>已登入：${mail}</span> <span class="small">${CLOUD_TXT[st]||''}</span> <button type="button" id="btnLogout">登出（換帳號）</button> <button type="button" id="btnLogoutKeep">登出並保留這台的進度（登錯帳號時用）</button>`;
+  $('btnLogoutKeep').onclick=()=>{if(confirm('登出後，這台裝置上的遊戲進度會保留，之後可以用另一個帳號登入，並選擇用這台的進度。原本登入的帳號，雲端進度不會被刪除。確定要登出嗎？'))doSignOut(true);};
   $('btnLogout').onclick=()=>{const ok=FACloud.status()==='ok';
     if(confirm(ok?'登出後，這台裝置上的遊戲進度會清除，雲端的進度會保留，下次登入就能接續。確定要登出嗎？':'目前進度還沒同步到雲端，登出後這台裝置上的進度會遺失。確定要登出嗎？'))doSignOut();};}
 async function initCloud(){

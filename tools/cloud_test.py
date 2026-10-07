@@ -145,6 +145,15 @@ async def main(url):
         await E.click('#btnLogout')
         await E.wait_for_function("window.FACloud && !window.FACloud.email() && document.getElementById('btnLogin')", timeout=15000)
         check('T9 登出後顯示登入按鈕、沒有登出鈕', await E.locator('#btnLogin').count() == 1 and await E.locator('#btnLogout').count() == 0)
+        # T10：登出並保留進度：本機存檔還在、已登出、meta 清掉（之後換帳號登入視為這台的進度）
+        ctxF, F = await device(ALICE); await open_(F)
+        await F.evaluate("() => localStorage.setItem('fa-kingdom-p1-v1', JSON.stringify({v:2,day:3,step:5,started:true}))")
+        await F.wait_for_selector('#btnLogoutKeep', timeout=15000)
+        F.once('dialog', lambda d: asyncio.ensure_future(d.accept()))
+        await F.click('#btnLogoutKeep')
+        await F.wait_for_function("window.FACloud && !window.FACloud.email() && document.getElementById('btnLogin')", timeout=15000)
+        check('T10 保留進度登出：本機存檔還在', await F.evaluate("() => !!localStorage.getItem('fa-kingdom-p1-v1')"))
+        check('T10 保留進度登出：已登出', await F.locator('#btnLogin').count() == 1)
         await b.close()
     n = results.count(False); print('全部通過' if not n else f'{n} 項失敗', f'（共 {len(results)} 項）'); return n
 
