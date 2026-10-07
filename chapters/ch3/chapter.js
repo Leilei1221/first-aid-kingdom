@@ -239,6 +239,7 @@ async function finale(){
   if(st.longestPauseMs>T.pauseLimitMs)rec.errs.push({key:'pause',code:'E4'});
   const sc=R.scoreFinale({judgeWrong:rec.judgeWrong,d1Wrong:rec.d1Wrong,stats:st,breath:rec.breath,aedErrors:rec.aedErrors==null?1:rec.aedErrors,stopped:rec.stopped},T.pauseLimitMs);
   S.c=S.c||{};let box=false;
+  const rw=completed?FA.starReward('ch3',sc.total):null;  /* 星級獎勵：每個新達成的星級只領一次（見 content/balance.json 的 STAR_REWARD） */
   if(completed){S.c.ch3_done=true;S.c.ch3_stars=Math.max(S.c.ch3_stars||0,sc.total);if(!S.c.ch3_box){S.c.ch3_box=true;box=true;}}
   if(DEBUG)window.__ch3Finale={rec,stats:st,score:sc,completed};
   const mark=ok=>ok?'★':'☆',sec=ms=>(ms/1000).toFixed(1),br=rec.breath?rec.breath.attempts.slice(0,2).filter(x=>x.band==='ok'&&!x.noAirway).length:0;
@@ -247,7 +248,7 @@ async function finale(){
     ${mark(sc.stars.assign)} 求救與分工：分工題${rec.d1Wrong===0?'第一次就答對':`答錯 ${rec.d1Wrong} 次`}<br>
     ${mark(sc.stars.quality)} 壓胸品質：平均 ${st.avgRate==null?'—':st.avgRate} 下／分（目標 100 至 120），最長一次中斷 ${sec(st.longestPauseMs)} 秒，按壓時間占比 ${st.ratio==null?'—':Math.round(st.ratio*100)}%<br>
     ${mark(sc.stars.breathAed)} 人工呼吸與 AED：兩次吹氣第一次吹好 ${br}/2，AED 選過 ${rec.aedErrors==null?'—':rec.aedErrors} 次錯誤做法<br>
-    ${mark(sc.stars.keep)} 持續：${completed?'做到救護人員接手':'中途停止了急救'}</p>`});
+    ${mark(sc.stars.keep)} 持續：${completed?'做到救護人員接手':'中途停止了急救'}</p>${rw?(rw.gain?`<p class="good">星級獎勵：+${rw.gain} 金幣</p>`:'')+(rw.next?`<p class="small">下次達成 ${rw.next.tier} 顆星，可以再領 ${rw.next.coins} 金幣。</p>`:''):''}`});
   if(box)await say({p:'hero',who:'神器',html:`<div style="text-align:center"><img src="${A.ch3_bls_box}" alt="心跳之匣" style="height:96px"></div><p class="good">獲得神器：心跳之匣（BLS 基礎急救包）</p>`});
 }
 async function downAct(){  /* 市集倒地的人：第 1～4 節都做完就多一個「章末演練」 */

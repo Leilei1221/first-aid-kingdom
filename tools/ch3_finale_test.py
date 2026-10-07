@@ -178,7 +178,10 @@ async def main(url):
         c = await st(page, "({done: S.c.ch3_done, stars: S.c.ch3_stars, box: S.c.ch3_box})")
         check('存檔：S.c.ch3_done、ch3_stars＝5、ch3_box', c == {'done': True, 'stars': 5, 'box': True}, str(c))
         check('沒有新增頂層存檔欄位（只有 S.c 裡的 ch3_ 鍵）', await st(page, "Object.keys(S).filter(k => k.toLowerCase().startsWith('c3') || k.startsWith('ch3')).length") == 0)
-        check('嚴重錯誤只記錄：金幣不變、仍在市集', await st(page, 'S.coins') == coins and await st(page, 'S.scene') == 'ch3_market')
+        check('星級獎勵：第一次 5 顆星＝3、4、5 星報酬都領（80＋160＋320）', await st(page, 'S.coins') == coins + 560 and await st(page, 'S.c.starPaid.ch3') == 5, str(await st(page, 'S.coins')) + ' vs ' + str(coins))
+        check('結算畫面有「星級獎勵：+560 金幣」', '星級獎勵：+560 金幣' in t, t)
+        check('嚴重錯誤只記錄、不扣錢：仍在市集', await st(page, 'S.scene') == 'ch3_market')
+        coins = await st(page, 'S.coins')
         await page.wait_for_timeout(400); g = await page.inner_text('#goal')
         check('目標：第三章完成、顯示最高 5 顆星', '第三章完成' in g and '5' in g, g)
         # --- 重玩：每題先答錯、吹氣沒先開呼吸道、AED 先選錯、中途停了一下（超過 2.5 秒的單次中斷）
@@ -193,7 +196,7 @@ async def main(url):
         await page.locator('#dBtns button:not([disabled])').nth(0).click(); await page.wait_for_timeout(500)
         c = await st(page, "({done: S.c.ch3_done, stars: S.c.ch3_stars, box: S.c.ch3_box})")
         check('重玩：最高星數仍是 5、不會再給一次心跳之匣', c == {'done': True, 'stars': 5, 'box': True} and await page.locator('img[alt="心跳之匣"]').count() == 0, str(c))
-        check('重玩：金幣不變', await st(page, 'S.coins') == coins)
+        check('重玩（只有 1 顆星）：沒有星級獎勵、金幣不變，結算沒有獎勵字樣', await st(page, 'S.coins') == coins and '星級獎勵' not in t, t)
         check('章末測試沒有頁面錯誤', not errs, str(errs))
         await page.close()
         # --- 全新存檔：中途「停止急救」→ 不算完成、沒有心跳之匣

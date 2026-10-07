@@ -104,7 +104,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,STAR_REWARD,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -695,9 +695,20 @@ async function rationPhase(){
   else{S.rescue.water='missing';await play('water.short',{w});if(stashCount('water')>0)await say({p:'hero',html:`<p>${T('stash.left')}</p>`});}
   const stars=['guard','cook','soldier','rations','water'].filter(k=>S.rescue[k]==='ok').length;
   S.castleDone=true;S.castleBest=Math.max(S.castleBest||0,stars);startRelief('quake');refresh();
-  await castleReport(stars);
+  await castleReport(stars,starReward('castle',stars));
 }
-async function castleReport(stars){
+/* 星級獎勵（老師 2026-10-07 決定）：大關卡的 3、4、5 顆星報酬不同，每個「新達成的星級」只領一次（記在 S.c.starPaid，不新增頂層欄位）。
+   落石之城（castle）要先完成第三章才開啟；第三章章末（ch3）由章節程式呼叫。回傳 null＝不適用；否則 {gain, next:{tier,coins}|null}。報酬數字在 content/balance.json 的 STAR_REWARD。 */
+function starReward(kind,stars){
+  const R=STAR_REWARD&&STAR_REWARD[kind];if(!R)return null;
+  if(kind==='castle'&&!(S.c&&S.c.ch3_done))return null;
+  S.c=S.c||{};const P=S.c.starPaid=S.c.starPaid||{};const paid=P[kind]||0;
+  let gain=0;for(const t of [3,4,5])if(t>paid&&t<=stars)gain+=R[t]||0;
+  const now=stars>=3?Math.max(paid,stars):paid;P[kind]=now;
+  if(gain){S.coins+=gain;S.earned+=gain;}
+  const nt=now<3?3:now+1;
+  return {gain,next:nt<=5&&R[nt]?{tier:nt,coins:R[nt]}:null};}
+async function castleReport(stars,rw){
   if(window.FAMusic){FAMusic.jingle();FAMusic.scene(S.scene,S);}
   const name={guard:'城堡守衛（頭皮出血）',cook:'廚娘（疑似前臂骨折）',soldier:'見習小兵（腳踝扭傷）'};
   const col=r=>r==='ok'?'var(--ok)':r==='wrong'?'var(--warn)':'var(--bad)';
@@ -705,7 +716,7 @@ async function castleReport(stars){
     `<div class="row"><div class="info"><b>三天份的乾糧</b><span style="color:${col(S.rescue.rations)}">${S.rescue.rations==='ok'?'準備充足':'不足'}</span></div></div><div class="row"><div class="info"><b>三天份的飲用水</b><span style="color:${col(S.rescue.water)}">${S.rescue.water==='ok'?'準備充足':'不足'}</span></div></div>`;
   const fk=S.fakesAtStart||[];
   const fakeHtml=fk.length?`<h4>你帶進城的偏方</h4>${fk.map(k=>`<div class="card"><b>${ITEMS[k].name}</b><p>${ITEMS[k].truth}</p></div>`).join('')}`:'<p class="good">你沒有把任何偏方帶進城。</p>';
-  await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>${rows}${fakeHtml}${S.expiredAtStart?`<p class="warn">背包裡有 ${S.expiredAtStart} 包過期的乾糧，要記得定期檢查。</p>`:''}<p class="small">最佳紀錄：${S.castleBest} 顆星。睡一覺之後城堡會修好，可以再挑戰一次。</p>`,buttons:[{label:'完成',primary:true}]});
+  await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>${rows}${fakeHtml}${S.expiredAtStart?`<p class="warn">背包裡有 ${S.expiredAtStart} 包過期的乾糧，要記得定期檢查。</p>`:''}${rw?(rw.gain?`<p class="good">星級獎勵：+${rw.gain} 金幣</p>`:'')+(rw.next?`<p class="small">下次達成 ${rw.next.tier} 顆星，可以再領 ${rw.next.coins} 金幣。</p>`:''):''}<p class="small">最佳紀錄：${S.castleBest} 顆星。睡一覺之後城堡會修好，可以再挑戰一次。</p>`,buttons:[{label:'完成',primary:true}]});
 }
 async function doEvent(ev){
   await say({p:ev.who,wound:ev.wound,html:`<p>${ev.intro}</p>`});
@@ -1193,11 +1204,11 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,orderQuiz,checkpoint,curRegion,regionOf,hearts,
+  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
 if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},flagOn,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},flagOn,starReward,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
