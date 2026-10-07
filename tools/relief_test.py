@@ -10,6 +10,8 @@ def check(name, ok, info=''):
 async def boot(ctx, url, extra=''):
     page = await ctx.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
     await page.add_init_script("if(!sessionStorage.getItem('fresh')){sessionStorage.setItem('fresh','1');localStorage.removeItem('fa-kingdom-p1-v1');}")
+    # 有班級、後台沒設定的學生：野外項目預設關（不屬於任何班的人野外預設是開的，選單會多一項打火石）；救災物資用 ?relief=1 開
+    await page.add_init_script("localStorage.setItem('fa-kingdom-ctrl-v1', JSON.stringify({email: 's1@hlhs.hlc.edu.tw', data: {class_id: 'c1', flags: {}, weather: null}, at: Date.now()}));")
     await page.goto(url + extra + '#debug')
     await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
     await page.evaluate("() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.started = true; S.coins = 100; S.day = 8; S.kitCap = 10; S.kit = []; document.getElementById('btnStart').click(); }")

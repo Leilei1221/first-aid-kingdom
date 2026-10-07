@@ -65,17 +65,18 @@ async def no_class_players(ctx, url):
     """不屬於任何班的人（老師、訪客、沒登入）：地圖（章節）預設開放；學生照班級後台；明確設定優先；野外與救災物資不跟著開。"""
     page, errs = await open_page(ctx, url, 'g@gmail.com', {'class_id': None, 'flags': {}, 'weather': None})
     r = await ev(page, "() => ({ch3: window.__fa.CHAPTERS.ch3.open, ch2: window.__fa.CHAPTERS.ch2.open, wild: window.__fa.flagOn('wild', false), relief: window.__fa.flagOn('relief', false)})")
-    check('訪客／老師（有登入、不屬於任何班）：地圖（第二、第三章）預設開放，野外項目與救災物資不跟著開', r == {'ch3': True, 'ch2': True, 'wild': False, 'relief': False}, str(r))
+    check('訪客／老師（有登入、不屬於任何班）：地圖（第二、第三章）與野外項目預設開放，村長救災物資不開', r == {'ch3': True, 'ch2': True, 'wild': True, 'relief': False}, str(r))
     check('訪客：不會自己出現天災', await ev(page, "() => window.__fa.S.wxNext == null && window.__fa.S.wx == null"))
     await page.close()
     page, errs = await open_page(ctx, url, None, None)
     r = await ev(page, "() => ({ch3: window.__fa.CHAPTERS.ch3.open, ch2: window.__fa.CHAPTERS.ch2.open, wild: window.__fa.flagOn('wild', false)})")
-    check('沒登入：地圖（第二、第三章）預設開放，野外項目不開', r == {'ch3': True, 'ch2': True, 'wild': False}, str(r))
+    check('沒登入：地圖（第二、第三章）與野外項目預設開放', r == {'ch3': True, 'ch2': True, 'wild': True}, str(r))
     # 第三章仍要先完成第二章：世界地圖的圖釘解鎖條件還在（走石階那一道門的擋下，由 tools/ch3_test.py 實際走一遍驗證）
     unlock = await ev(page, "() => window.__fa.REGIONS.ch3.unlock")
     check('沒登入：第三章雖然開放，解鎖條件仍是「完成第二章」（S.c.done）', unlock.replace(' ', '') == '()=>S.c&&S.c.done', unlock)
     await page.close()
     page, errs = await open_page(ctx, url, 's9@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {}, 'weather': None})
+    check('學生（有班級、後台沒設定野外項目）：野外項目仍然關閉', await ev(page, "() => window.__fa.flagOn('wild', false) === false"))
     check('學生（有班級、後台沒設定第三章）：第三章仍然關閉', await ev(page, "() => window.__fa.CHAPTERS.ch3.open === false && window.__fa.CHAPTERS.ch2.open === true"))
     await page.close()
     page, errs = await open_page(ctx, url, 's9@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {'ch3': True}, 'weather': None})
@@ -122,7 +123,7 @@ async def main(url):
         await ctx.add_init_script("if(!localStorage.getItem('keep')){localStorage.clear();localStorage.setItem('keep','1');}localStorage.setItem('fa-debug','1')")
         # 1) 沒登入：用程式預設
         page, errs = await open_page(ctx, url, None, {'class_id': 'c1', 'flags': {'wild': True}, 'weather': None})
-        check('沒登入：不讀班級設定，野外與救災都用預設（關閉）', await ev(page, "() => window.__fa.CONTROL === null && !window.__fa.flagOn('wild', false) && !window.__fa.flagOn('relief', false)"))
+        check('沒登入：不讀班級設定（CONTROL 空），野外項目依「不屬於任何班」預設開、村長救災物資預設關', await ev(page, "() => window.__fa.CONTROL === null && window.__fa.flagOn('wild', false) === true && !window.__fa.flagOn('relief', false)"))
         await page.close()
         # 2) 登入、班級開了 wild 和 relief
         ctrl = {'class_id': 'c1', 'flags': {'wild': True, 'relief': True, 'ch2': False}, 'weather': None}
@@ -145,11 +146,11 @@ async def main(url):
         await page.close()
         # 4) 換一個帳號：不能用上一個人的快取
         page, errs = await open_page(ctx, url, 'other@hlhs.hlc.edu.tw', 'error')
-        check('換帳號且讀不到：不使用別人的快取（回到預設）', await ev(page, "() => window.__fa.flagOn('wild', false) === false"))
+        check('換帳號且讀不到：不使用別人的快取（CONTROL 空；救災物資回到預設關）', await ev(page, "() => window.__fa.CONTROL === null && window.__fa.flagOn('relief', false) === false"))
         await page.close()
         # 5) 非在學學生（老師、訪客）：空設定 → 預設
         page, errs = await open_page(ctx, url, 'guest@gmail.com', {'class_id': None, 'flags': {}, 'weather': None})
-        check('訪客／老師：class_id 空、flags 空 → 野外項目用預設（關）、第二章開', await ev(page, "() => window.__fa.flagOn('wild', false) === false && window.__fa.flagOn('ch2', true) === true"))
+        check('訪客／老師：class_id 空、flags 空 → 野外項目與第二章開、村長救災物資預設關', await ev(page, "() => window.__fa.flagOn('wild', false) === true && window.__fa.flagOn('ch2', true) === true && window.__fa.flagOn('relief', false) === false"))
         check('班級控制測試沒有頁面錯誤', not errs, str(errs)); await page.close()
         await chapter_switch(ctx, url)
         await announcements(ctx, url)

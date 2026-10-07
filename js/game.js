@@ -122,9 +122,9 @@ const hookOf=sceneId=>{const c=chOf(sceneId);return c&&chOpen(c)?(CHH[c]||null):
 const chBase=(name,...a)=>{for(const [cid,h] of Object.entries(CHH)){if(!chOpen(cid))continue;const r=h[name]&&h[name](...a);if(r!==undefined&&r!==null&&r!==false)return r;}};
 /* ================= 班級控制：老師端設定的功能開關（沒設定就用程式預設）；讀取失敗時用本機快取 ================= */
 let CONTROL=window.FACloud&&FACloud.cachedControl?FACloud.cachedControl():null;  /* {class_id,flags:{ch2,wild,relief},weather:{id,type}|null} */
-/* 不屬於任何班的人（老師、訪客、沒登入）：地圖（章節）預設開放，但各章仍有自己的前置條件（例如第三章要先完成第二章）；
-   學生（有班級）照班級後台。野外項目、村長救災物資不在此列，天災只由班級公告觸發。後台對班級有明確設定時，一律以設定為準。 */
-const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;if(f&&name in f)return !!f[name];if(/^ch\d+$/.test(name)&&!(CONTROL&&CONTROL.class_id))return true;return !!def;};
+/* 不屬於任何班的人（老師、訪客、沒登入）：地圖（章節 chN）與野外項目（wild）預設開放，但各章仍有自己的前置條件（例如第三章要先完成第二章）；
+   學生（有班級）照班級後台。村長救災物資（relief）不在此列，天災只由班級公告觸發。後台對班級有明確設定時，一律以設定為準。 */
+const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;if(f&&name in f)return !!f[name];if(/^(ch\d+|wild)$/.test(name)&&!(CONTROL&&CONTROL.class_id))return true;return !!def;};
 async function pullControl(){if(!window.FACloud||!FACloud.refreshControl)return;try{CONTROL=await FACloud.refreshControl();}catch(e){}applyAnnouncement();}
 /* 老師發布的天災：每則公告每位學生只套用一次，排成「自己遊戲的明天」；套用時馬上告訴學生預報（等遊戲閒下來再顯示） */
 let wxNotice=null;

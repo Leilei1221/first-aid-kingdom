@@ -60,7 +60,7 @@ async def main(url):
         await pg.close()
         pg = await preview('river')
         await pg.evaluate("() => { window.__fa.S.pos = {x: 560, y: 520}; }"); await pg.wait_for_timeout(300)
-        check('?preview=river（沒有 wild=1）：河邊沒有「裝溪水」', await pg.inner_text('#act') != '裝溪水')
+        check('?preview=river（沒有 wild=1）：預覽沒有班級，野外項目依預設也是開的，河邊有「裝溪水」', await pg.inner_text('#act') == '裝溪水', await pg.inner_text('#act'))
         await pg.close()
         pg = await preview('home&wx=typhoon')
         r = await pg.evaluate("() => { const S = window.__fa.S, d = S.day; const next = JSON.stringify(S.wxNext); window.__fa.nextDay(); return {next, d, day: S.day, wx: S.wx && S.wx.type}; }")

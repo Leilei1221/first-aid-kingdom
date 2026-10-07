@@ -7,10 +7,11 @@ def check(name, ok, info=''):
     global fails
     print(('✓' if ok else '✗'), name, '' if ok else info)
     if not ok: fails += 1
-async def boot(ctx, url, extra='', rand=None):
+async def boot(ctx, url, extra='', rand=None, student=False):
     page = await ctx.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
     await page.add_init_script("if(!sessionStorage.getItem('fresh')){sessionStorage.setItem('fresh','1');localStorage.removeItem('fa-kingdom-p1-v1');}")
     if rand is not None: await page.add_init_script(f"Math.random = () => {rand};")
+    if student: await page.add_init_script("localStorage.setItem('fa-kingdom-ctrl-v1', JSON.stringify({email: 's1@hlhs.hlc.edu.tw', data: {class_id: 'c1', flags: {}, weather: null}, at: Date.now()}));")  # 有班級、後台沒設定的學生（野外項目預設關）
     await page.goto(url + extra + '#debug')
     await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
     await page.evaluate("() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.started = true; S.coins = 500; S.sta = 100; S.day = 5; S.kitCap = 14; document.getElementById('btnStart').click(); }")
@@ -106,11 +107,11 @@ async def main(url):
         await finish(page)
         check('河谷「裝溪水」：得到井水 1 份和野外找水知識卡', await st(page, "(S.mat.rawwater || 0) === 1 && !!S.cards.riverwater"), await st(page, 'JSON.stringify([S.mat.rawwater, S.cards.riverwater])'))
         check('溺水與溪水測試沒有頁面錯誤', not errs, str(errs)); await page.close()
-        # ---- 野外項目預設關閉
-        page, errs = await boot(ctx, url, '', rand=0)
+        # ---- 野外項目關閉：有班級、後台沒設定的學生（不屬於任何班的人預設是開的）
+        page, errs = await boot(ctx, url, '', rand=0, student=True)
         await start_go(page, 'river', 60, 440); await page.wait_for_timeout(800)
-        check('預設（WILD 關閉）：河谷沒有溺水事件', await page.evaluate("() => document.getElementById('dialog').hidden") and await st(page, '!S.f.drown'))
-        check('預設：阿鹿的高山症支線不出現', await page.evaluate("() => { const S = window.__fa.S; S.hearts.hunt = 3; return true; }") and await st(page, '!S.story.hunt'))
+        check('學生（後台沒設定野外）：河谷沒有溺水事件', await page.evaluate("() => document.getElementById('dialog').hidden") and await st(page, '!S.f.drown'))
+        check('學生（後台沒設定野外）：阿鹿的高山症支線不出現', await page.evaluate("() => { const S = window.__fa.S; S.hearts.hunt = 3; return true; }") and await st(page, '!S.story.hunt'))
         # ---- 體力耗盡
         await page.evaluate("() => { window.__fa.go('home', [840, 770]); }"); await page.wait_for_timeout(700)
         await page.evaluate("() => { window.__fa.faint('exhaust'); }"); await wait_dialog(page, '眼前突然')

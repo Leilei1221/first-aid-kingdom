@@ -7,10 +7,11 @@ def check(name, ok, info=''):
     global fails
     print(('✓' if ok else '✗'), name, '' if ok else info)
     if not ok: fails += 1
-async def boot(ctx, url, extra='', rand=None):
+async def boot(ctx, url, extra='', rand=None, student=False):
     page = await ctx.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
     await page.add_init_script("if(!sessionStorage.getItem('fresh')){sessionStorage.setItem('fresh','1');localStorage.removeItem('fa-kingdom-p1-v1');}")
     if rand is not None: await page.add_init_script(f"Math.random = () => {rand};")
+    if student: await page.add_init_script("localStorage.setItem('fa-kingdom-ctrl-v1', JSON.stringify({email: 's1@hlhs.hlc.edu.tw', data: {class_id: 'c1', flags: {}, weather: null}, at: Date.now()}));")  # 有班級、後台沒設定的學生（野外項目預設關）
     MOCK = "window.__cp = 0; window.FACloud = { checkpoint: () => { window.__cp++; }, restore: async () => null, failure: () => {}, flush: () => {}, queueSave: () => {}, status: () => 'off', email: () => null, onStatus: () => {}, init: async () => null, signIn: () => {}, signOut: async () => {} };"
     await page.goto(url + extra + '#debug')
     await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
@@ -27,14 +28,14 @@ async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
         await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
-        # 預設（WILD 關閉）：礦坑不掉打火石、背包沒有露營鈕
-        page, errs = await boot(ctx, url, rand=0)
+        # 野外項目關閉（有班級、後台沒設定的學生）：礦坑不掉打火石、背包沒有露營鈕
+        page, errs = await boot(ctx, url, rand=0, student=True)
         await page.evaluate("() => { window.__fa.go('mine_in', [860, 650]); }"); await page.wait_for_timeout(800)
         for _ in range(3): await page.evaluate("() => { window.__fa.mine(0); }"); await page.wait_for_timeout(450)
-        check('預設：敲礦石不會掉打火石', await st(page, '!(S.mat.flint)'), await st(page, 'JSON.stringify(S.mat)'))
+        check('學生（後台沒設定野外）：敲礦石不會掉打火石', await st(page, '!(S.mat.flint)'), await st(page, 'JSON.stringify(S.mat)'))
         await page.evaluate("() => { window.__fa.S.mat.flint = 1; window.__fa.S.mat.wood = 3; }")
         await page.click('#btnBag'); await page.wait_for_selector('#dText')
-        check('預設：背包的打火石沒有「露營」鈕', await page.locator('#dText button[data-m="camp"]').count() == 0)
+        check('學生（後台沒設定野外）：背包的打火石沒有「露營」鈕', await page.locator('#dText button[data-m="camp"]').count() == 0)
         await pick(page, 0); await page.close()
         # WILD：礦坑掉打火石
         page, errs = await boot(ctx, url, '?wild=1', rand=0)
