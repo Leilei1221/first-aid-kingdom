@@ -104,7 +104,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,STAR_REWARD,STAMINA_SHOP,VEHICLES,VIP,CHAT_LUCK,CHAT_TOPICS,DAILY,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,STAR_REWARD,STAMINA_SHOP,VEHICLES,OUTFITS,VIP,CHAT_LUCK,CHAT_TOPICS,DAILY,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -126,6 +126,22 @@ let CONTROL=window.FACloud&&FACloud.cachedControl?FACloud.cachedControl():null; 
    學生（有班級）照班級後台。村長救災物資（relief）不在此列，天災只由班級公告觸發。後台對班級有明確設定時，一律以設定為準。 */
 /* 體力上限：基本值 STA_MAX＋商店「體能訓練」買的次數（S.c.staUp，不新增頂層欄位）× 每次提高的點數 */
 const staMax=()=>STA_MAX+((S&&S.c&&S.c.staUp)||0)*STAMINA_SHOP.up.step;
+/* 裝扮（完成第三章後；背包「裝扮」換上）。擁有的 S.c.outfits（編號陣列）、穿著的 S.c.outfit（沒有＝預設） */
+const outfitOf=id=>OUTFITS.list.find(o=>o.id===id);
+const outfitSrc=()=>{const o=S&&S.c&&S.c.outfit&&(S.c.outfits||[]).includes(S.c.outfit)?S.c.outfit:null;return o?`assets/outfit_${o}.webp`:A.hero;};
+const applyOutfit=()=>{if(heroImg)heroImg.src=outfitSrc();};
+const bagOutfits=()=>{const own=S.c.outfits||[],cur=outfitSrc()===A.hero?'':S.c.outfit;
+  const row=(id,name,img,desc)=>`<div class="row"><img alt="" src="${img}" style="width:44px;height:70px;object-fit:contain;object-position:bottom"><div class="info"><b>${name}</b><span>${desc}</span></div>${(cur||'')===id?'<span class="small">穿著中</span>':`<button type="button" data-w="${id}">換上</button>`}</div>`;
+  return `<h4>裝扮</h4>`+row('','預設裝扮',A.hero,'旅行者的原本打扮。')+own.map(id=>outfitOf(id)).filter(Boolean).map(o=>row(o.id,o.name,`assets/outfit_${o.id}.webp`,o.desc)).join('');};
+function wearOutfit(id){S.c.outfit=id||null;applyOutfit();save();}
+/* 條件達成的裝扮自動送（第三章 5 顆星、累計簽到滿 30 天）；refresh() 會呼叫 */
+function outfitSync(){
+  if(!S||!S.c||!S.c.ch3_done)return;
+  const own=S.c.outfits||[],gain=[];
+  OUTFITS.list.forEach(o=>{if(own.includes(o.id))return;
+    if((o.src==='ch3star5'&&(S.c.ch3_stars||0)>=5)||(o.src==='daily30'&&S.c.daily&&S.c.daily.got&&S.c.daily.got[30]))gain.push(o);});
+  if(!gain.length)return;
+  S.c.outfits=own.concat(gain.map(o=>o.id));gain.forEach(o=>toast(`獲得新裝扮：${o.name}！到背包的「裝扮」換上`));}
 /* 交通工具（完成第三章後在雜貨店買；世界地圖搭乘）。擁有的記在 S.c.air（編號陣列） */
 const airOwned=()=>((S&&S.c&&S.c.air)||[]).map(id=>VEHICLES.list.find(v=>v.id===id)).filter(Boolean);
 const vBadge=v=>`<span class="badge" style="--c:${v.color};--tc:#1b1b1b" aria-hidden="true">${v.ch}</span>`;
@@ -393,7 +409,7 @@ function buildScene(){
   {const h=hookOf(S.scene);if(h&&h.build)h.build(S.scene,H,{sprite,npcEls});}
   (SIGNS[S.scene]||[]).forEach(g=>{const e=document.createElement('div');e.className='ent signpost';e.style.transform=`translate(${g.x}px,${g.y}px) translate(-50%,-50%)`;e.textContent=g.t();plane.appendChild(e);});
   snapFree();
-  heroEl=sprite('shadow','',S.pos.x,S.pos.y,H,RATIO.hero);heroEl.id='hero';heroImg=heroEl.querySelector('img');heroImg.src=A.hero;
+  heroEl=sprite('shadow','',S.pos.x,S.pos.y,H,RATIO.hero);heroEl.id='hero';heroImg=heroEl.querySelector('img');heroImg.src=outfitSrc();
   refresh();fit();
   if(window.FAMusic)FAMusic.scene(S.scene,S);
 }
@@ -407,6 +423,7 @@ function plotKey(p){ /* 對應圖片 */
   if(p.st==='tilled')return p.wet?'soil_wet':'soil_dry';
   if(p.g>=GROW_DAYS)return 'ripe';if(p.g>=2)return 'tall';if(p.g>=1)return 'sprout';return p.wet?'soil_wet':'soil_dry';}
 function refresh(){
+  outfitSync();
   const s=sc(),H=s.heroH;
   (s.trees||[]).forEach(t=>{const st=treeState(t),e=treeEls[t.id];const alive=st.hp>0;setSprite(e,alive?'tree':'stump',alive?Math.round(H*1.9):Math.round(H*.62));});
   plotEls.forEach((e,i)=>{const p=plotState(i),k=plotKey(p);e.hidden=!k;if(!k)return;
@@ -905,6 +922,10 @@ async function shopMenu(){
       const own=(S.c.air||[]);
       html+=`<h4>交通工具</h4><p class="small">買了以後，在世界地圖點其他地區就能搭乘：不用過夜、不用食水，只耗一點體力。颱風、豪雨不能飛。</p>`+VEHICLES.list.map(v=>{const has=own.includes(v.id);
         return `<div class="row">${vBadge(v)}<div class="info"><b>${v.name}</b><span>${has?'已擁有':P(v.cost)+' 金幣'}　飛一趟耗體力 ${v.sta}　${v.fog?'濃霧也能飛　':''}${v.desc}</span></div><button type="button" data-a="air:${v.id}" ${has||S.coins<P(v.cost)?'disabled':''}>${has?'已擁有':'購買'}</button></div>`;}).join('');}
+    if(S.c&&S.c.ch3_done){  /* 裝扮：完成第三章之後開啟（老師 2026-10-09 決定）；設定在 content/balance.json 的 OUTFITS */
+      const own=S.c.outfits||[];
+      html+=`<h4>裝扮</h4><p class="small">買了以後到背包的「裝扮」換上，只改外觀，不影響任何數值。</p>`+OUTFITS.list.filter(o=>o.src==='shop').map(o=>{const has=own.includes(o.id);
+        return `<div class="row"><img alt="" src="assets/outfit_${o.id}.webp" style="width:44px;height:70px;object-fit:contain;object-position:bottom"><div class="info"><b>${o.name}</b><span>${has?'已擁有':P(o.cost)+' 金幣'}　${o.desc}</span></div><button type="button" data-a="out:${o.id}" ${has||S.coins<P(o.cost)?'disabled':''}>${has?'已擁有':'購買'}</button></div>`;}).join('');}
     if(S.step>=5){html+=`<h4>急救用品</h4>`+SHOP_MED.concat(mapAvail()?SHOP_EXTRA:[]).map(k=>{const it=ITEMS[k];const full=S.kit.length>=S.kitCap;
       return `<div class="row">${badge(k)}<div class="info"><b>${it.name}　<span style="color:var(--gold)">背包裡有 ${kitCount(k)} 個</span></b><span>${P(it.price)} 金幣　重量 ${it.w}　${it.desc}</span></div><button type="button" data-a="buy:${k}" ${S.coins-P(it.price)>=-DEBT_LIMIT&&!full?'':'disabled'}>${full?'背包已滿':S.coins-P(it.price)<-DEBT_LIMIT?'超過賒帳上限':S.coins<P(it.price)?'賒帳買 1 個':'買 1 個'}</button></div>`;}).join('');}
     else html+=`<p class="small">急救用品目前缺貨中。</p>`;
@@ -920,6 +941,7 @@ async function shopMenu(){
     else if(pick==='kit'){S.coins-=P(kitNext.cost);S.kitCap=kitNext.cap;S.kitLv++;addHeart('shopkeeper',1);msg=`✓ 急救背包擴充為 ${S.kitCap} 格`;}
     else if(pick.startsWith('sta:')){const f=STAMINA_SHOP.food.find(x=>x.id===pick.slice(4));if(f&&S.coins>=P(f.cost)&&S.sta<staMax()){S.coins-=P(f.cost);const b4=S.sta;S.sta=Math.min(staMax(),S.sta+f.restore);msg=`✓ 吃了${f.name}，體力 +${S.sta-b4}`;}}
     else if(pick==='staup'){const up=S.c.staUp||0,c=STAMINA_SHOP.up.costs[up]!=null?P(STAMINA_SHOP.up.costs[up]):null;if(c!=null&&S.coins>=c){S.coins-=c;S.c.staUp=up+1;S.sta+=STAMINA_SHOP.up.step;addHeart('shopkeeper',1);msg=`✓ 體力上限提高為 ${staMax()}（體力 +${STAMINA_SHOP.up.step}）`;}}
+    else if(pick.startsWith('out:')){const o=outfitOf(pick.slice(4)),own=S.c.outfits||[];if(o&&o.src==='shop'&&!own.includes(o.id)&&S.coins>=P(o.cost)){S.coins-=P(o.cost);S.c.outfits=own.concat(o.id);addHeart('shopkeeper',1);msg=`✓ 買下了${o.name}！到背包的「裝扮」換上`;}}
     else if(pick.startsWith('air:')){const v=VEHICLES.list.find(x=>x.id===pick.slice(4)),own=S.c.air||[];if(v&&!own.includes(v.id)&&S.coins>=P(v.cost)){S.coins-=P(v.cost);S.c.air=own.concat(v.id);addHeart('shopkeeper',1);msg=`✓ 買下了${v.name}！到世界地圖點其他地區就能搭乘`;}}
     else if(pick.startsWith('buy:')){const k=pick.slice(4);S.coins-=P(ITEMS[k].price);S.kit.push(k);msg=`✓ 已購買：${ITEMS[k].name} ×1（急救背包 ${S.kit.length}/${S.kitCap}）`;}
     refresh();
@@ -1093,11 +1115,12 @@ async function bag(){if(busy)return;busy=true;stopInput();
     const tools=[S.axe&&'斧頭',S.tools.hoe&&'鋤頭',S.tools.can&&'澆水壺',S.tools.pick&&'十字鎬'].filter(Boolean).join('、')||'沒有';
     const r=await say({p:'hero',who:'我的包包',html:`<h4>急救背包 ${S.kit.length}/${S.kitCap}</h4><div class="meter"><i class="${l>LOAD_HEAVY?'over':l>LOAD_OK?'heavy':''}" style="width:${pct}%"></i></div>
       <p class="small">負重 ${l}　${l>LOAD_HEAVY?'太重了，走得很慢':l>LOAD_OK?'有點重，走路變慢':'輕鬆好走'}</p>${slots}
-      ${friendOn()&&S.c.daily&&S.c.daily.title?`<p class="small">稱號：「${S.c.daily.title}」</p>`:''}${friendOn()?`<h4>道具 ${invTotal()}/${CHAT_LUCK.invCap}</h4>${Object.entries(CHAT_LUCK.items).filter(([k])=>(invOf()[k]||0)>0).map(([k,I])=>`<div class="row"><div class="info"><b>${I.name} ×${invOf()[k]}</b><span>${I.desc}</span></div><button type="button" data-u="${k}">使用</button></div>`).join('')||'<p class="small">還沒有道具。跟好朋友聊天，有機會得到神秘小道具。</p>'}`:''}
+      ${friendOn()&&S.c.daily&&S.c.daily.title?`<p class="small">稱號：「${S.c.daily.title}」</p>`:''}${friendOn()?bagOutfits():''}${friendOn()?`<h4>道具 ${invTotal()}/${CHAT_LUCK.invCap}</h4>${Object.entries(CHAT_LUCK.items).filter(([k])=>(invOf()[k]||0)>0).map(([k,I])=>`<div class="row"><div class="info"><b>${I.name} ×${invOf()[k]}</b><span>${I.desc}</span></div><button type="button" data-u="${k}">使用</button></div>`).join('')||'<p class="small">還沒有道具。跟好朋友聊天，有機會得到神秘小道具。</p>'}`:''}
       <h4>素材袋 ${matUsed()}/${S.matCap}</h4>${Object.entries(S.mat).filter(([k,n])=>n>0).map(([k,n])=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name} ×${n}</b></div>${k==='mushroom'?'<button type="button" data-m="eat">吃掉</button> <button type="button" data-m="toss">丟掉</button>':''}${k==='flint'&&wild()?'<button type="button" data-m="camp">露營</button>':''}</div>`).join('')||'<p class="small">空的</p>'}<h4>工具</h4><p>${tools}</p>`,buttons:[{label:'關閉',primary:true}],
-      onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-u]').forEach(b=>b.onclick=()=>{useKey=b.dataset.u;fin('use');});root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('ration');});}});
+      onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-u]').forEach(b=>b.onclick=()=>{useKey=b.dataset.u;fin('use');});root.querySelectorAll('button[data-w]').forEach(b=>b.onclick=()=>{useKey=b.dataset.w;fin('wear');});root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('ration');});}});
     if(r==='drink'){if(S.drinkDay!==S.day){S.drinkDay=S.day;S.drinks=0;}S.kit.splice(pick,1);if(S.drinks<3){S.drinks++;S.sta=Math.min(staMax(),S.sta+10);toast('喝了開水，體力 +10');}else toast('喝了開水，已經不渴了');refresh();continue;}
     if(r==='use'){useItem(useKey);continue;}
+    if(r==='wear'){wearOutfit(useKey);continue;}
     if(r==='sugar'){await eatSugar(pick);continue;}
     if(r==='ration'){eatRation(pick);refresh();continue;}
     if(r==='camp'){busy=false;await camp();busy=true;break;}
@@ -1346,5 +1369,5 @@ Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
 if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
