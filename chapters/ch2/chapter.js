@@ -80,7 +80,7 @@ async function elecEvent(){
   await say({p:'ch2_appr',html:`<p>嚇死我了……謝謝你。我這就去給醫生看看。</p><p class="good">獲得知識卡：${CARDS.ch2_elec.title}</p>`});}
 async function innRoom(){
   const i=await say({p:'ch2_innk',who:'溫泉旅館',html:`<p>要住一晚嗎？一晚 20 金幣，體力會完全恢復，進入下一天。</p><p class="small">金幣 ${S.coins}</p>`,buttons:[{label:'住一晚',primary:true,disabled:S.coins<20},{label:'不用了'}]});
-  if(i!==0)return;S.coins-=20;$('fade').classList.add('on');await sleep(RM?0:500);const html=nextDay();S.sta=STA_MAX;refresh();$('fade').classList.remove('on');checkpoint();
+  if(i!==0)return;S.coins-=20;$('fade').classList.add('on');await sleep(RM?0:500);const html=nextDay();S.sta=FA.staMax();refresh();$('fade').classList.remove('on');checkpoint();
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>泡完溫泉睡了一覺，體力完全恢復了。</p>'+html});}
 async function bigFire(){
   if(S.c.r_ext){await say({p:'ch2_cap',html:'<p>倉庫的火勢太大了，交給消防隊！你快去幫忙救人！</p>'});return;}
@@ -213,7 +213,7 @@ async function voyageSleep(){
     await say({p:'ch2_capt',html:`<p class="${i===1?'good':'bad'}">${i===1?'做得好！船員抓住了救生圈，被拉回船上了。':'別跳！在海上跳下去，只會多一個需要救的人！快拋救生圈！'}</p><p>他在水裡很冷靜，一直用<b>仰漂</b>的方式浮著等我們。</p>`});
     await say({p:'ch2_capt',html:`<div class="card"><b>${CARDS.ch2_overboard.title}</b><p>${CARDS.ch2_overboard.text}</p></div>`});S.cards.ch2_overboard=true;v.mob=true;return;}
   const msg=await voyageMeal();
-  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,STA_MAX-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
+  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,FA.staMax()-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
   if(v.left>0){await say({icon:'⚓',who:`第 ${S.day} 天・海上`,html:`<p>${msg.join('。')}。</p><p>在船艙睡了一晚，船還在海上航行。</p>`+html});return;}
   const to=v.to;S.voyage=null;
   await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});

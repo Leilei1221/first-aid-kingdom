@@ -139,6 +139,26 @@ async def main(url):
         await talk_at(page, 'ch3_harbor', 1000, 480)
         t = await collect_lines(page, 2)
         check('港口水手：天氣停航、告示牌搭船', '會停航' in t[0] and '告示牌' in t[1], str(t))
+        # --- 港口救生員：還沒練習完時，「接下來做什麼」依進度指路（不會卡住）
+        await page.evaluate("() => { const S = window.__fa.S; S.c.ch3_met = true; delete S.c.ch3_done; ['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].forEach(k => delete S.cards[k]); }")
+        for have, key in [([], '倒下了'), (['ch3_k1_3'], '救生站吧'), (['ch3_k1_3', 'ch3_k2_3'], '面罩'), (['ch3_k1_3', 'ch3_k2_3', 'ch3_k3_1'], 'AED')]:
+            await page.evaluate("(h) => { const S = window.__fa.S; ['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].forEach(k => delete S.cards[k]); h.forEach(k => S.cards[k] = true); }", have)
+            await talk_at(page, 'ch3_harbor', 1250, 800)
+            menu = await page.locator('#dBtns button').all_inner_texts()
+            if len(have) == 0: check('還沒練習完：選單「接下來做什麼／聊聊／先離開」', menu == ['接下來做什麼', '聊聊', '先離開'], str(menu))
+            await next_btn(page, '接下來做什麼'); t = await say_text(page)
+            check(f'接下來做什麼（已有 {len(have)} 張卡）：指到對的地方', key in t, t)
+            await next_btn(page); await page.wait_for_selector('#dBtns button')
+            check('說完回到選單（沒有卡死）', await page.locator('#dBtns button').count() == 3)
+            await next_btn(page, '先離開'); await page.wait_for_timeout(300)
+        # --- 三位路人：章末前後各一句
+        for pid, key0, key1 in [('ch3_by_red', '嚇得不知道', '謝謝你'), ('ch3_by_blue', '只敢站在這裡', '第一個動手'), ('ch3_by_green', '救生員很懂', '帶頭')]:
+            for done, key in [(False, key0), (True, key1)]:
+                await page.evaluate("(d) => { const S = window.__fa.S; if (d) S.c.ch3_done = true; else delete S.c.ch3_done; }", done)
+                pos = await page.evaluate("(id) => { const n = window.__fa.SCENES.ch3_market.npcs.find(n => n.id === id); return [n.x, n.y]; }", pid)
+                await talk_at(page, 'ch3_market', pos[0], pos[1] + 50)
+                t = await say_text(page); check(f'{pid}（章末{"後" if done else "前"}）：有台詞', key in t and '還沒' not in t, t)
+                await next_btn(page); await page.wait_for_timeout(300)
         # --- 南岸水手：選單與四個話題
         sailor = await page.evaluate("() => { const n = window.__fa.SCENES.ch3_fishport.npcs.find(n => n.id === 'ch3_sailor'); return [n.x, n.y]; }")
         await talk_at(page, 'ch3_fishport', sailor[0], sailor[1] + 50)

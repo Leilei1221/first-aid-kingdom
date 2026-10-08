@@ -48,7 +48,7 @@ async function bed(){
     await say({p:'ch3_captain',html:`<p class="${i===1?'good':'bad'}">${i===1?'做得好！船員抓住了救生圈，被拉回船上了。':'別跳！在海上跳下去，只會多一個需要救的人！快拋救生圈！'}</p><p>他在水裡很冷靜，一直用<b>仰漂</b>的方式浮著等我們。</p>`});
     await say({p:'ch3_captain',html:`<div class="card"><b>${CARDS.ch2_overboard.title}</b><p>${CARDS.ch2_overboard.text}</p></div>`});S.cards.ch2_overboard=true;v.mob=true;return;}
   const msg=voyageMeal();
-  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,STA_MAX-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
+  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,FA.staMax()-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
   if(v.left>0){await say({icon:'⚓',who:`第 ${S.day} 天・海上`,html:`<p>${msg.join('。')}。</p><p>在船艙睡了一晚，船還在海上航行。</p>`+html});return;}
   const to=v.to;S.voyage=null;
   await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});
@@ -275,10 +275,11 @@ async function lifegHarbor(){
   }
   for(;;){
     const ready=['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
-    const labels=ready?['請教救生員','聊聊','先離開']:['聊聊','先離開'];
+    const labels=ready?['請教救生員','聊聊','先離開']:['接下來做什麼','聊聊','先離開'];
     const i=await say({p:LIFEG,html:ready?'<p>想聊聊，還是想請教急救和防災的事？</p>':'<p>港口人多，想聊聊嗎？市集和救生站都可以去看看。</p>',buttons:labels.map((l,k)=>({label:l,primary:k===0}))});
     const lab=labels[i];
     if(lab==='請教救生員')return lesson4();
+    if(lab==='接下來做什麼'){await lines(LIFEG,[!S.cards.ch3_k1_3?'市集的空地上有人倒下了，快過去看看！':!S.cards.ch3_k2_3?'去救生站吧，假人旁邊可以練習按壓。':!S.cards.ch3_k3_1?'假人旁邊的面罩，可以練習人工呼吸。':'救生站牆上的 AED，也要練習怎麼用。']);continue;}
     if(lab!=='聊聊')return;
     const c=S.c||{};
     if(c.ch3_done){
@@ -301,6 +302,11 @@ async function sailorPort(){
     await lines(SAILOR,SAILOR_TOPICS[i][1]);
   }}
 
+const PASSER_LINES={
+  ch3_by_red:[['我剛剛看到他突然就倒下去了，嚇得不知道該怎麼辦。'],['剛才真的謝謝你！我以後也想學學急救。']],
+  ch3_by_blue:[['不知道有沒有人會急救……我只敢站在這裡看。'],['你好厲害，那麼多人在，你還是第一個動手的。']],
+  ch3_by_green:[['聽說港口的救生員很懂急救，他說不定有辦法。'],['有人在現場帶頭，大家就知道該做什麼了。']]};
+const passerTalk=id=>lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);
 return {
   acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed},
   build(sceneId,H,{sprite}){
@@ -322,6 +328,7 @@ return {
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
     if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();
+    if(PASSERS.includes(id))return passerTalk(id);
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */
 };
 }
