@@ -180,6 +180,7 @@ async def main(url):
         check('沒有新增頂層存檔欄位（只有 S.c 裡的 ch3_ 鍵）', await st(page, "Object.keys(S).filter(k => k.toLowerCase().startsWith('c3') || k.startsWith('ch3')).length") == 0)
         check('星級獎勵：第一次 5 顆星＝3、4、5 星報酬都領（80＋160＋320）', await st(page, 'S.coins') == coins + 560 and await st(page, 'S.c.starPaid.ch3') == 5, str(await st(page, 'S.coins')) + ' vs ' + str(coins))
         check('結算畫面有「星級獎勵：+560 金幣」', '星級獎勵：+560 金幣' in t, t)
+        check('完成章末演練也算每日任務「處理一次事件或傷口」', await st('S.c.daily && S.c.daily.done.care') is True, str(await st('S.c.daily')))
         check('嚴重錯誤只記錄、不扣錢：仍在市集', await st(page, 'S.scene') == 'ch3_market')
         coins = await st(page, 'S.coins')
         await page.wait_for_timeout(400); g = await page.inner_text('#goal')

@@ -104,7 +104,7 @@ const quizOf=k=>{const z=DLG.quizzes[k];return quiz(k,z.q,z.opts,z.ans,z.explain
 const missTxt=miss=>miss.map(([k,n])=>ITEMS[k].name+' \u00d7'+(n-kitCount(k))).join('、');
 
 /* ================= 內容資料（從 content/*.json 載入；審核時改 JSON） ================= */
-const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,STAR_REWARD,STAMINA_SHOP,VIP,CHAT_LUCK,CHAT_TOPICS,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
+const {ITEMS,MATS,GIFTABLE,LIKES,RECIPES,BENCH_WOOD,MED_FEE,HYPO_AT,EVENTS,STORIES,VICTIMS,RATION_NEED,RATION_SELL,WATER_NEED,RESCUE_FEE,DEBT_LIMIT,RATION_EAT,STASH_CAP,SPRINKLER_AREA,SPRINKLER_SLOTS,FORAGE_SPOTS,FORAGE_N,SHOP_MED,SHOP_EXTRA,WOUNDS,OUTDOOR,WX,WILD_ON,DROWN_CHANCE,RELIEF_ON,RELIEF_LIMIT,SCENARIOS,STAR_REWARD,STAMINA_SHOP,VIP,CHAT_LUCK,CHAT_TOPICS,DAILY,MERCHANT_GOODS,MAT_UP,KIT_UP,LOAD_OK,LOAD_HEAVY,STA_MAX,COST,GROW_DAYS,RATION_WHEAT,RATION_LIFE,MACHINE_WOOD,MACHINE_COIN,CARDS,REQUESTS,PEOPLE,RATIO,PLOTS,ROCKS}=Object.assign({},C.items,C.balance,C.characters,C.crafting,C.cards,C.quests,C.ratios,C.wounds,C.weather,C.rescue);
 const SCENES=compileScenes(C.scenes),SIGNS=compileSigns(C.signs);
 /* ================= 地區（綠葉谷＋各章宣告的地區） ================= */
 const BASE={id:'base',name:'綠葉谷',pin:[41,44],center:{scene:'village',at:[1045,300]},home:{scene:'home',at:[420,660]}};
@@ -167,7 +167,7 @@ async function chatLuck(id){
   else{const n=CHAT_LUCK.coin.min+Math.floor(Math.random()*(CHAT_LUCK.coin.max-CHAT_LUCK.coin.min+1));S.coins+=n;S.earned+=n;
     await say({p:id,html:`<p>${pickLine('coin')}</p><p class="good">獲得 ${n} 金幣</p>`});}
   if(h<5)toast('好感度越高，聊天時越容易有驚喜');
-  refresh();return kind;}
+  await dailyDone('chat');refresh();return kind;}
 /* 使用道具 */
 function useItem(k){const inv=invOf();if(!(inv[k]>0))return false;const E=CHAT_LUCK.effects,B=buffOf();inv[k]--;
   const boots=()=>{B.boots=Math.min(E.boots.maxSeconds,(B.boots||0)+E.boots.seconds);},charm=()=>{B.charm=Math.min(E.charm.maxAnswers,(B.charm||0)+E.charm.answers);};
@@ -185,6 +185,36 @@ function updateBuffPill(){const el=$('buffPill');if(!el)return;const B=S&&S.c&&S
   if(B.boots>0){const s=Math.ceil(B.boots);parts.push(`疾風 ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`);}
   if(B.charm>0)parts.push(`幸運 ×${B.charm}`);
   el.hidden=!parts.length;el.textContent=parts.join('　');}
+
+/* ================= 每日任務與累計簽到（老師 2026-10-08 決定，完成第三章後開啟；以現實日期計算）=================
+   每日任務（DAILY.tasks）：聊聊天、處理事件或傷口、複習知識卡，三項都完成就領獎勵（金幣，另有機率小道具）。
+   累計簽到：每個現實日期打開遊戲算一天，累積（中斷不歸零）到 DAILY.milestones 的天數就領獎勵（金幣、小道具、部分有稱號）。
+   記在既有的 S.c.daily，不新增頂層欄位；數字在 content/balance.json 的 DAILY。 */
+function dailyState(){S.c=S.c||{};const d=S.c.daily=S.c.daily||{days:0,last:null,date:null,done:{},claimed:false,got:{},title:null,titles:[]};
+  if(d.date!==todayStr()){d.date=todayStr();d.done={};d.claimed=false;}return d;}
+const dailyCount=()=>DAILY.tasks.filter(t=>dailyState().done[t.id]).length;
+function updateDailyPill(){const el=$('btnDaily');if(!el)return;el.hidden=!friendOn();if(el.hidden)return;$('dailyInfo').textContent=`${dailyCount()}/${DAILY.tasks.length}`;}
+function giveItems(items){const inv=invOf();return Object.entries(items||{}).map(([k,n])=>{inv[k]=(inv[k]||0)+n;return `${CHAT_LUCK.items[k].name} ×${n}`;});}
+async function grantDaily(){
+  const R=DAILY.reward;S.coins+=R.coins;S.earned+=R.coins;let more='';
+  if(Math.random()<R.itemChance){const k=pickWeighted(R.items);more=`<p class="good">還額外得到：${giveItems({[k]:1})[0]}</p>`;}
+  await say({p:'hero',who:'每日任務',html:`<p class="good">今天的每日任務全部完成了！</p><p class="good">獲得 ${R.coins} 金幣</p>${more}`});refresh();}
+async function dailyDone(id){
+  if(!friendOn())return false;const d=dailyState(),t=DAILY.tasks.find(x=>x.id===id);if(!t||d.done[id])return false;
+  d.done[id]=true;updateDailyPill();const n=dailyCount();toast(`每日任務完成：${t.name}（${n}/${DAILY.tasks.length}）`);
+  if(n===DAILY.tasks.length&&!d.claimed){d.claimed=true;await grantDaily();}return true;}
+async function dailyCheck(){  /* 累計簽到：每個現實日期第一次進遊戲算一天 */
+  if(!friendOn())return false;const d=dailyState(),today=todayStr();if(d.last===today)return false;
+  d.last=today;d.days++;const m=DAILY.milestones.find(x=>x.days===d.days&&!d.got[x.days]);
+  if(!m){toast(`累計登入第 ${d.days} 天`);return true;}
+  d.got[m.days]=true;S.coins+=m.coins;S.earned+=m.coins;const items=giveItems(m.items);if(m.title){d.title=m.title;if(!d.titles.includes(m.title))d.titles.push(m.title);}
+  await say({p:'hero',who:'累計簽到',html:`<p class="good">你累計登入第 ${d.days} 天了！</p><p class="good">獲得 ${m.coins} 金幣${items.length?'、'+items.join('、'):''}</p>${m.title?`<p class="good">獲得稱號：「${m.title}」</p>`:''}<p class="small">道具放進背包的「道具」裡。</p>`});refresh();return true;}
+async function dailyWindow(){
+  if(busy)return;busy=true;stopInput();
+  try{const d=dailyState(),nx=DAILY.milestones.find(x=>x.days>d.days);
+    await say({p:'hero',who:'每日任務',html:`<h4>今天的任務（${dailyCount()}/${DAILY.tasks.length}）</h4>${DAILY.tasks.map(t=>`<div class="row"><div class="info"><b>${d.done[t.id]?'✓':'□'} ${t.name}</b></div></div>`).join('')}<p class="small">三項都完成，可以領 ${DAILY.reward.coins} 金幣，還有機會得到神秘小道具。每天都會重新開始。</p>
+      <h4>累計登入</h4><p>已經累計登入 <b>${d.days}</b> 天${d.title?`　稱號：「${d.title}」`:''}</p><p class="small">${nx?`再登入 ${nx.days-d.days} 天（第 ${nx.days} 天）有獎勵：${nx.coins} 金幣${nx.items?'、'+Object.entries(nx.items).map(([k,n])=>CHAT_LUCK.items[k].name+' ×'+n).join('、'):''}${nx.title?`、稱號「${nx.title}」`:''}。中斷幾天也沒關係，天數不會歸零。`:'累計登入的獎勵都領完了！'}</p>`,buttons:[{label:'關閉',primary:true}]});}
+  finally{busy=false;}}
 const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;if(f&&name in f)return !!f[name];if(/^(ch\d+|wild)$/.test(name)&&!(CONTROL&&CONTROL.class_id))return true;return !!def;};
 async function pullControl(){if(!window.FACloud||!FACloud.refreshControl)return;try{CONTROL=await FACloud.refreshControl();}catch(e){}applyAnnouncement();}
 /* 老師發布的天災：每則公告每位學生只套用一次，排成「自己遊戲的明天」；套用時馬上告訴學生預報（等遊戲閒下來再顯示） */
@@ -381,7 +411,7 @@ function refresh(){
   rockEls.forEach((e,i)=>{const r=rockState(i),o=sc().ore;setSprite(e,r.hp>0?(r.ore&&o?o.img:r.gold?'rock_gold':'rock'):(r.ore&&o?o.rubble:'rubble'),r.hp>0?Math.round(H*.95):Math.round(H*.55));});
   Object.entries(npcEls).forEach(([id,e])=>{e.querySelector('.tag').innerHTML=PEOPLE[id].name+(npcHasNews(id)?'<span class="bang">!</span>':'');});
   $('place').textContent=s.name;$('coins').textContent=S.coins;$('coins').style.color=S.coins<0?'var(--bad)':'';$('day').textContent=S.day;
-  updateBuffPill();$('sta').textContent=S.sta;const sb=$('staBar');sb.style.width=(S.sta/staMax()*100)+'%';sb.classList.toggle('low',S.sta<20);
+  updateBuffPill();updateDailyPill();$('sta').textContent=S.sta;const sb=$('staBar');sb.style.width=(S.sta/staMax()*100)+'%';sb.classList.toggle('low',S.sta<20);
   $('bagInfo').textContent=`${S.kit.length}/${S.kitCap}`;$('cardInfo').textContent=Object.keys(S.cards).length;
   $('joy').hidden=S.ctrl!=='joy';$('dpad').hidden=S.ctrl!=='pad';
   $('btnMap').hidden=!mapAvail();applyWx();
@@ -744,7 +774,7 @@ async function victim(id){
     const i=await say({p:id,html:`<p class="q">${v.q}</p>`,buttons:v.opts.map(o=>({label:o}))});
     const ok=i===v.ans;
     await say({p:id,html:`<p class="${ok?'good':'bad'}">${ok?'處置正確！':'這個做法不對。'}</p><p>${v.explain}</p>`});
-    S.rescue[id]=ok?'ok':'wrong';if(ok)addHeart(id,2);}
+    S.rescue[id]=ok?'ok':'wrong';if(ok)addHeart(id,2);await dailyDone('care');}
   refresh();
   if(Object.keys(VICTIMS).every(k=>S.rescue[k]))await rationPhase();
 }
@@ -801,6 +831,7 @@ async function doEvent(ev){
   takeKit(ev.needs);S.event.done=true;S.coins+=20;S.earned+=20;addHeart(ev.who,1);
   const isNew=!S.cards[ev.id];S.cards[ev.id]=true;
   await say({p:ev.who,html:`<p>${ev.thanks}</p><p class="good">獲得 20 金幣${isNew?`、知識卡：${CARDS[ev.id].title}`:''}</p>`});
+  await dailyDone('care');
 }
 async function forestChest(){
   if(S.chests.f1){await say({p:'hero',html:'<p>寶箱已經空了。</p>'});return;}
@@ -1037,7 +1068,7 @@ async function bag(){if(busy)return;busy=true;stopInput();
     const tools=[S.axe&&'斧頭',S.tools.hoe&&'鋤頭',S.tools.can&&'澆水壺',S.tools.pick&&'十字鎬'].filter(Boolean).join('、')||'沒有';
     const r=await say({p:'hero',who:'我的包包',html:`<h4>急救背包 ${S.kit.length}/${S.kitCap}</h4><div class="meter"><i class="${l>LOAD_HEAVY?'over':l>LOAD_OK?'heavy':''}" style="width:${pct}%"></i></div>
       <p class="small">負重 ${l}　${l>LOAD_HEAVY?'太重了，走得很慢':l>LOAD_OK?'有點重，走路變慢':'輕鬆好走'}</p>${slots}
-      ${friendOn()?`<h4>道具 ${invTotal()}/${CHAT_LUCK.invCap}</h4>${Object.entries(CHAT_LUCK.items).filter(([k])=>(invOf()[k]||0)>0).map(([k,I])=>`<div class="row"><div class="info"><b>${I.name} ×${invOf()[k]}</b><span>${I.desc}</span></div><button type="button" data-u="${k}">使用</button></div>`).join('')||'<p class="small">還沒有道具。跟好朋友聊天，有機會得到神秘小道具。</p>'}`:''}
+      ${friendOn()&&S.c.daily&&S.c.daily.title?`<p class="small">稱號：「${S.c.daily.title}」</p>`:''}${friendOn()?`<h4>道具 ${invTotal()}/${CHAT_LUCK.invCap}</h4>${Object.entries(CHAT_LUCK.items).filter(([k])=>(invOf()[k]||0)>0).map(([k,I])=>`<div class="row"><div class="info"><b>${I.name} ×${invOf()[k]}</b><span>${I.desc}</span></div><button type="button" data-u="${k}">使用</button></div>`).join('')||'<p class="small">還沒有道具。跟好朋友聊天，有機會得到神秘小道具。</p>'}`:''}
       <h4>素材袋 ${matUsed()}/${S.matCap}</h4>${Object.entries(S.mat).filter(([k,n])=>n>0).map(([k,n])=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name} ×${n}</b></div>${k==='mushroom'?'<button type="button" data-m="eat">吃掉</button> <button type="button" data-m="toss">丟掉</button>':''}${k==='flint'&&wild()?'<button type="button" data-m="camp">露營</button>':''}</div>`).join('')||'<p class="small">空的</p>'}<h4>工具</h4><p>${tools}</p>`,buttons:[{label:'關閉',primary:true}],
       onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-u]').forEach(b=>b.onclick=()=>{useKey=b.dataset.u;fin('use');});root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('ration');});}});
     if(r==='drink'){if(S.drinkDay!==S.day){S.drinkDay=S.day;S.drinks=0;}S.kit.splice(pick,1);if(S.drinks<3){S.drinks++;S.sta=Math.min(staMax(),S.sta+10);toast('喝了開水，體力 +10');}else toast('喝了開水，已經不渴了');refresh();continue;}
@@ -1052,7 +1083,7 @@ async function bag(){if(busy)return;busy=true;stopInput();
 function woundGallery(){const ws=Object.keys(WOUNDS),seen=S.wounds||{},n=ws.filter(w=>seen[w]).length;if(!n)return '';
   return `<h4>傷口圖鑑 ${n}/${ws.length}</h4><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">`+ws.map(w=>seen[w]?`<figure style="margin:0;text-align:center"><img alt="" src="assets/w_${w}.webp" style="width:100%;border-radius:8px;border:2px solid #F4E7CC;background:#fff"><figcaption class="small">${WOUNDS[w]}</figcaption></figure>`:`<figure style="margin:0;text-align:center;opacity:.5"><div style="aspect-ratio:1;border-radius:8px;border:2px dashed #B8C2C9;display:grid;place-items:center">？</div><figcaption class="small">？</figcaption></figure>`).join('')+'</div>';}
 async function cards(){if(busy)return;busy=true;stopInput();
-  try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:woundGallery()+(ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>'),buttons:[{label:'關閉',primary:true}]});}
+  try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:woundGallery()+(ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>'),buttons:[{label:'關閉',primary:true}]});await dailyDone('review');}
   finally{busy=false;}}
 async function settings(){if(busy)return;busy=true;stopInput();let reset=false;const hasOut=!!(window.FACloud&&FACloud.email());
   try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>${window.FAMusic?`<p>背景音樂：<b>${FAMusic.isOn()?'開':'關'}</b>　音量 <input type="range" id="musVol" min="0" max="100" value="${Math.round(FAMusic.vol()*100)}" style="vertical-align:middle"></p><p class="small">配樂：AI 輔助原創作曲與合成音色製作</p>`:''}`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(hasOut?[{label:'登出'}]:[]),...(window.FAMusic?[{label:FAMusic.isOn()?'關閉背景音樂':'開啟背景音樂'}]:[]),{label:'關閉'}],
@@ -1084,7 +1115,7 @@ function inputVec(){let x=input.jx,y=input.jy;const k=input.keys,p=input.pad;
   const m=Math.hypot(x,y);if(m>1){x/=m;y/=m;}return [x,y];}
 let last=0,walking=false,saveT=0,exiting=false;const trail=[];
 function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;
-  if(!$('game').hidden)buffTick(dt);
+  if(!$('game').hidden){buffTick(dt);if(!busy&&friendOn()&&((loop.dc=(loop.dc||0)+dt)>5)){loop.dc=0;if(dailyState().last!==todayStr()){busy=true;dailyCheck().finally(()=>{busy=false;save();refresh();});}}}
   if(wxNotice&&!busy&&!$('game').hidden){const ty=wxNotice;wxNotice=null;busy=true;say({icon:'☁',who:'天氣預報',html:`<p class="warn">${WX[ty].fore}</p>`}).finally(()=>{busy=false;});}  /* 老師發布的天災預報 */
   if(!$('game').hidden&&!busy&&S&&chClosed(S.scene)&&!loop.reloc){loop.reloc=true;(async()=>{busy=true;try{toast('這一章暫時關閉了，先回到村莊');await go('village',SCENES.village.spawn);}finally{busy=false;loop.reloc=false;}})();}  /* 老師端關閉章節時，人還在裡面 */
   if(!$('game').hidden&&!busy&&heroEl){
@@ -1134,7 +1165,7 @@ window.addEventListener('keydown',e=>{if(!$('dialog').hidden)return;const k=e.ke
 window.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;input.keys[k]=false;});
 window.addEventListener('blur',stopInput);
 $('act').addEventListener('click',doAction);
-$('btnMap').onclick=worldMap;$('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
+$('btnMap').onclick=worldMap;$('btnDaily').onclick=dailyWindow;$('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
 
 /* ================= 雲端存檔與存檔點 ================= */
 const checkpoint=()=>{if(window.FACloud)try{FACloud.checkpoint(S);}catch(e){}};
@@ -1271,7 +1302,8 @@ async function riverWater(){
   if(!await useSta(2))return;S.mat.rawwater=(S.mat.rawwater||0)+1;toast('裝了一桶溪水（要煮沸才能喝）');
   if(!S.cards.riverwater){S.cards.riverwater=true;await say({p:'hero',html:`<div class="card"><b>${CARDS.riverwater.title}</b><p>${CARDS.riverwater.text}</p></div><p class="good">獲得知識卡</p>`});}}
 /* ================= 啟動 ================= */
-async function startScene(){busy=false;if(S.step===0&&S.day===1)checkpoint();if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}}
+async function startScene(){busy=false;if(S.step===0&&S.day===1)checkpoint();if(S.step===0){busy=true;await sleep(RM?0:400);try{await introGrandpa();}finally{busy=false;save();refresh();}}
+  if(friendOn()){busy=true;try{await dailyCheck();}finally{busy=false;save();refresh();}}}  /* 完成第三章後：進遊戲算一次累計簽到 */
 S=PREVIEW?previewState(PREVIEW):(load()||newState());
 if(S.started)$('btnStart').textContent='繼續冒險';
 $('btnFull').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen().then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>toast('這台裝置不支援全螢幕'));else toast('這台裝置不支援全螢幕');}catch(e){toast('這台裝置不支援全螢幕');}};
@@ -1283,11 +1315,11 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,orderQuiz,checkpoint,curRegion,regionOf,hearts,
+  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
 if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},flagOn,starReward,staMax,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
