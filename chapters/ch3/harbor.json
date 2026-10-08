@@ -40,7 +40,8 @@
     }
    ],
    "thanks": "救護人員來了，說幸好有人一直守著我的呼吸……謝謝你。以後我再也不徒手碰藍色環紋的章魚了。",
-   "card": "ch3_h_octopus"
+   "card": "ch3_h_octopus",
+   "wound": "octopus"
   },
   "ch3_h_jelly": {
    "name": "水母螫傷",
@@ -72,7 +73,8 @@
     }
    ],
    "thanks": "不那麼痛了，謝謝你！我以後下水會看看海邊的警告旗。",
-   "card": "ch3_h_jelly"
+   "card": "ch3_h_jelly",
+   "wound": "jelly"
   },
   "ch3_h_cut": {
    "name": "岩石割傷",
@@ -105,7 +107,8 @@
     }
    ],
    "thanks": "血止住了，也洗乾淨了，謝謝你。我會注意傷口有沒有紅腫。",
-   "card": "ch3_h_cut"
+   "card": "ch3_h_cut",
+   "wound": "rockcut"
   },
   "ch3_h_vibrio": {
    "name": "海洋弧菌感染",
@@ -136,7 +139,8 @@
    ],
    "thanks": "<b>一定要先就醫！</b>傷口碰過海水或生海鮮，紅腫、發熱、起水泡、發燒，不要自己在家處理、不要等。醫生說還好有趕快來，謝謝你。",
    "card": "ch3_h_vibrio",
-   "emph": true
+   "emph": true,
+   "wound": "vibrio"
   }
  }
 }

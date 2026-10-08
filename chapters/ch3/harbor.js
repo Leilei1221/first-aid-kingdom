@@ -26,7 +26,7 @@ async function board(){
 async function help(){
   if(!active())return;
   const d=await data(),e=d[todayId()];
-  await say({p:e.who,html:`<p>${e.intro}</p>`});
+  await say({p:e.who,wound:e.wound,html:`<p>${e.intro}</p>`});
   const miss=PREV?[]:needCheck(e.needs);  /* 預覽不檢查用品，方便直接看題目 */
   if(miss.length){await say({p:e.who,html:`<p>需要：${needTxt(e.needs)}</p><p class="warn">你的背包還缺：${miss.map(([k,n])=>ITEMS[k].name+' ×'+n).join('、')}</p><p class="small">今天之內帶用品回來還來得及。到港口市集或商店補齊吧。</p>`});return;}
   for(const q of e.qs)await quiz(e.who,q.q,q.opts,q.ans,q.explain);
@@ -45,7 +45,7 @@ const things=id=>{
   return L;};
 const build=(id,H,{sprite})=>{
   if(id!=='ch3_harbor'||!on())return;
-  const b=sprite('shadow','',HB.boardAt.x,HB.boardAt.y,84,1);b.innerHTML='<span class="badge lg" style="--c:#8A5A2B;--tc:#fff;--s:72px">告</span>';  /* 公告板圖還沒有，先用文字徽章 */
+  const b=sprite('shadow','',HB.boardAt.x,HB.boardAt.y,Math.round(H*1.7),RATIO.ch3_hb_board);b.querySelector('img').src=A.ch3_hb_board;
   if(active()){const e=DATA&&DATA[todayId()];const key=e?e.who:'ch3_by_red';const s=sprite('shadow','',HB.victimAt.x,HB.victimAt.y,Math.round(H*.9),RATIO[key]);s.querySelector('img').src=A[key];}};
 const addRep=n=>{st().rep+=n;};
 return {things,build,acts:{ch3_hbboard:board,ch3_hbhelp:help},load:data,active,addRep,

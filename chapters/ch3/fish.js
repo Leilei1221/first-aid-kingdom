@@ -11,7 +11,8 @@ export const SPECIES=[
 export const PROTECTED=[{id:'turtle',name:'綠蠵龜（海龜）'},{id:'ray',name:'鬼蝠魟（蝠鱝）'}];
 export const pickSpecies=r=>{const tot=SPECIES.reduce((a,b)=>a+b.w,0);let x=r*tot;for(const s of SPECIES){if((x-=s.w)<0)return s;}return SPECIES[SPECIES.length-1];};
 export default function(FA,{on,debug,addRep,preview}){
-const {say,quiz,toast,refresh,CARDS,staMax}=FA;
+const {say,quiz,toast,refresh,CARDS,staMax,A,RATIO}=FA;
+const img=(k,h)=>`<img src="${A[k]}" alt="" style="display:block;margin:6px auto;max-height:${h}px;max-width:100%">`;
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
 const st=()=>{S.c=S.c||{};const f=S.c.ch3_fish||(S.c.ch3_fish={rod:false,bag:{},rel:0,n:0});if(preview)f.rod=true;return f;};
 const bagN=()=>Object.values(st().bag).reduce((a,b)=>a+b,0);
@@ -36,7 +37,7 @@ async function biteGame(){
 const RM_WAIT=()=>600+Math.floor(Math.random()*900);
 const ruler=size=>`<div style="position:relative;height:22px;background:#E4DCCB;border-radius:11px;overflow:hidden;margin:8px 0"><div style="width:${size}%;height:100%;background:#5BA3C9"></div><div style="position:absolute;left:${FISH.sizeLine}%;top:0;bottom:0;width:3px;background:#B3402A"></div></div><p class="small">紅線＝要留下的最小尺寸（遊戲設定）</p>`;
 async function protectedCatch(sp){
-  await say({p:'hero',html:`<p>釣線另一端傳來很重的力量……不是魚，是一隻<b>${sp.name}</b>！</p>`});
+  await say({p:'hero',html:`${img('ch3_p_'+sp.id,150)}<p>釣線另一端傳來很重的力量……不是魚，是一隻<b>${sp.name}</b>！</p>`});
   await quiz('hero',`釣到了${sp.name}，你要怎麼做？`,['把牠拉上岸，拍照給大家看','把牠留下來，拿去賣','小心地剪斷魚線，把牠放回海裡'],2,'海龜、鯨豚、鯨鯊、鬼蝠魟等是保育類野生動物，不能騷擾、獵捕、買賣或持有。意外釣到要小心放回海裡，不要拖上岸。');
   st().rel++;addRep(1);
   await say({p:'hero',html:'<p class="good">牠慢慢游走了。港口信譽 +1</p>'});
@@ -44,7 +45,7 @@ async function protectedCatch(sp){
 }
 async function fishOutcome(sp,size){
   const f=st(),small=size<FISH.sizeLine;
-  const i=await say({p:'hero',who:'釣到了！',html:`<p><b>${sp.name}</b>　大小 ${size}</p>${ruler(size)}`,buttons:[{label:'留下',primary:!small},{label:'放回海裡',primary:small}]});
+  const i=await say({p:'hero',who:'釣到了！',html:`${img('ch3_f_'+sp.id,90)}<p><b>${sp.name}</b>　大小 ${size}</p>${ruler(size)}`,buttons:[{label:'留下',primary:!small},{label:'放回海裡',primary:small}]});
   if(small){
     if(i===0)await say({p:'ch3_fishwife',html:'<p>這麼小的魚我們不收。讓牠回去長大，以後才有魚可以釣。</p>'});
     f.rel++;if(f.rel%FISH.relPerRep===0){addRep(1);toast('放回小魚：港口信譽 +1');}
@@ -73,7 +74,7 @@ async function stall(){
     labels.push(f.rod?'釣竿：已經有了':`買釣竿（${FISH.rodPrice} 金幣）`);act.push('rod');
     labels.push('賣出漁獲');act.push('sell');labels.push('請老闆娘烤一條魚（體力 +'+FISH.eatSta+'）');act.push('eat');
     labels.push('看看大網');act.push('net');labels.push('離開');act.push('bye');
-    const i=await say({p:'ch3_fishwife',html:`<p>要買賣什麼嗎？</p><p class="small">魚簍：${bagTxt}　金幣 ${S.coins}</p>`,
+    const i=await say({p:'ch3_fishwife',html:`${f.rod?img('ch3_rod',50):''}<p>要買賣什麼嗎？</p><p class="small">魚簍：${bagTxt}　金幣 ${S.coins}</p>`,
       buttons:labels.map((l,k)=>({label:l,primary:k===1,disabled:(act[k]==='rod'&&(f.rod||S.coins<FISH.rodPrice))||(act[k]==='sell'&&!n)||(act[k]==='eat'&&!n)}))});
     const a=act[i];
     if(a==='bye')return;
@@ -94,8 +95,8 @@ const things=id=>{
   return [];};
 const build=(id,H,{sprite})=>{
   if(!on())return;
-  const badge=(x,y,t,c)=>{const b=sprite('shadow','',x,y,84,1);b.innerHTML=`<span class="badge lg" style="--c:${c};--tc:#fff;--s:72px">${t}</span>`;};  /* 圖還沒有，先用文字徽章 */
-  if(id==='ch3_harbor')badge(FISH.spots.pier.x,FISH.spots.pier.y,'釣','#2E6F95');
-  if(id==='ch3_market')badge(FISH.stallAt.x,FISH.stallAt.y,'魚','#8A5A2B');};
+  const put=(x,y,k,h)=>{const e=sprite('shadow','',x,y,Math.round(H*h),RATIO[k]);e.querySelector('img').src=A[k];};
+  if(id==='ch3_harbor')put(FISH.spots.pier.x,FISH.spots.pier.y,'ch3_fish_spot',2.1);
+  if(id==='ch3_market')put(FISH.stallAt.x,FISH.stallAt.y,'ch3_fish_stall',2.0);};
 return {things,build,acts:{ch3_fishspot:fishSpot,ch3_stall:stall},st};
 }

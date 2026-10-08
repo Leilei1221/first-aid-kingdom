@@ -14,6 +14,16 @@
   "ch3_bls_box": 1.088,
   "ch3_cpr_manikin": 1.342,
   "ch3_escape_bag": 0.879,
-  "ch3_face_shield": 1.391
+  "ch3_face_shield": 1.391,
+  "ch3_hb_board": 0.9674,
+  "ch3_fish_spot": 0.95,
+  "ch3_fish_stall": 1.5094,
+  "ch3_f_mackerel": 2.7097,
+  "ch3_f_horse": 2.4277,
+  "ch3_f_snapper": 2.1429,
+  "ch3_f_grouper": 2.0588,
+  "ch3_p_turtle": 1.4141,
+  "ch3_p_ray": 1.5613,
+  "ch3_rod": 1.7143
  }
 }

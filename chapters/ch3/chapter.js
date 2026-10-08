@@ -12,6 +12,7 @@ const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},h
 const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
 const QS=new URLSearchParams(location.search),PREV=!!QS.get('preview');
 const E1_ON=PREV||(location.hash==='#debug'&&QS.get('e1')==='1');  /* 「藍堡的日常」E1 是草稿：只有老師預覽或本機 #debug ?e1=1 看得到 */
+if(E1_ON)Object.assign(FA.WOUNDS,{octopus:'藍環章魚咬傷',jelly:'水母螫傷',rockcut:'岩石割傷',vibrio:'海洋弧菌感染'});  /* 圖在 assets/w_*.webp；草稿期間只在 E1 開啟時加入，傷口圖鑑不會多出格子 */
 const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const FISHPORT='ch3_fishport',HARBOR='ch3_harbor',CABIN='ch3_ship_cabin';
 const deckOf=left=>left>=2?'ch3_ship_day':'ch3_ship_dusk';  /* 第一天白天、第二天黃昏 */

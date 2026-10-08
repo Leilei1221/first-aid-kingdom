@@ -1313,7 +1313,7 @@ initCloud();
 async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`});}  /* 連續幾句同一個人說的話（章節程式用） */
 /* ================= 章節程式用的核心功能（FA）：章節程式只能透過它存取遊戲，不直接碰核心變數 ================= */
 let FA=null;
-try{FA={get S(){return S;},ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
+try{FA={get S(){return S;},ITEMS,MATS,CARDS,WOUNDS,A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
   kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save};
