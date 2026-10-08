@@ -47,6 +47,7 @@ const build=(id,H,{sprite})=>{
   if(id!=='ch3_harbor'||!on())return;
   const b=sprite('shadow','',HB.boardAt.x,HB.boardAt.y,84,1);b.innerHTML='<span class="badge lg" style="--c:#8A5A2B;--tc:#fff;--s:72px">告</span>';  /* 公告板圖還沒有，先用文字徽章 */
   if(active()){const e=DATA&&DATA[todayId()];const key=e?e.who:'ch3_by_red';const s=sprite('shadow','',HB.victimAt.x,HB.victimAt.y,Math.round(H*.9),RATIO[key]);s.querySelector('img').src=A[key];}};
-return {things,build,acts:{ch3_hbboard:board,ch3_hbhelp:help},load:data,active,
+const addRep=n=>{st().rep+=n;};
+return {things,build,acts:{ch3_hbboard:board,ch3_hbhelp:help},load:data,active,addRep,
   goal:()=>on()&&active()?'港口有人需要幫忙：看看港口公告板，再到廣場上找求助的人。':null};
 }
