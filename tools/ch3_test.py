@@ -147,7 +147,7 @@ async def main(url):
         await page.locator('#dBtns button').nth(0).click(); await page.wait_for_timeout(250)
         await page.wait_for_selector('#dBtns button')
         menu = await page.locator('#dBtns button').all_inner_texts()
-        check('第 1～3 節沒做完：選單沒有「請教救生員」（第 4 節要照順序）', menu == ['聊聊', '先離開'], str(menu))
+        check('第 1～3 節沒做完：選單沒有「請教救生員」（第 4 節要照順序）', menu == ['接下來做什麼', '聊聊', '先離開'], str(menu))
         await page.locator('#dBtns button', has_text='先離開').click(); await page.wait_for_timeout(300)
         check('見過救生員：記在 S.c.ch3_met', await st(page, 'S.c.ch3_met === true'))
         await page.evaluate("() => { const S = window.__fa.S; ['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].forEach(k => S.cards[k] = true); }")
