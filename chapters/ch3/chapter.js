@@ -5,9 +5,12 @@
  * CPR 按壓、吹氣、AED、章末事件尚未加入，等老師審核。 */
 import * as R from './rhythm.js';
 import * as AED from './aed.js';
+import harborInit from './harbor.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
+const QS=new URLSearchParams(location.search),PREV=!!QS.get('preview');
+const E1_ON=PREV||(location.hash==='#debug'&&QS.get('e1')==='1');  /* 「藍堡的日常」E1 是草稿：只有老師預覽或本機 #debug ?e1=1 看得到 */
 const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const FISHPORT='ch3_fishport',HARBOR='ch3_harbor',CABIN='ch3_ship_cabin';
 const deckOf=left=>left>=2?'ch3_ship_day':'ch3_ship_dusk';  /* 第一天白天、第二天黃昏 */
@@ -275,7 +278,7 @@ async function lifegHarbor(){
     await lines(LIFEG,['你來了！我就是你爺爺的老朋友，他早就寫信說你會來。','藍堡的港口人來人往，這裡的人都得會急救才行。市集那邊人最多，你先過去看看。']);
   }
   for(;;){
-    const ready=['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
+    const ready=PREV||['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
     const labels=ready?['請教救生員','聊聊','先離開']:['接下來做什麼','聊聊','先離開'];
     const i=await say({p:LIFEG,html:ready?'<p>想聊聊，還是想請教急救和防災的事？</p>':'<p>港口人多，想聊聊嗎？市集和救生站都可以去看看。</p>',buttons:labels.map((l,k)=>({label:l,primary:k===0}))});
     const lab=labels[i];
@@ -309,23 +312,27 @@ const PASSER_LINES={
   ch3_by_blue:[['不知道有沒有人會急救……我只敢站在這裡看。'],['你好厲害，那麼多人在，你還是第一個動手的。']],
   ch3_by_green:[['聽說港口的救生員很懂急救，他說不定有辦法。'],['有人在現場帶頭，大家就知道該做什麼了。']]};
 const passerTalk=async id=>{await lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
+const HBR=harborInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done))});
+HBR.load().catch(()=>{});
 return {
-  acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed},
-  build(sceneId,H,{sprite}){
+  acts:Object.assign({},HBR.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed}),
+  build(sceneId,H,{sprite,npcEls}){
+    HBR.build(sceneId,H,{sprite});
     if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}
     if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;
       const m=sprite('shadow','',MASK.x,MASK.y,Math.round(H*.2),RATIO.ch3_face_shield);m.querySelector('img').src=A.ch3_face_shield;}},
-  things(sceneId){return sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'}]:[];},
+  things(sceneId){return HBR.things(sceneId).concat(sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'}]:[]);},
   goalBase:()=>onShip()?'在船上度過兩個晚上：到艙口進船艙，在床上睡覺。':undefined,  /* 船上的場景算綠葉谷地區，目標要走這個接點 */
   goal(){  /* 畫面上方「目標」：依知識卡判斷做到哪一節，告訴玩家下一步去哪裡 */
     if(onShip())return '在船上度過兩個晚上：到艙口進船艙，在床上睡覺。';
-    if(!(S.c&&S.c.ch3_met)&&!Object.keys(S.cards).some(k=>k.startsWith('ch3_k')))return '到港口廣場的另一頭，救生站旁，找爺爺的老朋友——港口救生員。';
+    if(!(S.c&&(S.c.ch3_met||S.c.ch3_done))&&!Object.keys(S.cards).some(k=>k.startsWith('ch3_k')))return '到港口廣場的另一頭，救生站旁，找爺爺的老朋友——港口救生員。';
     if(!S.cards.ch3_k1_3)return '到港口市集，查看倒在地上的人。';
     if(!S.cards.ch3_k2_3)return '到港口的救生站，在假人旁練習按壓。';
     if(!S.cards.ch3_k3_1)return '在救生站，假人旁的面罩可以練習人工呼吸。';
     if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習。';
     if(!S.cards.ch3_k4_4)return '到港口，找救生員請教專線與防災。';
     if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
+    {const g=HBR.goal();if(g)return g;}
     return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`;},
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
