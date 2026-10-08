@@ -89,7 +89,11 @@ async def answer_until(page, stop_selector, max_steps=100):
 async def say_text(page):
     """目前對話框的文字（空字串＝沒有對話）"""
     return '' if await hidden(page) else await page.inner_text('#dText')
+async def no_luck(page):
+    """完成第三章後，跟角色聊天會多一次隨機的「聊天運氣」對話；這個測試只驗證台詞，所以把今天的運氣標成已抽過（運氣由 chat_luck_test 驗證）"""
+    await page.evaluate("() => { const d = new Date(), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); const S = window.__fa.S; S.c.chat = {date: t, done: {ch3_lifeg: true, ch3_sailor: true, ch3_by_red: true, ch3_by_blue: true, ch3_by_green: true}}; }")
 async def talk_at(page, scene, x, y):
+    await no_luck(page)
     await goto(page, scene, x, y)
     await page.evaluate("([x, y]) => { window.__fa.S.pos = {x, y}; }", [x, y]); await page.wait_for_timeout(300)
     await act(page); await page.wait_for_selector('#dBtns button')
