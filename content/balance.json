@@ -72,5 +72,43 @@
       {"id": "meal", "name": "豐盛便當", "restore": 100, "cost": 100, "desc": "吃得飽飽的，體力大幅恢復。"}
     ],
     "up": {"step": 10, "costs": [300, 600, 1000]}
+  },
+  "VIP": {
+    "_說明": "雜貨店老闆的好感度折扣（老師 2026-10-08 決定，完成第三章後開啟）：好感度達到 hearts 顆心，全品項打 rate 折；迷霧商人不適用。這是遊戲平衡參數，可調。",
+    "tiers": [{"hearts": 5, "rate": 0.85}, {"hearts": 3, "rate": 0.95}]
+  },
+  "CHAT_LUCK": {
+    "_說明": "聊天抽運氣（老師 2026-10-08 決定，完成第三章後開啟）：跟 NPC 聊天，每位角色每個「現實日期」一次機會，隨機得到 知識（現有知識卡）／神秘小道具／金幣／沒事。好感度每多一顆心，小道具與金幣的機率各增加 perHeart 點（從知識扣）。小道具存進道具欄（上限 invCap），滿了就不給也不用掉當天機會。所有數字都是遊戲平衡參數，可調；不是醫學內容。",
+    "weights": {"none": 10, "knowledge": 60, "item": 25, "coin": 5},
+    "perHeart": {"item": 2, "coin": 1},
+    "itemWeights": {"snack": 50, "boots": 30, "charm": 15, "double": 5},
+    "coin": {"min": 10, "max": 20},
+    "invCap": 10,
+    "effects": {"snack": {"restore": 60}, "boots": {"seconds": 600, "mul": 1.5, "maxSeconds": 1800}, "charm": {"answers": 5, "bonus": 8, "maxAnswers": 15}},
+    "items": {
+      "snack": {"name": "提神小點心", "desc": "吃了體力馬上 +60。"},
+      "boots": {"name": "疾風草鞋", "desc": "走路速度 +50%，持續 10 分鐘（遊戲開著才倒數）。"},
+      "charm": {"name": "幸運符", "desc": "接下來答對的 5 題，每題額外 +8 金幣。"},
+      "double": {"name": "雙重驚喜", "desc": "疾風草鞋加幸運符，一次生效。"}
+    },
+    "lines": {
+      "knowledge": ["說到這個，我想起一件事……", "對了，我之前聽說過這樣的事……", "你有空的話，聽我說一件事吧。"],
+      "item": ["對了，這個送你，說不定哪天用得上。", "我身上剛好有這個，給你吧！", "收下吧，當作我的一點心意。"],
+      "coin": ["剛好手邊有一點，你拿去吧。", "這個你拿著，買點需要的東西。", "別客氣，收下吧。"],
+      "none": ["今天沒什麼特別的事，聊聊天就好。", "哈哈，跟你聊天心情很好。", "最近一切平平安安的，這樣就好。"]
+    }
+  },
+  "CHAT_TOPICS": {
+    "_說明": "每位角色聊天時，「知識」結果可能出現的現有知識卡（文字照知識卡，不改）。",
+    "hunt": ["altitude", "snake", "lost", "signal", "hypothermia", "cross"],
+    "wood": ["bleed", "cut", "fracture", "spine"],
+    "kid": ["scrape", "bee", "nose", "allergy", "choke"],
+    "guard": ["typhoon", "flood", "faint", "cpr"],
+    "grandpa": ["tetanus", "water", "food", "burn"],
+    "ch3_lifeg": ["cpr", "faint", "spine", "choke", "cross"],
+    "ch3_sailor": ["cross", "hypothermia", "typhoon", "flood"],
+    "ch3_by_red": ["cpr", "faint", "choke"],
+    "ch3_by_blue": ["cpr", "faint", "choke"],
+    "ch3_by_green": ["cpr", "faint", "choke"]
   }
 }

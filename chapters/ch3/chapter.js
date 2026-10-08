@@ -202,7 +202,7 @@ async function askScored(key,rec){  /* 同核心的 quiz（答錯顯示說明、
     const ok=i===z.ans;
     if(!ok){wrong++;if(z.severe&&(!z.severeOpts||z.severeOpts.includes(i)))rec.errs.push({key,code:z.severe,opt:i});}
     await say({p:'hero',html:`<p class="${ok?'good':'bad'}">${ok?'處置正確！':'這個做法不對。'}</p><p>${z.explain}</p>`,buttons:[{label:ok?'繼續':'再選一次',primary:true}]});
-    if(ok)return wrong;}}
+    if(ok){FA.luckyBonus();return wrong;}}}
 async function finaleCompress(ses,T,{count,untilSwap}){  /* 一段按壓：count 下就結束；或換手後再壓 afterSwap 下就結束。回傳 'done' 或 'stop'（停止急救） */
   let n=0;
   return say({p:'hero',who:'章末演練',html:`<div style="display:flex;gap:14px;align-items:center;justify-content:center;margin:8px 0">
@@ -287,9 +287,10 @@ async function lifegHarbor(){
     }else{
       await lines(LIFEG,['港口人來人往，市集尤其擠。真的有人倒下的時候，旁邊的人常常只是看著。你要是遇到了，別當那個只看著的人。','救生站裡有練習用的假人和 AED，想練習隨時過來。']);
     }
+    await FA.chatLuck(LIFEG);  /* 完成第三章後，聊天有機會抽到知識、小道具或金幣（每天一次，見 js/game.js 的 chatLuck） */
   }}
 const lifegStation=()=>lines(LIFEG,['這具假人是給大家練習用的。按壓、吹氣、AED，都可以在這裡一步一步練。','別怕弄壞它，壞了我再修。']);
-const sailorHarbor=()=>lines(SAILOR,['海上的天氣說變就變。颱風或豪雨要來的時候，船長會停航，到時候只能在港口等天氣好轉。','要回綠葉谷的話，到告示牌那邊搭船就行。']);
+const sailorHarbor=async()=>{await lines(SAILOR,['海上的天氣說變就變。颱風或豪雨要來的時候，船長會停航，到時候只能在港口等天氣好轉。','要回綠葉谷的話，到告示牌那邊搭船就行。']);await FA.chatLuck(SAILOR);};
 const SAILOR_TOPICS=[
   ['去藍堡怎麼走',['要去藍堡的話，找老船長買票。船上要過兩個晚上，乾糧和水自己帶比較划算。']],
   ['看浪況',['出海前先看海：浪越來越大、海面一直冒白色浪花、浪一波接一波的時候，就不是出船的好時機。','看不懂的時候別硬撐，問問老船長或港口的人，寧可多等一天。']],
@@ -306,7 +307,7 @@ const PASSER_LINES={
   ch3_by_red:[['我剛剛看到他突然就倒下去了，嚇得不知道該怎麼辦。'],['剛才真的謝謝你！我以後也想學學急救。']],
   ch3_by_blue:[['不知道有沒有人會急救……我只敢站在這裡看。'],['你好厲害，那麼多人在，你還是第一個動手的。']],
   ch3_by_green:[['聽說港口的救生員很懂急救，他說不定有辦法。'],['有人在現場帶頭，大家就知道該做什麼了。']]};
-const passerTalk=id=>lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);
+const passerTalk=async id=>{await lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
 return {
   acts:{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed},
   build(sceneId,H,{sprite}){
