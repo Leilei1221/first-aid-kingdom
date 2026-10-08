@@ -70,6 +70,7 @@ async def main(url):
             await page.wait_for_timeout(200)
         check('睡一覺：體力回到新上限（130）', await st('S.sta') == mx, f'{await st("S.sta")} vs {mx}')
         # 欠債時不能買
+        await page.evaluate("() => { window.__fa.S.hearts.shopkeeper = 0; }")   # 買體能訓練會增加老闆的好感度，3 顆心起有折扣；這裡要測原價的邊界
         await page.evaluate("() => { window.__fa.S.coins = -50; window.__fa.S.sta = 20; }")
         await page.evaluate("() => { window.__fa.S.c.staUp = 0; }")
         await open_shop()
