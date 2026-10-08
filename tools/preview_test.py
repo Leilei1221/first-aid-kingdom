@@ -49,7 +49,14 @@ async def main(url):
         check('走近路人：互動鈕「對話」', await page.inner_text('#act') == '對話', await page.inner_text('#act'))
         await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(500)
         txt = await page.inner_text('#dText') if not await page.evaluate("() => document.getElementById('dialog').hidden") else ''
-        check('跟沒有對白的路人說話：會出現對話框（……、之後才會加入），不是沒反應', '……' in txt and '之後才會加入' in txt, txt)
+        check('跟路人說話：會出現對話框（有對白，不是沒反應）', len(txt) > 0 and '倒下去' in txt, txt)
+        # 還沒有對白的角色（南岸漁港的漁婦）：按「對話」顯示「……（這位角色的對話之後才會加入。）」，不是沒反應
+        await page.evaluate("() => { document.getElementById('dialog').hidden || document.querySelector('#dBtns button').click(); }"); await page.wait_for_timeout(600)
+        npc = await page.evaluate("() => { window.__fa.go('ch3_fishport', [760, 110]); const n = window.__fa.SCENES.ch3_fishport.npcs.find(n => n.id === 'ch3_fishwife'); return [n.x, n.y]; }"); await page.wait_for_timeout(900)
+        await page.evaluate("([x, y]) => { window.__fa.S.pos = {x, y: y + 50}; }", npc); await page.wait_for_timeout(300)
+        await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(500)
+        txt = await page.inner_text('#dText') if not await page.evaluate("() => document.getElementById('dialog').hidden") else ''
+        check('沒有對白的角色（漁婦）：會出現對話框（……、之後才會加入），不是沒反應', '……' in txt and '之後才會加入' in txt, txt)
         # --- 野外項目、救災物資、天災（預覽參數）
         async def preview(q):
             pg = await ctx.new_page(); await pg.goto(f'{root}/index.html?preview={q}#debug')
