@@ -25,8 +25,7 @@ async function captTalk(){
   if(stormy()){await say({p:'ch3_captain',html:'<p>颱風或豪雨就要來了，今天停航！海上的風浪可不是開玩笑的，等天氣好轉再出發。</p>'});return;}
   const r=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length,w=kitCount('water');
   const i=await say({p:'ch3_captain',html:`<p>要去${toHarbor?'港口藍堡':'綠葉谷'}嗎？船票 ${FARE} 金幣，要在海上過兩夜。</p><p>船上每天吃一包乾糧、喝一瓶水，自己帶最划算；船上也有賣，乾糧 ${SHIP_RATION}、開水 ${SHIP_WATER} 金幣。</p><p class="small">你的背包：有效乾糧 ${r} 包、開水 ${w} 瓶　金幣 ${S.coins}</p>`,
-    buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'},...(toHarbor&&E3&&E3.sailorOffer()?[{label:'買水手服（200 金幣）'}]:[])]});
-  if(i===2)return E3.buySailor();
+    buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'}]});
   if(i!==0)return;
   await stashDepart();  /* 防災包是旅行行李：放在這個地區就問要不要帶上 */
   S.coins-=FARE;S.voyage={to:toHarbor?HARBOR:FISHPORT,left:2,sick:false,mob:false};
@@ -283,10 +282,9 @@ async function lifegHarbor(){
   }
   for(;;){
     const ready=PREV||['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
-    const labels=(ready?['請教救生員','聊聊']:['接下來做什麼','聊聊']).concat(E3&&E3.lifegOffer()?['領取救生員裝']:[],['先離開']);
+    const labels=ready?['請教救生員','聊聊','先離開']:['接下來做什麼','聊聊','先離開'];
     const i=await say({p:LIFEG,html:ready?'<p>想聊聊，還是想請教急救和防災的事？</p>':'<p>港口人多，想聊聊嗎？市集和救生站都可以去看看。</p>',buttons:labels.map((l,k)=>({label:l,primary:k===0}))});
     const lab=labels[i];
-    if(lab==='領取救生員裝'){await E3.giveLifeg();continue;}
     if(lab==='請教救生員')return lesson4();
     if(lab==='接下來做什麼'){await lines(LIFEG,[!S.cards.ch3_k1_3?'市集的空地上有人倒下了，快過去看看！':!S.cards.ch3_k2_3?'去救生站吧，假人旁邊可以練習按壓。':!S.cards.ch3_k3_1?'假人旁邊的面罩，可以練習人工呼吸。':'救生站牆上的 AED，也要練習怎麼用。']);continue;}
     if(lab!=='聊聊')return;

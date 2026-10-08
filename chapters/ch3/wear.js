@@ -1,12 +1,6 @@
-/* 第三章「藍堡的日常」E3：換裝。整套造型（換主角整張圖）與疊件（外套、毛帽，可換 9 種顏色）。
- * 草稿：只有老師預覽或 #debug ?e1=1 看得到。狀態記在 S.c.ch3_e3（outfit、wear）。
+/* 第三章「藍堡的日常」E3：換裝的疊件（外套、毛帽，可換 10 種顏色），疊在目前穿的整套裝扮上。整套裝扮由核心的「背包 → 裝扮」換（老師另一個決定的功能），這裡只管疊件。
+ * 草稿：只有老師預覽或 #debug ?e1=1 看得到。狀態記在 S.c.ch3_e3（wear）。
  * 換色用逐像素的色相旋轉（不用 canvas filter，因為 iPad Safari 不支援）。疊件的位置是遊戲參數，可調。 */
-export const OUTFITS=[
-  {id:'',name:'原本的打扮',img:null},
-  {id:'knight',name:'披風騎士',img:'ch3_o_knight'},
-  {id:'sailor',name:'水手',img:'ch3_o_sailor'},
-  {id:'climber',name:'登山者',img:'ch3_o_climber'},
-  {id:'lifeguard',name:'救生員',img:'ch3_o_lifeguard'}];
 export const COLORS=[['紅',0],['橙',28],['黃',52],['綠',120],['青',170],['藍',215],['紫',275],['粉',325],['灰',-1],['黑',-2]];
 export const LAYERS={  /* 疊件在 330×520 主角畫布上的位置（x、y、寬），高度依圖片比例 */
   jacket:{name:'外套',img:'ch3_g_jacket',x:62,y:96,w:190},
@@ -27,12 +21,12 @@ const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(
 export default function(FA,{on}){
 const {say,A,RATIO}=FA;
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
-const st=()=>{S.c=S.c||{};return S.c.ch3_e3||(S.c.ch3_e3={frag:{},own:{},cnt:{},seen:{},outfit:'',wear:{}});};
+const st=()=>{S.c=S.c||{};return S.c.ch3_e3||(S.c.ch3_e3={frag:{},own:{},cnt:{},seen:{},wear:{}});};
 let url=null,key='';
-const wornKey=()=>{const e=st();return JSON.stringify([e.outfit,e.wear]);};
+const wornKey=()=>{const e=st();return JSON.stringify([FA.outfitBase(),e.wear]);};
 async function compose(e){
-  const base=OUTFITS.find(o=>o.id===e.outfit),cv=document.createElement('canvas');cv.width=330;cv.height=520;const ctx=cv.getContext('2d');
-  ctx.drawImage(await loadImg(base&&base.img?A[base.img]:A.hero),0,0,330,520);
+  const cv=document.createElement('canvas');cv.width=330;cv.height=520;const ctx=cv.getContext('2d');
+  ctx.drawImage(await loadImg(FA.outfitBase()),0,0,330,520);
   for(const [k,L] of Object.entries(LAYERS)){const w=e.wear[k];if(!w||!w.on||!e.own[k])continue;
     const im=await loadImg(A[L.img]),h=Math.round(L.w/(im.width/im.height));
     const t=document.createElement('canvas');t.width=L.w;t.height=h;const tc=t.getContext('2d');tc.drawImage(im,0,0,L.w,h);recolor(tc,0,0,L.w,h,COLORS[w.c||0][1]);
@@ -40,23 +34,21 @@ async function compose(e){
   return cv;}
 async function update(){
   const e=st();key=wornKey();
-  if(!on()||(!e.outfit&&!Object.values(e.wear).some(w=>w&&w.on))){url=null;FA.refreshHero();return;}
+  if(!on()||!Object.values(e.wear).some(w=>w&&w.on)){url=null;FA.refreshHero();return;}
   try{url=(await compose(e)).toDataURL('image/png');}catch(_){url=null;}FA.refreshHero();}
 const look=()=>on()&&url&&key===wornKey()?url:null;
-FA.setHeroLook(look);
+FA.setHeroLook(look,()=>{update();});  /* 換整套裝扮時，核心會通知這裡重新合成 */
 async function wardrobe(){
   const e=st();
   for(;;){
-    const ownO=OUTFITS.filter(o=>!o.id||e.own['o_'+o.id]);
     const ownL=Object.entries(LAYERS).filter(([k])=>e.own[k]);
     let cv=null;try{cv=await compose(e);}catch(_){}
     const r=await say({p:'hero',who:'換裝',html:`<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:0 0 150px;text-align:center"><canvas id="wv" width="330" height="520" style="width:150px;border-radius:10px;background:rgba(255,255,255,.06)"></canvas></div><div style="flex:1;min-width:0">
-      <p class="small">整套造型</p><div id="wo" style="display:flex;flex-wrap:wrap;gap:6px">${ownO.map(o=>`<button type="button" class="btn${e.outfit===o.id?' primary':''}" data-o="${o.id}">${o.name}</button>`).join('')}</div>
-      ${ownL.length?`<p class="small" style="margin-top:10px">疊件（可換顏色）</p>`+ownL.map(([k,L])=>{const w=e.wear[k]||{};return `<div style="margin-bottom:6px"><button type="button" class="btn${w.on?' primary':''}" data-t="${k}">${L.name}：${w.on?'穿著':'沒穿'}</button><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${COLORS.map(([n],ci)=>`<button type="button" class="btn${(w.c||0)===ci?' primary':''}" data-c="${k}:${ci}" style="padding:2px 8px;min-width:0">${n}</button>`).join('')}</div></div>`;}).join(''):'<p class="small" style="margin-top:10px">買了外套或毛帽，這裡就可以疊在身上、換顏色。</p>'}
+      <p class="small">疊件：穿在目前的裝扮外面（整套裝扮到背包的「裝扮」換）</p>
+      ${ownL.length?ownL.map(([k,L])=>{const w=e.wear[k]||{};return `<div style="margin-bottom:6px"><button type="button" class="btn${w.on?' primary':''}" data-t="${k}">${L.name}：${w.on?'穿著':'沒穿'}</button><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${COLORS.map(([n],ci)=>`<button type="button" class="btn${(w.c||0)===ci?' primary':''}" data-c="${k}:${ci}" style="padding:2px 8px;min-width:0">${n}</button>`).join('')}</div></div>`;}).join(''):'<p class="small" style="margin-top:10px">買了外套或毛帽，這裡就可以疊在身上、換顏色。</p>'}
       </div></div>`,buttons:[{label:'完成',primary:true}],
       onRender:(root,fin)=>{
         const paint=c=>{const v=root.querySelector('#wv');if(v&&c)v.getContext('2d').drawImage(c,0,0);};paint(cv);
-        root.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{e.outfit=b.dataset.o;fin('again');});
         root.querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>{const k=b.dataset.t;e.wear[k]=Object.assign({c:0},e.wear[k],{on:!(e.wear[k]&&e.wear[k].on)});fin('again');});
         root.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const [k,c]=b.dataset.c.split(':');e.wear[k]=Object.assign({},e.wear[k],{on:true,c:+c});fin('again');});}});
     if(r!=='again')break;}

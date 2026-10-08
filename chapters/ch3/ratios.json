@@ -46,10 +46,6 @@
   "ch3_i_warmer": 1.0236,
   "ch3_i_blanket": 1.6774,
   "ch3_i_headlamp": 1.8978,
-  "ch3_i_socks": 1.1659,
-  "ch3_o_sailor": 0.6346,
-  "ch3_o_climber": 0.6346,
-  "ch3_o_lifeguard": 0.6346,
-  "ch3_o_knight": 0.6346
+  "ch3_i_socks": 1.1659
  }
 }

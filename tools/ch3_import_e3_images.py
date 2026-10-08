@@ -13,8 +13,8 @@ MAP = [  # (時間, 輸出, 種類, 尺寸)
  ('12_38_47', 'ch3_map_frag', 'obj', 300),
  ('12_38_51', 'ch3_g_jacket', 'obj', 420), ('12_38_57', 'ch3_g_hat', 'obj', 360), ('12_39_01', 'ch3_g_pants', 'obj', 420), ('12_39_05', 'ch3_g_gloves', 'obj', 420),
  ('12_39_09', 'ch3_g_boots', 'obj', 420), ('12_39_14', 'ch3_g_goggles', 'obj', 360), ('12_39_19', 'ch3_g_pack1', 'obj', 420), ('12_39_23', 'ch3_g_pack2', 'obj', 420),
- ('12_39_27', 'ch3_i_warmer', 'obj', 260), ('12_39_31', 'ch3_i_blanket', 'obj', 260), ('12_39_36', 'ch3_i_headlamp', 'obj', 260), ('12_39_40', 'ch3_i_socks', 'obj', 260),
- ('12_50_55', 'ch3_o_sailor', 'outfit', 0), ('12_51_04', 'ch3_o_climber', 'outfit', 0), ('12_51_09', 'ch3_o_lifeguard', 'outfit', 0), ('12_51_36', 'ch3_o_knight', 'outfit', 0)]
+ ('12_39_27', 'ch3_i_warmer', 'obj', 260), ('12_39_31', 'ch3_i_blanket', 'obj', 260), ('12_39_36', 'ch3_i_headlamp', 'obj', 260), ('12_39_40', 'ch3_i_socks', 'obj', 260)
+]
 HERO = (330, 520)
 def find(t):
     r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(t)]
