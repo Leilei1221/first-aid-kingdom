@@ -143,3 +143,71 @@ A simple wooden fishing rod with a reel and a coil of line, lying diagonally, ga
 - 傷口圖：轉成 420×420 WebP，加進 `content/wounds.json`（key：`octopus`、`jelly`、`rockcut`、`vibrio`），求助事件開場就會顯示傷口圖，也會進傷口圖鑑。
 - 物件圖：去背、轉成 WebP、放進 `chapters/ch3/assets/`，換掉目前的文字徽章；魚類圖示會顯示在釣到的畫面與魚簍。
 - 丟給我的方式：把檔案放在專案資料夾外面任何地方，告訴我路徑就好。
+
+---
+
+# E3 生圖提示詞（各國商人、商船、海圖碎片、登山裝備）
+
+整理日期：2026 年 10 月 9 日。每一類先貼「共用段」，再貼各項那一句。
+
+## E3-0 登山裝備的換色與穿搭（老師 2026-10-09 提問）
+
+- **換色可以做**：衣物圖用「單一鮮豔底色（紅）＋灰白黑的配件」畫，程式用色相旋轉產生紅、橙、黃、綠、青、藍、紫、粉等顏色，不用每個顏色各畫一張；灰、白、黑色用降低飽和度做。
+- **畫在主角身上的限制**：主角圖（`hero.webp`，330×520）是固定姿勢的單張圖，身上已經有披風、大背包、腰帶；疊上去的衣服只能近似對位，不是逐像素貼合。建議**先各畫一張外套、毛帽當測試**，放進遊戲看效果，OK 再畫其餘。
+- 背包、裝備欄用的圖示可以直接用同一張圖。
+
+## E3-1 三位商人（全身＋頭像）
+
+附上 `ch3_lifeg.webp`（港口救生員）當風格參考。尼泊爾內陸國，沒有港口，所以商人是「搭別國的船來」。
+
+**全身圖共用段**
+```
+Match the art style of the attached reference image: full-body fantasy RPG character, detailed painterly anime-influenced illustration, standing relaxed front-facing three-quarter pose, whole body visible from head to boots, plain light-gray background for easy cutout, soft warm lighting. No text, no letters, no logos, no watermark. A friendly traveling merchant who is also a good teacher.
+```
+- **merchant_jp（日本）**：`A middle-aged Japanese man in a dark indigo samue work outfit with a straw hat, a wooden fishing box and bundles of dried kelp tied on his back, a couple of fishing rods in one hand, warm smile.`
+- **merchant_au（澳洲）**：`A sun-tanned Australian woman in her thirties with a wide-brim sun hat, long-sleeve sun-protection shirt and shorts, a bright first-aid satchel with a green cross on her hip, zinc sunscreen on her nose, holding a bandage roll, cheerful.`
+- **merchant_np（尼泊爾）**：`A Nepali mountain guide and trader in his forties, wearing a layered wool jacket, a knitted wool cap with ear flaps, a thick scarf and sturdy boots, a big framed backpack loaded with warm clothes, an ice axe and coiled rope, calm and kind expression.`
+
+**頭像共用段（各 160×160，附上剛生好的全身圖當參考）**
+```
+Head-and-shoulders portrait of the same character as in the attached full-body image, same art style and same outfit, friendly expression, square 1:1 composition, plain light-gray background for easy cutout. No text, no watermark.
+```
+
+## E3-2 商船（3 艘，各 480×360）
+```
+Match the art style of the attached reference image: hand-painted fantasy RPG game prop, chunky readable shapes, rich painterly texture, warm cinematic lighting, isometric 2.5D feel viewed from about 45 degrees. A small merchant sailing ship moored sideways at a pier, crates and barrels on deck, plain flat light-gray background for easy cutout. No text, no letters, no watermark. [SHIP]
+```
+- 日本：`Wooden ship with a battened white sail, a simple white flag with a red circle.`
+- 澳洲：`White-hulled cutter with a blue flag with white stars.`
+- 尼泊爾：`The same kind of small cutter, flying a crimson double-pennant flag with a blue border (it is chartered by the mountain trader).`
+
+## E3-3 海圖碎片（256×256）
+```
+Match the art style of the attached reference image: hand-painted fantasy RPG item icon, rich painterly texture, warm lighting, single object centered, plain flat light-gray background for easy cutout. No text, no letters, no watermark. A torn fragment of an old parchment sea chart with coastlines, dotted routes and a corner of a compass rose, no words.
+```
+
+## E3-4 登山裝備
+
+附上 `ch3_aed_cabinet.webp` 當風格參考。
+
+**可穿戴衣物（主體用「鮮紅色」，拉鍊、毛邊、鞋底用灰白黑，不要用棕色；正面、左右對稱、沒有身體、懸空）**
+```
+Match the art style of the attached reference image: hand-painted fantasy RPG equipment piece, painterly texture, warm lighting. Front-facing view as if worn, symmetrical, floating with no body or mannequin, plain flat light-gray background for easy cutout. The main fabric is one saturated bright red; zippers, trims, fur lining and soles are neutral white, gray or black (no brown, no other colors) so it can be recolored later. No text, no letters, no logos, no watermark. [ITEM]
+```
+- **gear_jacket**：`A thick insulated mountaineering parka with a hood, sealed pockets and a zipper.`（先做，測試用）
+- **gear_hat**：`A knitted wool beanie with a folded cuff and a small pom-pom.`（先做，測試用）
+- gear_pants：`Insulated mountaineering trousers with knee reinforcement and ankle straps.`
+- gear_gloves：`A pair of insulated mountaineering gloves with long cuffs.`
+- gear_boots：`A pair of sturdy insulated mountaineering boots with thick gray soles.`
+- gear_goggles：`Snow goggles with a wide strap and tinted gray lenses.`
+- gear_pack1：`A medium-size framed mountaineering backpack with side pockets and straps.`
+- gear_pack2：`A large expedition mountaineering backpack with a rolled sleeping mat and an ice axe attached.`
+
+**圖示（4 張，各 256×256，不需要換色）**
+```
+Match the art style of the attached reference image: hand-painted fantasy RPG item icon, rich painterly texture, warm lighting, single object centered, plain flat light-gray background for easy cutout. No text, no letters, no watermark. [ITEM]
+```
+- item_handwarmer：`A small hand-warmer pouch, slightly puffy, with a gentle warm orange glow.`
+- item_blanket：`A folded silver emergency thermal blanket, shiny foil texture.`
+- item_headlamp：`A mountaineering headlamp on an elastic strap, lit.`
+- item_socks：`A pair of thick wool hiking socks, folded.`
