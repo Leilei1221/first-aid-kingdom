@@ -47,6 +47,24 @@
    "img": "ch3_by_green",
    "face": "ch3_by_green_face",
    "hk": 1
+  },
+  "ch3_m_jp": {
+   "name": "日本商人 健太",
+   "img": "ch3_m_jp",
+   "face": "ch3_m_jp_face",
+   "hk": 1
+  },
+  "ch3_m_au": {
+   "name": "澳洲商人 艾蜜莉",
+   "img": "ch3_m_au",
+   "face": "ch3_m_au_face",
+   "hk": 1
+  },
+  "ch3_m_np": {
+   "name": "尼泊爾商人 帕桑",
+   "img": "ch3_m_np",
+   "face": "ch3_m_np_face",
+   "hk": 1
   }
  }
 }

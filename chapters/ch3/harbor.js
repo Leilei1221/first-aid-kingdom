@@ -8,7 +8,7 @@ export const HB={reward:30,repPerEvent:1,
 const ORDER=['ch3_h_octopus','ch3_h_jelly','ch3_h_cut','ch3_h_vibrio'];
 export const title=rep=>HB.titles.filter(t=>rep>=t[0]).pop()[1];
 export const evIdOf=day=>ORDER[((day*3)%ORDER.length+ORDER.length)%ORDER.length];  /* 每天輪一件，4 天輪完，不用亂數 */
-export default function(FA,{on}){
+export default function(FA,{on,extra}){
 const {say,quiz,toast,refresh,CARDS,A,RATIO,takeKit,needCheck,ITEMS,sprite}=FA;
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
 let DATA=null;
@@ -21,7 +21,7 @@ const todayId=()=>PREV&&EVQ>=1&&EVQ<=ORDER.length?ORDER[EVQ-1]:evIdOf(S.day);  /
 async function board(){
   const h=st(),d=await data(),e=d[todayId()];
   await say({icon:'📋',who:'港口公告板',html:`<p>你的稱號：<b>${title(h.rep)}</b>　港口信譽 ${h.rep}　已幫忙 ${h.n} 件</p>`+
-    (h.done===S.day?'<p class="good">今天的求助都處理好了，明天再來看看。</p>':`<p><b>今天的求助：</b>${e.name}</p><p class="small">港口廣場上有人在等你，走近按「求助」。需要的用品：${Object.keys(e.needs).length?needTxt(e.needs):'不用準備，帶著判斷力就好'}。</p>`)});
+    (extra?extra():'')+(h.done===S.day?'<p class="good">今天的求助都處理好了，明天再來看看。</p>':`<p><b>今天的求助：</b>${e.name}</p><p class="small">港口廣場上有人在等你，走近按「求助」。需要的用品：${Object.keys(e.needs).length?needTxt(e.needs):'不用準備，帶著判斷力就好'}。</p>`)});
 }
 async function help(){
   if(!active())return;
@@ -48,6 +48,6 @@ const build=(id,H,{sprite})=>{
   const b=sprite('shadow','',HB.boardAt.x,HB.boardAt.y,Math.round(H*1.7),RATIO.ch3_hb_board);b.querySelector('img').src=A.ch3_hb_board;
   if(active()){const e=DATA&&DATA[todayId()];const key=e?e.who:'ch3_by_red';const s=sprite('shadow','',HB.victimAt.x,HB.victimAt.y,Math.round(H*.9),RATIO[key]);s.querySelector('img').src=A[key];}};
 const addRep=n=>{st().rep+=n;};
-return {things,build,acts:{ch3_hbboard:board,ch3_hbhelp:help},load:data,active,addRep,
+return {things,build,acts:{ch3_hbboard:board,ch3_hbhelp:help},load:data,active,addRep,rep:()=>st().rep,
   goal:()=>on()&&active()?'港口有人需要幫忙：看看港口公告板，再到廣場上找求助的人。':null};
 }

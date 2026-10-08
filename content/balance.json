@@ -135,5 +135,19 @@
       {"days": 14, "coins": 200, "items": {"double": 2}, "title": "老朋友"},
       {"days": 30, "coins": 400, "items": {"double": 3}, "title": "港口之友"}
     ]
-  }
+  },
+  "PACKS": [
+    {
+      "cap": 18,
+      "ok": 10,
+      "heavy": 15,
+      "cost": 600
+    },
+    {
+      "cap": 22,
+      "ok": 12,
+      "heavy": 18,
+      "cost": 1200
+    }
+  ]
 }

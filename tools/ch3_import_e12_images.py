@@ -3,7 +3,7 @@
 檔名對應（以檔名裡的時間辨認，2026-10-08 晚上那一批）：見 MAP。沒有 numpy，只用 PIL。"""
 import sys, pathlib
 from PIL import Image, ImageDraw, ImageFilter
-SRC = pathlib.Path(sys.argv[1])
+SRC = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else None
 ROOT = pathlib.Path(__file__).parent.parent
 MAP = [  # (檔名結尾時間, 輸出, 種類, 最長邊)
  ('11_56_57', 'w_octopus', 'wound', 420), ('11_57_31', 'w_jelly', 'wound', 420), ('11_57_37', 'w_rockcut', 'wound', 420), ('11_57_42', 'w_vibrio', 'wound', 420),
@@ -36,11 +36,12 @@ def cutout(im, tol=22, enclosed=True):
     mask = mask.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(1.1))
     out = im.convert('RGBA'); out.putalpha(mask)
     return out.crop(out.getbbox() or (0, 0, w, h))
-for t, name, kind, size in MAP:
-    im = Image.open(find(t))
-    if kind == 'wound':
-        out = im.convert('RGB').resize((size, size), Image.LANCZOS); dst = ROOT / 'assets' / f'{name}.webp'; out.save(dst, 'WEBP', quality=88)
-    else:
-        out = cutout(im, enclosed=name in ('ch3_hb_board', 'ch3_fish_spot', 'ch3_fish_stall', 'ch3_rod')); out.thumbnail((size, size), Image.LANCZOS); dst = ROOT / 'chapters/ch3/assets' / f'{name}.webp'; out.save(dst, 'WEBP', quality=90)
-        print(name, out.size, round(out.size[0] / out.size[1], 4))
-    print('→', dst.relative_to(ROOT), dst.stat().st_size // 1024, 'KB')
+if __name__ == '__main__':
+    for t, name, kind, size in MAP:
+        im = Image.open(find(t))
+        if kind == 'wound':
+            out = im.convert('RGB').resize((size, size), Image.LANCZOS); dst = ROOT / 'assets' / f'{name}.webp'; out.save(dst, 'WEBP', quality=88)
+        else:
+            out = cutout(im, enclosed=name in ('ch3_hb_board', 'ch3_fish_spot', 'ch3_fish_stall', 'ch3_rod')); out.thumbnail((size, size), Image.LANCZOS); dst = ROOT / 'chapters/ch3/assets' / f'{name}.webp'; out.save(dst, 'WEBP', quality=90)
+            print(name, out.size, round(out.size[0] / out.size[1], 4))
+        print('→', dst.relative_to(ROOT), dst.stat().st_size // 1024, 'KB')

@@ -16,6 +16,7 @@ const img=(k,h)=>`<img src="${A[k]}" alt="" style="display:block;margin:6px auto
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
 const st=()=>{S.c=S.c||{};const f=S.c.ch3_fish||(S.c.ch3_fish={rod:false,bag:{},rel:0,n:0});if(preview)f.rod=true;return f;};
 const bagN=()=>Object.values(st().bag).reduce((a,b)=>a+b,0);
+const bagMax=()=>FISH.bagMax+(st().plus||0);  /* 日本商人的加大魚簍 */
 const nameOf=id=>SPECIES.find(s=>s.id===id).name;
 const card=async k=>{if(S.cards[k])return;S.cards[k]=true;await say({p:'hero',html:`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div><p class="good">獲得知識卡</p>`});};
 const F=()=>debug&&window.__ch3FishForce||null;  /* 只有 #debug：測試用的指定結果 */
@@ -51,9 +52,9 @@ async function fishOutcome(sp,size){
     f.rel++;if(f.rel%FISH.relPerRep===0){addRep(1);toast('放回小魚：港口信譽 +1');}
     await say({p:'hero',html:'<p class="good">小魚游回海裡了。</p>'});await card('ch3_c_size');return;}
   if(i===1){f.rel++;await say({p:'hero',html:'<p>牠游回海裡了。</p>'});return;}
-  if(bagN()>=FISH.bagMax){await say({p:'hero',html:`<p class="bad">魚簍滿了（${FISH.bagMax} 隻），裝不下。到魚攤賣一些吧。</p>`});return;}
+  if(bagN()>=bagMax()){await say({p:'hero',html:`<p class="bad">魚簍滿了（${bagMax()} 隻），裝不下。到魚攤賣一些吧。</p>`});return;}
   f.bag[sp.id]=(f.bag[sp.id]||0)+1;
-  await say({p:'hero',html:`<p class="good">留下了一隻${sp.name}。</p><p class="small">魚簍 ${bagN()}/${FISH.bagMax}。可以拿去魚攤賣，或請老闆娘烤來吃。</p>`});}
+  await say({p:'hero',html:`<p class="good">留下了一隻${sp.name}。</p><p class="small">魚簍 ${bagN()}/${bagMax()}。可以拿去魚攤賣，或請老闆娘烤來吃。</p>`});}
 async function fishSpot(){
   const f=st();
   if(!f.rod){await say({p:'hero',html:'<p>這裡可以釣魚，不過我沒有釣竿。魚攤有賣。</p>'});return;}

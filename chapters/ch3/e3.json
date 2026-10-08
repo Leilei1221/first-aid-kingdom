@@ -1,0 +1,43 @@
+{
+ "MERCHANTS": {
+  "jp": {"id":"ch3_m_jp","name":"日本商人 健太（Kenta）","ship":"ch3_ship_jp","from":"日本",
+   "hello":["Hello! 你好！我是從日本來的商人，健太（Kenta）。","我的船上有乾海帶和漁具，也歡迎你把釣到的魚賣給我，我出的價格比市集好一點。"],
+   "talk":["日本的漁夫有一個習慣：小魚一定放回海裡，這樣明年才有魚可以釣。","Small fish, go home. 小魚，回家吧。","今天學三句：Hello! 你好！／Thank you! 謝謝！／How much? 多少錢？"],
+   "sellNote":"我收新鮮的魚，一隻比市集多三成。"},
+  "au": {"id":"ch3_m_au","name":"澳洲商人 艾蜜莉（Emily）","ship":"ch3_ship_au","from":"澳洲",
+   "hello":["Welcome! 歡迎！我是澳洲來的艾蜜莉（Emily）。","我賣繃帶、紗布這些急救用品，也收乾糧。在海邊玩，一定要記得防曬、小心水母和章魚。"],
+   "talk":["Bandage 是繃帶，gauze 是紗布，glove 是手套。","Are you OK? 你還好嗎？這是看到有人受傷時，最先要問的一句。","還有一句很重要：Help! 救命！ Call for help! 快叫人來幫忙！"],
+   "sellNote":"我收沒過期的乾糧，一包 40 金幣。"},
+  "np": {"id":"ch3_m_np","name":"尼泊爾商人 帕桑（Pasang）","ship":"ch3_ship_np","from":"尼泊爾",
+   "hello":["Hello! 你好！我是來自尼泊爾山區的帕桑（Pasang），平常帶人爬山，這趟是搭朋友的船來賣東西。","山上很冷，保暖的衣服、帽子、手套、登山靴，我這裡都有，也有可以擴充行李的登山包。"],
+   "talk":["Warm clothes 是保暖衣物。上山前，衣服要一層一層穿，濕了就要換。","Stay warm. 保持溫暖。Stay together. 不要走散。","有一天，我們一起去爬雪山吧。Let's climb together someday!"],
+   "sellNote":"我收藥品和繃帶，山上很需要，一件 25 金幣。"}
+ },
+ "GOODS": {
+  "jp": [
+   {"k":"kelp","name":"乾海帶 dried kelp","price":25,"type":"food","desc":"吃了體力 +15"},
+   {"k":"bagplus","name":"加大魚簍 big fish basket","price":200,"type":"bag","desc":"魚簍多 4 格（只能買一次）"}],
+  "au": [
+   {"k":"glove","type":"kit"},{"k":"gauze","type":"kit"},{"k":"bandaid","type":"kit"},{"k":"elastic","type":"kit"}],
+  "np": [
+   {"k":"jacket","name":"防寒外套 parka","price":400,"type":"gear","desc":"可以疊在身上換顏色"},
+   {"k":"hat","name":"保暖毛帽 wool hat","price":120,"type":"gear","desc":"可以疊在身上換顏色"},
+   {"k":"pants","name":"防寒褲 insulated pants","price":300,"type":"gear","desc":"雪山章會用到"},
+   {"k":"gloves","name":"保暖手套 gloves","price":150,"type":"gear","desc":"雪山章會用到"},
+   {"k":"boots","name":"登山靴 boots","price":350,"type":"gear","desc":"雪山章會用到"},
+   {"k":"goggles","name":"護目鏡 goggles","price":200,"type":"gear","desc":"雪山章會用到"},
+   {"k":"pack1","name":"登山包 backpack（急救背包 18 格）","price":600,"type":"pack","lv":1,"desc":"背包變大，負重門檻也提高"},
+   {"k":"pack2","name":"大型登山包 big backpack（急救背包 22 格）","price":1200,"type":"pack","lv":2,"desc":"要先買登山包"},
+   {"k":"warmer","name":"暖暖包 hand warmer","price":30,"type":"count","desc":"雪山章會用到"},
+   {"k":"blanket","name":"保暖毯 thermal blanket","price":60,"type":"count","desc":"雪山章會用到"},
+   {"k":"headlamp","name":"頭燈 headlamp","price":90,"type":"count","desc":"雪山章會用到"},
+   {"k":"socks","name":"毛襪 wool socks","price":50,"type":"count","desc":"雪山章會用到"},
+   {"k":"o_climber","name":"整套造型：登山者 climber set","price":1500,"type":"outfit","desc":"比單件加起來便宜，直接換成整套造型"}]
+ },
+ "SELL": {
+  "jp": {"kind":"fish","mul":1.3},
+  "au": {"kind":"kit","item":"ration","pay":40},
+  "np": {"kind":"kitlist","items":["gauze","elastic","bandaid"],"pay":25}
+ },
+ "ICONS": {"jacket":"ch3_g_jacket","hat":"ch3_g_hat","pants":"ch3_g_pants","gloves":"ch3_g_gloves","boots":"ch3_g_boots","goggles":"ch3_g_goggles","pack1":"ch3_g_pack1","pack2":"ch3_g_pack2","warmer":"ch3_i_warmer","blanket":"ch3_i_blanket","headlamp":"ch3_i_headlamp","socks":"ch3_i_socks","o_climber":"ch3_o_climber","kelp":"ch3_map_frag","bagplus":"ch3_rod"}
+}

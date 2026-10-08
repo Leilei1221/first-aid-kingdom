@@ -7,6 +7,7 @@ import * as R from './rhythm.js';
 import * as AED from './aed.js';
 import harborInit from './harbor.js';
 import fishInit from './fish.js';
+import e3Init from './e3.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
@@ -24,7 +25,8 @@ async function captTalk(){
   if(stormy()){await say({p:'ch3_captain',html:'<p>颱風或豪雨就要來了，今天停航！海上的風浪可不是開玩笑的，等天氣好轉再出發。</p>'});return;}
   const r=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length,w=kitCount('water');
   const i=await say({p:'ch3_captain',html:`<p>要去${toHarbor?'港口藍堡':'綠葉谷'}嗎？船票 ${FARE} 金幣，要在海上過兩夜。</p><p>船上每天吃一包乾糧、喝一瓶水，自己帶最划算；船上也有賣，乾糧 ${SHIP_RATION}、開水 ${SHIP_WATER} 金幣。</p><p class="small">你的背包：有效乾糧 ${r} 包、開水 ${w} 瓶　金幣 ${S.coins}</p>`,
-    buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'}]});
+    buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'},...(toHarbor&&E3&&E3.sailorOffer()?[{label:'買水手服（200 金幣）'}]:[])]});
+  if(i===2)return E3.buySailor();
   if(i!==0)return;
   await stashDepart();  /* 防災包是旅行行李：放在這個地區就問要不要帶上 */
   S.coins-=FARE;S.voyage={to:toHarbor?HARBOR:FISHPORT,left:2,sick:false,mob:false};
@@ -281,9 +283,10 @@ async function lifegHarbor(){
   }
   for(;;){
     const ready=PREV||['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
-    const labels=ready?['請教救生員','聊聊','先離開']:['接下來做什麼','聊聊','先離開'];
+    const labels=(ready?['請教救生員','聊聊']:['接下來做什麼','聊聊']).concat(E3&&E3.lifegOffer()?['領取救生員裝']:[],['先離開']);
     const i=await say({p:LIFEG,html:ready?'<p>想聊聊，還是想請教急救和防災的事？</p>':'<p>港口人多，想聊聊嗎？市集和救生站都可以去看看。</p>',buttons:labels.map((l,k)=>({label:l,primary:k===0}))});
     const lab=labels[i];
+    if(lab==='領取救生員裝'){await E3.giveLifeg();continue;}
     if(lab==='請教救生員')return lesson4();
     if(lab==='接下來做什麼'){await lines(LIFEG,[!S.cards.ch3_k1_3?'市集的空地上有人倒下了，快過去看看！':!S.cards.ch3_k2_3?'去救生站吧，假人旁邊可以練習按壓。':!S.cards.ch3_k3_1?'假人旁邊的面罩，可以練習人工呼吸。':'救生站牆上的 AED，也要練習怎麼用。']);continue;}
     if(lab!=='聊聊')return;
@@ -314,17 +317,19 @@ const PASSER_LINES={
   ch3_by_blue:[['不知道有沒有人會急救……我只敢站在這裡看。'],['你好厲害，那麼多人在，你還是第一個動手的。']],
   ch3_by_green:[['聽說港口的救生員很懂急救，他說不定有辦法。'],['有人在現場帶頭，大家就知道該做什麼了。']]};
 const passerTalk=async id=>{await lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
-const HBR=harborInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done))});
-HBR.load().catch(()=>{});
+let E3=null;
+const HBR=harborInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),extra:()=>E3?E3.boardExtra():''});
 const FSH=fishInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),debug:DEBUG,addRep:HBR.addRep,preview:PREV});
+E3=e3Init(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
+HBR.load().catch(()=>{});E3.load().catch(()=>{});
 return {
-  acts:Object.assign({},HBR.acts,FSH.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed}),
+  acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed}),
   build(sceneId,H,{sprite,npcEls}){
-    HBR.build(sceneId,H,{sprite});FSH.build(sceneId,H,{sprite});
+    HBR.build(sceneId,H,{sprite});FSH.build(sceneId,H,{sprite});E3.build(sceneId,H,{sprite});
     if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}
     if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;
       const m=sprite('shadow','',MASK.x,MASK.y,Math.round(H*.2),RATIO.ch3_face_shield);m.querySelector('img').src=A.ch3_face_shield;}},
-  things(sceneId){return HBR.things(sceneId).concat(FSH.things(sceneId),sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'}]:[]);},
+  things(sceneId){return HBR.things(sceneId).concat(FSH.things(sceneId),E3.things(sceneId),sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'}]:[]);},
   goalBase:()=>onShip()?'在船上度過兩個晚上：到艙口進船艙，在床上睡覺。':undefined,  /* 船上的場景算綠葉谷地區，目標要走這個接點 */
   goal(){  /* 畫面上方「目標」：依知識卡判斷做到哪一節，告訴玩家下一步去哪裡 */
     if(onShip())return '在船上度過兩個晚上：到艙口進船艙，在床上睡覺。';
@@ -337,6 +342,7 @@ return {
     if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
     {const g=HBR.goal();if(g)return g;}
     return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`;},
+  wear:()=>E3.wardrobe(),
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
     if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();
