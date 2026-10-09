@@ -46,6 +46,9 @@ async def main(url):
         await page.evaluate("() => { window.__fa.S.c.ch3_done = true; window.__fa.S.hearts.shopkeeper = 0; }")
         await open_shop(); t = await dlg_text()
         check('完成第三章後：商店出現「交通工具」四種', all(v['name'] in t for v in V['list']) and '交通工具' in t, t[-500:])
+        check('商店列表顯示四張交通工具圖', await page.locator('#dText img[src*="assets/vehicle_"]').count() == 4)
+        info = await page.evaluate("""async () => Promise.all(['bamboo','balloon','glider','drone'].map(id => new Promise(r => { const i = new Image(); i.onload = () => r([id, i.naturalWidth > 0]); i.onerror = () => r([id, false]); i.src = 'assets/vehicle_' + id + '.webp'; })))""")
+        check('四張交通工具圖都能載入', all(ok for _, ok in info), str(info))
         # --- 買：價格、扣款、已擁有、記在 S.c.air
         b4 = await st('S.coins'); await click('air:balloon')
         check(f'買熱氣球：扣 {L["balloon"]["cost"]} 金幣、記在 S.c.air，沒有新增頂層欄位', await st('S.coins') == b4 - L['balloon']['cost'] and await st('S.c.air') == ['balloon'] and await page.evaluate("() => !('air' in window.__fa.S)"))
@@ -63,6 +66,7 @@ async def main(url):
         day, coins, sta = await st('S.day'), await st('S.coins'), await st('S.sta')
         await open_map_click(ch3); t = await dlg_text()
         check('地圖點港口藍堡：跳出「搭乘熱氣球」，列出耗體力', '熱氣球' in t and str(L['balloon']['sta']) in t and '港口藍堡' in t, t)
+        check('搭乘確認視窗顯示熱氣球的圖', await page.locator('#dText img[src*="vehicle_balloon"]').count() == 1)
         await pick_btn('搭熱氣球出發'); await finish_dialogs()
         check('抵達港口藍堡的中心場景', (await st('S.scene')).startswith('ch3_'), await st('S.scene'))
         check(f'耗體力 {L["balloon"]["sta"]}、沒過夜、沒花錢、不是航行中', await st('S.sta') == sta - L['balloon']['sta'] and await st('S.day') == day and await st('S.coins') == coins and await st('!S.voyage'), f'{await st("S.sta")} {await st("S.day")}')
