@@ -145,7 +145,7 @@ function outfitSync(){
   S.c.outfits=own.concat(gain.map(o=>o.id));gain.forEach(o=>toast(`獲得新裝扮：${o.name}！到背包的「裝扮」換上`));}
 /* 交通工具（完成第三章後在雜貨店買；世界地圖搭乘）。擁有的記在 S.c.air（編號陣列） */
 const airOwned=()=>((S&&S.c&&S.c.air)||[]).map(id=>VEHICLES.list.find(v=>v.id===id)).filter(Boolean);
-const vBadge=v=>`<span class="badge" style="--c:${v.color};--tc:#1b1b1b" aria-hidden="true">${v.ch}</span>`;
+const vBadge=v=>`<img alt="" src="assets/vehicle_${v.id}.webp" style="width:64px;height:48px;object-fit:contain;flex:none">`;
 /* 回傳 {v} 或 {why}：why＝none（沒有）／storm（颱風豪雨）／fog（濃霧，沒有能飛的）／tired（體力不夠） */
 function airPick(){
   const own=airOwned();if(!own.length)return {why:'none'};
@@ -1092,7 +1092,7 @@ async function fly(g){
   const pk=airPick(),c=g.center||BASE.center;
   if(!pk.v){const msg={storm:'颱風或豪雨（或明天就要來了），太危險，不能飛。等天氣好轉再出發。',fog:'濃霧裡看不見路，這些交通工具都不能飛。等霧散了再說，或者換一台能在濃霧裡飛的。',tired:`體力不夠，飛過去至少要有 ${pk.need} 點體力。先吃點東西再出發。`}[pk.why];
     await say({p:'hero',html:`<p>${msg}</p>`});return;}
-  const v=pk.v,i=await say({p:'hero',who:'交通工具',html:`<p>要搭乘${v.name}前往${g.name}嗎？</p><p class="small">不用過夜、不用食水，耗體力 ${v.sta}（目前 ${S.sta}/${staMax()}）。</p>`,buttons:[{label:`搭${v.name}出發`,primary:true},{label:'再想想'}]});
+  const v=pk.v,i=await say({p:'hero',who:'交通工具',html:`<div style="text-align:center">${vBadge(v).replace('width:64px;height:48px','width:200px;height:150px')}</div><p>要搭乘${v.name}前往${g.name}嗎？</p><p class="small">不用過夜、不用食水，耗體力 ${v.sta}（目前 ${S.sta}/${staMax()}）。</p>`,buttons:[{label:`搭${v.name}出發`,primary:true},{label:'再想想'}]});
   if(i!==0)return;
   await stashDepart();
   S.sta-=v.sta;save();busy=false;await go(c.scene,c.at);busy=true;}
