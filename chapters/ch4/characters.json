@@ -11,6 +11,18 @@
    "img": "ch4_innk",
    "face": "ch4_innk_face",
    "hk": 0.98
+  },
+  "ch4_guide_up": {
+   "name": "嚮導 帕桑",
+   "img": "ch4_guide_up",
+   "face": "ch4_guide_up_face",
+   "hk": 1
+  },
+  "ch4_hiker": {
+   "name": "年輕登山客 小宇",
+   "img": "ch4_hiker",
+   "face": "ch4_hiker_face",
+   "hk": 1
   }
  }
 }

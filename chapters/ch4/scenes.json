@@ -38,6 +38,12 @@
     "x": 620,
     "y": 700,
     "label": "搭小船回藍堡"
+   },
+   {
+    "kind": "ch4_stall",
+    "x": 1330,
+    "y": 548,
+    "label": "裝備攤"
    }
   ],
   "exits": [],
@@ -84,5 +90,86 @@
     "need": null
    }
   ]
+ },
+ "ch4_camp1": {
+  "name": "營地 1",
+  "spawn": [
+   420,
+   780
+  ],
+  "bg": "ch4_camp1",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_hiker",
+    "x": 900,
+    "y": 420
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 1250,
+    "y": 430,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch4_tent",
+    "x": 330,
+    "y": 330,
+    "label": "帳篷（過夜）"
+   },
+   {
+    "kind": "ch4_up",
+    "x": 1430,
+    "y": 410,
+    "label": "往營地 2 的小徑"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch4_village",
+    "at": [
+     420,
+     430
+    ],
+    "block": null,
+    "test": "(x,y)=>x<300&&y>780",
+    "need": null
+   }
+  ],
+  "outdoor": true
+ },
+ "ch4_camp1_night": {
+  "name": "營地 1（夜）",
+  "spawn": [
+   600,
+   500
+  ],
+  "bg": "ch4_camp1_night",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_hiker",
+    "x": 1000,
+    "y": 420
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 1250,
+    "y": 430,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch4_tent",
+    "x": 330,
+    "y": 330,
+    "label": "進帳篷睡覺"
+   }
+  ],
+  "exits": [],
+  "outdoor": true
  }
 }

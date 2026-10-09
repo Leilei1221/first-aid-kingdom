@@ -98,7 +98,7 @@ async def main(url):
         check('目標文字提到帕桑', '帕桑' in await page.inner_text('#goal'))
         check('沒有錯誤', not errs, str(errs[:2]))
         # --- 山腳村：上山的路還不能走、帕桑對話、回藍堡
-        await act_at(page, 400, 400); check('上山的路：說營地還沒準備好', '還沒準備好' in await text(page) or '營地' in await text(page), await text(page)); await drain(page)
+        await act_at(page, 400, 400); check('上山的路：第 1 節還沒做，帕桑請你先準備', '第 1 節' in await text(page), await text(page)); await drain(page)
         await act_at(page, 1000, 600)
         check('和帕桑說話有選單', any('聊聊雪嶺' in t for t in await btns(page)), str(await btns(page)))
         await click(page, '聊聊雪嶺'); check('聊聊：有「一層一層穿」的話', '一層一層' in await text(page) or '毛線' in await text(page), await text(page))
@@ -138,6 +138,70 @@ async def main(url):
         check('港口：帕桑（商船不是他的那天）站在港口另一個位置', await ev(page, "S.day") >= 16)
         await page.evaluate("() => { window.__fa.S.day = 12; }"); await goto(page, 'ch3_harbor', 820, 640)
         await act_at(page, 1050, 620); check('第 12 天（澳洲商船）：還是找得到帕桑，選單有去雪嶺', any('跟帕桑去雪嶺' in t for t in await btns(page)), str(await btns(page))); await leave(page)
+        # --- F2：第 1 節（山腳村）與第 2 節（營地 1）
+        QZ = json.load(open(ROOT / 'chapters/ch4/dialogues.json', encoding='utf-8'))['quizzes']
+        byq = {z['q']: z for z in QZ.values()}
+        async def play_until(page, stop, n=60):
+            for _ in range(n):
+                if stop() if not asyncio.iscoroutinefunction(stop) else await stop(): return True
+                if await hidden(page):
+                    await page.wait_for_timeout(900)
+                    if await hidden(page): return False
+                t = await text(page); z = next((z for q, z in byq.items() if q in t), None)
+                bt = await page.locator('#dBtns button:not([disabled])').all_inner_texts()
+                if z and z['opts'][z['ans']] in bt: await click(page, z['opts'][z['ans']], 350); continue
+                if any('再選一次' in b for b in bt): await click(page, '再選一次', 350); continue
+                await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+            return False
+        async def has(expr):
+            return await ev(page, expr)
+        await goto(page, 'ch4_village', 880, 620); await page.evaluate("() => { const S = window.__fa.S; S.c.ch4.s1 = false; ['jacket','hat','pants','gloves','boots'].forEach(k => S.c.ch3_e3.own[k] = 1); S.c.ch3_e3.cnt.warmer = 1; S.c.ch4.s2a = false; S.c.ch4.s2 = false; S.c.ch4.c1 = false; delete S.cards.ch4_k1_1; }")
+        await act_at(page, 1330, 548); await page.wait_for_timeout(600)
+        check('裝備攤：開了尼泊爾商人的買東西畫面', '買東西' in await text(page) or 'need' in (await text(page)).lower() or '金幣' in await text(page), (await text(page))[:60])
+        await leave_shop(page)
+        await act_at(page, 400, 400); check('第 1 節沒做完，上山路被帕桑擋下', '第 1 節' in await text(page), await text(page)); await drain(page, 3)
+        await act_at(page, 1000, 600); await click(page, '準備上山', 600)
+        await click(page, '繼續', 400)
+        check('第 1 節：先有裝備檢查畫面', '裝備檢查' in await page.inner_text('#dialog') or '防寒外套' in await page.inner_text('#dialog'), (await page.inner_text('#dialog'))[:80])
+        ok1 = await play_until(page, lambda: False, 40)
+        check('第 1 節：全部答對後完成（s1）', await has("!!S.c.ch4.s1"), await ev(page, "JSON.stringify(S.c.ch4)"))
+        check('第 1 節：拿到知識卡 ch4_k1_1、ch4_k1_2', await has("!!S.cards.ch4_k1_1 && !!S.cards.ch4_k1_2"))
+        check('保暖等級（5 件齊全）記為 full', await has("S.c.ch4.warm") == 'full', str(await has("S.c.ch4.warm")))
+        for _ in range(6):
+            if any('先離開' in t for t in await btns(page)): await click(page, '先離開', 500); break
+            if await hidden(page): break
+            await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+        await act_at(page, 400, 400); check('第 1 節完成後，上山路問要不要出發', '營地 1' in await text(page), await text(page))
+        await click(page, '出發', 1200); await play_until(page, lambda: False, 6)
+        check('上山後到了營地 1', await ev(page, "S.scene") == 'ch4_camp1', await ev(page, "S.scene"))
+        await drain(page, 4)
+        await act_at(page, 330, 330); check('還沒幫小宇，帳篷不能過夜', '年輕人' in await text(page), await text(page)); await drain(page, 3)
+        await act_at(page, 900, 450)
+        check('小宇開頭：說過溪弄濕衣服', '弄濕' in await text(page), await text(page))
+        w0 = await has("(S.c.ch3_e3.cnt.warmer || 0)")
+        await play_until(page, lambda: False, 60)
+        check('第 2 節：幫完小宇（s2a）、拿到 ch4_k2_1 與既有的 hypothermia 卡', await has("!!S.c.ch4.s2a && !!S.cards.ch4_k2_1 && !!S.cards.hypothermia"), await ev(page, "JSON.stringify(S.c.ch4)"))
+        await drain(page, 4)
+        d0 = await ev(page, "S.day")
+        await act_at(page, 330, 330); await click(page, '過夜', 1500)
+        check('過夜：到了夜晚場景', await ev(page, "S.scene") == 'ch4_camp1_night', await ev(page, "S.scene"))
+        await play_until(page, lambda: False, 40)
+        check('第 2 節完成：s2、拿到 ch4_k2_2、天數 +1、回到白天營地', await has("!!S.c.ch4.s2 && !!S.cards.ch4_k2_2") and await ev(page, "S.day") == d0 + 1 and await ev(page, "S.scene") == 'ch4_camp1', f'{await ev(page, "JSON.stringify(S.c.ch4)")} {await ev(page, "S.day")} {await ev(page, "S.scene")}')
+        await drain(page, 4)
+        log = await page.evaluate("() => window.__ch4Log || []")
+        check('全部答對：沒有記錄嚴重錯誤', log == [], str(log))
+        t = await page.evaluate("() => { const e = window.__fa.SCENES.ch4_camp1.exits[0]; return [e.test(250, 800), e.test(600, 600), e.to, e.at]; }")
+        check('營地 1 左下的石階是出口，回山腳村', t[0] and not t[1] and t[2] == 'ch4_village', str(t))
+        # 答錯選項會被記錄
+        await goto(page, 'ch4_camp1', 420, 780); await page.evaluate("() => { window.__ch4Log = []; window.__fa.S.c.ch4.s2a = false; }")
+        await act_at(page, 900, 450)
+        for _ in range(8):
+            t = await text(page)
+            if '第一步' in t: break
+            await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+        await click(page, '跑步', 400); await drain(page, 2)
+        check('選「跑步暖身」：記錄嚴重錯誤 C1', (await page.evaluate("() => window.__ch4Log"))[:1] == [{'key': 'ch4_q2_1', 'code': 'C1', 'opt': 0}], str(await page.evaluate("() => window.__ch4Log")))
+        await page.evaluate("() => { const d = document.getElementById('dialog'); }")
         await ctx2.close()
         # --- 老師預覽：直接站在雪嶺、全部章節開放、不需要條件
         ctx3 = await b.new_context(viewport={'width': 1180, 'height': 820})
@@ -156,6 +220,13 @@ async def leave(page):
     for _ in range(4):
         if await hidden(page): return
         if any('Bye' in t for t in await btns(page)): await click(page, 'Bye', 500); return
+        await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+async def leave_shop(page):
+    for _ in range(4):
+        if await hidden(page): return
+        bt = await btns(page)
+        if any('關閉' in t or '離開' in t for t in bt):
+            await page.locator('#dBtns button', has_text='關閉' if any('關閉' in t for t in bt) else '離開').first.click(); await page.wait_for_timeout(400); continue
         await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
 async def skip_to_menu(page):
     for _ in range(6):

@@ -323,6 +323,7 @@ return {
     if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
     return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`+(HBR.goal()?'港口今天有人需要幫忙，看看公告板。':'');},
   wear:()=>E3.wardrobe(),
+  gearShop:()=>E3.gearShop(),
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
     if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();

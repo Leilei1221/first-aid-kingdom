@@ -32,7 +32,7 @@ async def chapter_switch(ctx, url):
     page, errs = await open_page(ctx, url, 's2@hlhs.hlc.edu.tw', {'class_id': 'c1', 'flags': {'ch2': False}, 'weather': None})
     await ev(page, "() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.f.final = true; S.started = true; S.coins = 100; document.getElementById('btnStart').click(); }"); await page.wait_for_timeout(500)
     r = await ev(page, "() => ({open: window.__fa.CHAPTERS.ch2.open, n: Object.keys(window.__fa.SCENES).length, map: window.__fa.mapAvail()})")
-    check('老師關閉第二章：章節資料已載入但「未開放」、世界地圖不出現', r == {'open': False, 'n': 30, 'map': False}, str(r))
+    check('老師關閉第二章：章節資料已載入但「未開放」、世界地圖不出現', r == {'open': False, 'n': 32, 'map': False}, str(r))
     await ev(page, "() => { window.__fa.go('home', [840, 770]); }"); await page.wait_for_timeout(700)
     await ev(page, "() => { window.__fa.talk('grandpa'); }"); await page.wait_for_timeout(500)
     txt = await ev(page, "() => document.getElementById('dText').innerText")

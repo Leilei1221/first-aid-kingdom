@@ -6,11 +6,18 @@
   "characters": "characters.json",
   "dialogues": "dialogues.json",
   "ratios": "ratios.json",
-  "walks": "walks.json"
+  "walks": "walks.json",
+  "cards": "cards.json"
  },
  "assets": [
+  "ch4_camp1",
+  "ch4_camp1_night",
   "ch4_guide",
   "ch4_guide_face",
+  "ch4_guide_up",
+  "ch4_guide_up_face",
+  "ch4_hiker",
+  "ch4_hiker_face",
   "ch4_inn",
   "ch4_innk",
   "ch4_innk_face",

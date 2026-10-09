@@ -9,7 +9,11 @@ SRC = pathlib.Path(sys.argv[1]); OUT = ROOT / 'chapters/ch4/assets'; OUT.mkdir(p
 MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  ('*02_01_01', 'ch4_village', 'scene', None), ('*02_01_39', 'ch4_inn', 'scene', None),
  ('ch4_guide.png', 'ch4_guide', 'body', 520), ('ch4_innk.png', 'ch4_innk', 'body', 520),
- ('ch4_guide_face.png', 'ch4_guide_face', 'face', 160), ('ch4_innk_face.png', 'ch4_innk_face', 'face', 160)]
+ ('ch4_guide_face.png', 'ch4_guide_face', 'face', 160), ('ch4_innk_face.png', 'ch4_innk_face', 'face', 160),
+ # F2：營地 1（白天、夜晚）、同行登山客、山上版的帕桑
+ ('喜馬拉雅中山營地.png', 'ch4_camp1', 'scene', None), ('喜馬拉雅中山營地_夜景.png', 'ch4_camp1_night', 'scene', None),
+ ('ch4_young_hiker.png', 'ch4_hiker', 'body', 520), ('ch4_young_hiker_portrait.png', 'ch4_hiker_face', 'face', 160),
+ ('ch4_guide_mountain.png', 'ch4_guide_up', 'body', 520), ('ch4_guide_portrait.png', 'ch4_guide_up_face', 'face', 160)]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]

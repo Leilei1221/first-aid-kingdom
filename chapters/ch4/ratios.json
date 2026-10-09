@@ -3,6 +3,10 @@
   "ch4_guide": 0.5288,
   "ch4_innk": 0.4327,
   "ch4_guide_face": 1.0,
-  "ch4_innk_face": 1.0
+  "ch4_innk_face": 1.0,
+  "ch4_hiker": 0.3577,
+  "ch4_hiker_face": 1.0,
+  "ch4_guide_up": 0.5096,
+  "ch4_guide_up_face": 1.0
  }
 }

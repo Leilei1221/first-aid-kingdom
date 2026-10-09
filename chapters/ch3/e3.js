@@ -75,5 +75,7 @@ const build=(id,H,{sprite})=>{
 const boardExtra=()=>{if(!on())return '';const k=today(),Dd=D;const nm=x=>Dd?Dd.MERCHANTS[x].from:x;
   if(k)return `<p>今天靠岸的商船：<b>${nm(k)}</b>（走到港口廣場找商人）</p>`;
   const nx=nextArrival(S.day);return nx?`<p>今天沒有商船靠岸。下一艘：第 ${nx} 天（${nm(merchantOn(nx))}）</p>`:'';};
-return {things,build,acts:{ch3_merchant:()=>merchant(),ch3_pasang:()=>merchant('np')},wardrobe:W.wardrobe,wear:W.wardrobe,boardExtra,load:data,st};
+/* 第四章山腳村的裝備攤：直接開尼泊爾商人的「買東西」（同一份商品與價格） */
+async function gearShop(){const D=await data(),M=D.MERCHANTS.np;await say({p:M.id,html:'<p>登山裝備都在這裡。What do you need? 需要什麼？</p>'});await pickFrom(M,()=>buyRows('np',D),'買東西');}
+return {things,build,acts:{ch3_merchant:()=>merchant(),ch3_pasang:()=>merchant('np')},wardrobe:W.wardrobe,wear:W.wardrobe,gearShop,boardExtra,load:data,st};
 }
