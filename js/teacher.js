@@ -30,10 +30,15 @@ function ch3Of(s){const c=s.c||{};
   if(c.ch3_done)return {label:'已完成',stars:c.ch3_stars||0,done:true};
   if(c.ch3_intro||Object.keys(s.cards||{}).some(k=>k.startsWith('ch3_')))return {label:'進行中',stars:0,done:false};
   return {label:'',stars:0,done:false};}
+/* 第四章（雪嶺，S.c.ch4）：到過雪嶺或有第四章的知識卡算進行中；章末演練完成才有星數（S.c.ch4.stars） */
+function ch4Of(s){const c=(s.c||{}).ch4||{};
+  if(c.done)return {label:'已完成',stars:c.stars||0,done:true};
+  if(c.arrived||Object.keys(s.cards||{}).some(k=>k.startsWith('ch4_')))return {label:'進行中',stars:0,done:false};
+  return {label:'',stars:0,done:false};}
 function summarize(state,cardTotal){
   const s=state||{},m=milestones(s),done=m.filter(Boolean).length;
   return {day:s.day||1,stage:stageLabel(s),pct:Math.round(done/m.length*100),stars:s.castleBest||0,castleDone:!!s.castleDone,
-    cards:Object.keys(s.cards||{}).length,cardTotal:cardTotal||0,coins:s.coins||0,hearts:s.hearts||{},ch2:ch2Of(s),ch3:ch3Of(s)};}
+    cards:Object.keys(s.cards||{}).length,cardTotal:cardTotal||0,coins:s.coins||0,hearts:s.hearts||{},ch2:ch2Of(s),ch3:ch3Of(s),ch4:ch4Of(s)};}
 const pad=n=>String(n).padStart(2,'0');
 function fmtTime(iso){if(!iso)return '';const d=new Date(iso);if(isNaN(d))return '';return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
 function ago(iso){if(!iso)return '';const m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return '剛剛';if(m<60)return m+' 分鐘前';if(m<1440)return Math.round(m/60)+' 小時前';return Math.round(m/1440)+' 天前';}
@@ -69,8 +74,8 @@ async function makeApi(){
 
 /* ---------- 畫面 ---------- */
 let api=null,user=null,classes=[],rows=[],fails=[],cardTotal=0,names={},scenarioNames={};
-let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,ch3:false,wild:false,relief:false},wxNames={};
-const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['ch3','第三章（港口藍堡）','完成第二章後，從礦坑入口往南的漁港搭船前往'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
+let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,ch3:false,ch4:false,wild:false,relief:false},wxNames={};
+const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['ch3','第三章（港口藍堡）','完成第二章後，從礦坑入口往南的漁港搭船前往'],['ch4','第四章（雪嶺）','完成第三章、集滿 3 片海圖碎片後，到藍堡港口找帕桑出發'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
 const say=(t,bad)=>{const e=$('status');e.hidden=false;e.textContent=t;e.style.borderColor=bad?'var(--bad)':'';};
 
 async function loadStatic(){
@@ -135,6 +140,7 @@ function render(){
     [started.length?Math.round(started.reduce((a,r)=>a+r.sum.pct,0)/started.length)+'%':'—','已開始者的平均進度'],
     [started.filter(r=>r.sum.castleDone).length,'通關落石之城'],
     ...(started.some(r=>r.sum.ch2.label)?[[started.filter(r=>r.sum.ch2.done).length,'完成第二章']]:[]),
+    ...(started.some(r=>r.sum.ch4.label)?[[started.filter(r=>r.sum.ch4.done).length,'完成第四章'],...(started.some(r=>r.sum.ch4.done)?[[started.filter(r=>r.sum.ch4.stars>=5).length,'第四章章末拿到 5 顆星']]:[])]:[]),
     ...(started.some(r=>r.sum.ch3.label)?[[started.filter(r=>r.sum.ch3.done).length,'完成第三章'],...(started.some(r=>r.sum.ch3.done)?[[started.filter(r=>r.sum.ch3.stars>=5).length,'第三章章末拿到 5 顆星']]:[])]:[]),
     [started.filter(r=>r.sum.coins<0).length,'目前有欠款']].map(([b,t])=>`<div><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join('');
   $('list').innerHTML=rows.map(r=>{
@@ -142,14 +148,14 @@ function render(){
     const x=r.sum,hearts=Object.entries(x.hearts).map(([k,n])=>`<span>${esc(names[k]||k)} ${'♥'.repeat(Math.min(5,n))}${'♡'.repeat(5-Math.min(5,n))}</span>`).join('');
     return `<details class="st"><summary><span class="seat">${esc(r.seat)}</span><span class="nm">${esc(r.name)}<small>${esc(r.no)}</small></span>
       <span class="prog"><i><em style="width:${x.pct}%"></em></i>${x.pct}%　${esc(x.stage)}</span>
-      <span class="chips"><span>第 <b>${x.day}</b> 天</span><span>城堡 <b>${x.stars}</b>★</span>${x.ch2.label?`<span>第二章 <b>${esc(x.ch2.label)}</b>${x.ch2.done?` ${x.ch2.stars}★`:''}</span>`:''}${x.ch3.label?`<span>第三章 <b>${esc(x.ch3.label)}</b>${x.ch3.done?` ${x.ch3.stars}★`:''}</span>`:''}<span>知識卡 <b>${x.cards}</b>/${x.cardTotal}</span><span class="${x.coins<0?'debt':''}">金幣 <b>${x.coins}</b>${x.coins<0?'（欠款）':''}</span></span></summary>
+      <span class="chips"><span>第 <b>${x.day}</b> 天</span><span>城堡 <b>${x.stars}</b>★</span>${x.ch2.label?`<span>第二章 <b>${esc(x.ch2.label)}</b>${x.ch2.done?` ${x.ch2.stars}★`:''}</span>`:''}${x.ch3.label?`<span>第三章 <b>${esc(x.ch3.label)}</b>${x.ch3.done?` ${x.ch3.stars}★`:''}</span>`:''}${x.ch4.label?`<span>第四章 <b>${esc(x.ch4.label)}</b>${x.ch4.done?` ${x.ch4.stars}★`:''}</span>`:''}<span>知識卡 <b>${x.cards}</b>/${x.cardTotal}</span><span class="${x.coins<0?'debt':''}">金幣 <b>${x.coins}</b>${x.coins<0?'（欠款）':''}</span></span></summary>
       <div class="body">最後遊玩：<b>${esc(fmtTime(r.updated))}</b>（${esc(ago(r.updated))}）　<span class="small">${esc(r.email)}</span><div class="hearts">${hearts}</div></div></details>`;}).join('')||'<p class="small">這個班級沒有學生名單。</p>';
 }
 
 function exportCsv(){
   const cls=classes.find(c=>c.id===$('cls').value)||{};
-  const head=['班級','座號','學號','姓名','email','最後遊玩','天數','主線進度%','主線階段','城堡最佳星數','知識卡','知識卡總數','金幣','第二章','第二章星數','第三章','第三章星數'];
-  const body=rows.map(r=>{const x=r.sum;return [cls.name,r.seat,r.no,r.name,r.email,x?fmtTime(r.updated):'尚未開始',x?x.day:'',x?x.pct:'',x?x.stage:'',x?x.stars:'',x?x.cards:'',x?x.cardTotal:'',x?x.coins:'',x?x.ch2.label:'',x&&x.ch2.done?x.ch2.stars:'',x?x.ch3.label:'',x&&x.ch3.done?x.ch3.stars:''];});
+  const head=['班級','座號','學號','姓名','email','最後遊玩','天數','主線進度%','主線階段','城堡最佳星數','知識卡','知識卡總數','金幣','第二章','第二章星數','第三章','第三章星數','第四章','第四章星數'];
+  const body=rows.map(r=>{const x=r.sum;return [cls.name,r.seat,r.no,r.name,r.email,x?fmtTime(r.updated):'尚未開始',x?x.day:'',x?x.pct:'',x?x.stage:'',x?x.stars:'',x?x.cards:'',x?x.cardTotal:'',x?x.coins:'',x?x.ch2.label:'',x&&x.ch2.done?x.ch2.stars:'',x?x.ch3.label:'',x&&x.ch3.done?x.ch3.stars:'',x?x.ch4.label:'',x&&x.ch4.done?x.ch4.stars:''];});
   const blob=new Blob([csv([head,...body])],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`急救王國進度_${cls.name||'班級'}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
 }

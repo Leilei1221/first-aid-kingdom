@@ -25,7 +25,7 @@ async def act_at(page, x, y):
     await page.evaluate(f"() => {{ window.__fa.S.pos = {{x: {x}, y: {y}}}; }}"); await page.wait_for_timeout(400)
     await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(500)
 async def click(page, text, wait=450):
-    await page.locator('#dBtns button, #dText button', has_text=text).first.click(); await page.wait_for_timeout(wait)
+    await page.locator('#dBtns button:visible, #dText button:visible', has_text=text).first.click(); await page.wait_for_timeout(wait)
 async def btns(page): return await page.locator('#dBtns button').all_inner_texts()
 async def text(page): return await page.inner_text('#dText')
 async def drain(page, n=12):
@@ -149,6 +149,7 @@ async def main(url):
                     if await hidden(page): return False
                 t = await text(page); z = next((z for q, z in byq.items() if q in t), None)
                 bt = await page.locator('#dBtns button:not([disabled])').all_inner_texts()
+                if any('先不要' in b for b in bt) and any('嚮導訓練' in b for b in bt): return True  # 回到帕桑的選單就停
                 if '按「吹」三下' in t:
                     for _ in range(2):
                         for _ in range(3): await page.locator('#dBtns button', has_text='吹！').first.click(); await page.wait_for_timeout(150)
@@ -298,6 +299,42 @@ async def main(url):
         check('重打：嚴重錯誤記錄 C6', (await page.evaluate("() => window.__ch4Log || []"))[:1] == [{'key': 'ch4_f1', 'code': 'C6', 'opt': 0}], str(await page.evaluate("() => window.__ch4Log")))
         await drain(page, 6); await page.evaluate("() => { window.__ch4Log = []; }")
         check('沒有新增頂層存檔欄位（章末也只用 S.c）', await ev(page, "!('ch4' in S)"))
+        # --- F7：山屋的日常（章末完成後）
+        await goto(page, 'ch4_lodge', 820, 700); await page.evaluate("() => { window.__ch4Log = []; const S = window.__fa.S; S.day = 6; S.c.ch4.rep = 4; S.c.ch4.d = null; S.coins = 1000; }")
+        c0 = await ev(page, "S.coins")
+        await act_at(page, 1430, 385)
+        check('公告板：晴天，顯示今日天氣與求助（第 6 天輪到高山症）', '適合上山' in await text(page) and '高山症' in await text(page), (await text(page))[:80])
+        await click(page, '幫忙處理', 600)
+        await play_until(page, lambda: False, 60); await page.wait_for_timeout(800)
+        check('求助全部答對：信譽 +2（4 → 6）、稱號升級為正式嚮導、金幣 +20', await has("S.c.ch4.rep === 6") and await ev(page, "S.coins") - c0 == 20, f'{await ev(page, "S.c.ch4.rep")} {await ev(page, "S.coins") - c0}')
+        
+        await drain(page, 3)
+        await act_at(page, 1430, 385)
+        check('再開公告板：今日求助已處理，按鈕不能再按', '已經處理好了' in await text(page) and await page.locator('#dBtns button[disabled]').count() >= 1, (await text(page))[:100])
+        await click(page, '離開', 500); await drain(page, 3)
+        await page.evaluate("() => { window.__fa.S.day = 9; }")
+        await act_at(page, 1430, 385)
+        check('風雪天：公告板顯示風雪大、今天沒有戶外求助，求助按鈕不能按', '風雪大' in await text(page) and await page.locator('#dBtns button[disabled]').count() >= 1, (await text(page))[:100])
+        await click(page, '離開', 500); await drain(page, 3)
+        # 嚮導訓練：每天第一次加信譽
+        r0 = await ev(page, "S.c.ch4.rep")
+        await act_at(page, 1020, 580); await click(page, '嚮導訓練', 500); await click(page, '失溫', 500)
+        await play_until(page, lambda: False, 40); await page.wait_for_timeout(600)
+        check('嚮導訓練：第一次完成信譽 +1', await ev(page, "S.c.ch4.rep") == r0 + 1, f'{r0} {await ev(page, "S.c.ch4.rep")}')
+        r1 = await ev(page, "S.c.ch4.rep")
+        await click(page, '嚮導訓練', 500); await click(page, '失溫', 500)
+        await play_until(page, lambda: False, 40); await page.wait_for_timeout(600)
+        check('同一天再訓練：信譽不再增加', await ev(page, "S.c.ch4.rep") == r1, f'{r1} {await ev(page, "S.c.ch4.rep")}')
+        await click(page, '先不要', 500)
+        # 山屋小店
+        await page.evaluate("() => { const S = window.__fa.S; S.sta = 40; S.coins = 500; }")
+        await act_at(page, 880, 540); await click(page, '山屋小店', 500)
+        await click(page, '熱奶茶', 500)
+        check('小店：買熱奶茶，金幣 −30、體力 +30', await ev(page, "S.coins") == 470 and await ev(page, "S.sta") == 70, f'{await ev(page, "S.coins")} {await ev(page, "S.sta")}')
+        await click(page, '暖暖包', 500)
+        check('小店：買暖暖包，數量 +1', await has("(S.c.ch3_e3.cnt.warmer || 0) >= 1"))
+        await click(page, '離開', 500); await click(page, '先離開', 500)
+        check('日常沒有新增頂層存檔欄位', await ev(page, "!('ch4' in S)"))
         # 答錯選項會被記錄
         await goto(page, 'ch4_camp1', 420, 780); await page.evaluate("() => { window.__ch4Log = []; window.__fa.S.c.ch4.s2a = false; }")
         await act_at(page, 900, 450)
