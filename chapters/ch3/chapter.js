@@ -284,11 +284,24 @@ async function supplyAct(){
     if(r!=='pick')return;
     const it=FA.ITEMS[pick];if(S.coins>=it.price&&S.kit.length<S.kitCap){S.coins-=it.price;S.kit.push(pick);msg=`已買下：${it.name} ×1（急救背包 ${S.kit.length}/${S.kitCap}）`;refresh();}
   }}
+/* 解除警報音（老師 2026-10-09 提供資訊：一長聲 90 秒）：沒有錄音檔，用程式合成一條穩定的單音長鳴；可以跳過 */
+async function allClearPlay(){
+  const T=Object.assign({ms:90000},DEBUG&&window.__ch3Tune&&window.__ch3Tune.clear||{}),AC=window.AudioContext||window.webkitAudioContext;
+  let ctx=null,timers=[];
+  const stop=()=>{timers.forEach(clearTimeout);timers=[];try{ctx&&ctx.close();}catch(e){}ctx=null;};
+  try{await say({p:'hero',who:'解除警報音',html:'<p id="al" style="font-size:1.4em;text-align:center;margin:14px 0">一長聲……</p><p class="small" style="text-align:center">（解除警報音是一長聲，共 90 秒。太長可以按「跳過」）</p>',buttons:[{label:'跳過'}],
+    onRender:(root,fin)=>{
+      if(AC)try{ctx=new AC();const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime,d=T.ms/1000;o.type='sine';o.frequency.value=440;
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.3);g.gain.setValueAtTime(.1,t+Math.max(.3,d-.3));g.gain.linearRampToValueAtTime(0,t+d);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d);}catch(e){}
+      timers.push(setTimeout(()=>fin('done'),T.ms));}});}
+  finally{stop();}}
 async function tsunami(){
   const i=await say({p:LIFEG,html:'<p>要不要聽聽海嘯警報是什麼聲音？聽過一次，真的響起的時候才認得出來。</p>',buttons:[{label:'聽聽看',primary:true},{label:'先不用'}]});
   if(i!==0)return;
   await alarmPlay();
-  await ask('ch3_q4_4');await showCard('ch3_k4_3');}
+  await ask('ch3_q4_4');await showCard('ch3_k4_3');
+  const j=await say({p:LIFEG,html:'<p>警報解除的時候，聲音又不一樣。要不要也聽聽看？</p>',buttons:[{label:'聽聽解除警報音',primary:true},{label:'不用了'}]});
+  if(j===0)await allClearPlay();}
 async function lifegHarbor(){
   S.c=S.c||{};
   if(!S.c.ch3_met){
