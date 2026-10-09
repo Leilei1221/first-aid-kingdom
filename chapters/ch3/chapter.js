@@ -251,24 +251,18 @@ async function downAct(){  /* 市集倒地的人：第 1～4 節都做完就多�
 /* ---------- NPC 對話（2026-10-07 老師同意的擬稿；沒有醫療數字，只用遊戲現有規則與已審核內容） ---------- */
 const LIFEG='ch3_lifeg',SAILOR='ch3_sailor';
 /* 海嘯警報選配支線（老師 2026-10-09 同意做；K4-3、Q4-4 文字照老師草稿）：第 4 節做完後，救生員選單多一項「海嘯警報」：
- * 先聽一次警報（鳴 5 秒、停 5 秒、鳴 5 秒，聲音由程式合成，可以跳過），再出情境題 Q4-4，最後給知識卡 K4-3。警報秒數來自草稿；救生員那句邀請與警報字幕是我加的非醫療用語。 */
-const ALARM={on:5000,off:5000};
+ * 先聽一次警報（老師提供的真實錄音，約 89 秒，可以跳過），再出情境題 Q4-4，最後給知識卡 K4-3。警報秒數來自草稿；救生員那句邀請與警報字幕是我加的非醫療用語。 */
+/* 警報聲用老師提供的真實錄音（2026-10-09，「海嘯警報不具語音廣播」，約 89 秒，已轉成 m4a）；播完才出語音字幕，可以隨時按「跳過」。 */
+const ALARM={ms:89400,src:new URL('assets/ch3_tsunami_alarm.m4a',import.meta.url).href};
 async function alarmPlay(){
-  const T=Object.assign({},ALARM,DEBUG&&window.__ch3Tune&&window.__ch3Tune.alarm||{}),AC=window.AudioContext||window.webkitAudioContext;
-  let ctx=null,timers=[];
-  const stop=()=>{timers.forEach(clearTimeout);timers=[];try{ctx&&ctx.close();}catch(e){}ctx=null;};
-  /* 警報聲：單一音高緩緩升高再降低的長鳴（不是兩個音交替，那會像救護車）。老師 2026-10-09 聽了覺得像救護車而改；真實警報聲若有錄音，之後可以換成音檔 */
-  const tone=ms=>{if(!AC)return;try{ctx=ctx||new AC();const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime,d=ms/1000;o.type='sine';
-    o.frequency.setValueAtTime(380,t);o.frequency.linearRampToValueAtTime(520,t+d/2);o.frequency.linearRampToValueAtTime(380,t+d);
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.2);g.gain.setValueAtTime(.12,t+Math.max(.2,d-.2));g.gain.linearRampToValueAtTime(0,t+d);
-    o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d);}catch(e){}};
-  try{await say({p:'hero',who:'海嘯警報',html:'<p id="al" style="font-size:1.4em;text-align:center;margin:14px 0">……</p>',buttons:[{label:'跳過'}],
+  const T=Object.assign({},ALARM,DEBUG&&window.__ch3Tune&&window.__ch3Tune.alarm||{});
+  let au=null,timers=[];
+  const stop=()=>{timers.forEach(clearTimeout);timers=[];try{au&&au.pause();}catch(e){}au=null;};
+  try{await say({p:'hero',who:'海嘯警報',html:'<p id="al" style="font-size:1.4em;text-align:center;margin:14px 0">警報聲播放中……</p><p class="small" style="text-align:center">（要有聲音。太長可以按「跳過」）</p>',buttons:[{label:'跳過'}],
     onRender:(root,fin)=>{const al=root.querySelector('#al'),at=(ms,fn)=>timers.push(setTimeout(fn,ms));
-      al.textContent='鳴——';tone(T.on);
-      at(T.on,()=>{al.textContent='（停）';});
-      at(T.on+T.off,()=>{al.textContent='鳴——';tone(T.on);});
-      at(T.on*2+T.off,()=>{al.innerHTML='語音：「海嘯警報，請所有民眾迅速往高處疏散」';});
-      at(T.on*2+T.off+2200,()=>fin('done'));}});}
+      try{au=new Audio(T.src);au.play().catch(()=>{});}catch(e){}
+      at(T.ms,()=>{al.innerHTML='語音：「海嘯警報，請所有民眾迅速往高處疏散」';});
+      at(T.ms+2200,()=>fin('done'));}});}
   finally{stop();}}
 /* 藍堡的休息處（老師 2026-10-09 同意加；藍堡原本沒有床，只有船艙）：救生站的休息區，免費睡一晚，沿用爺爺家床的規則（進入下一天、體力完全恢復、建立存檔點） */
 const REST_AT={x:800,y:450};
