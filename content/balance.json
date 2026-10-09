@@ -128,7 +128,8 @@
     "ch3_sailor": ["cross", "hypothermia", "typhoon", "flood"],
     "ch3_by_red": ["cpr", "faint", "choke"],
     "ch3_by_blue": ["cpr", "faint", "choke"],
-    "ch3_by_green": ["cpr", "faint", "choke"]
+    "ch3_by_green": ["cpr", "faint", "choke"],
+    "ch3_fishwife": ["food", "water", "burn"], "ch3_fisher": ["cross", "hypothermia", "typhoon", "flood"]
   },
   "DAILY": {
     "_說明": "每日任務與累計簽到（老師 2026-10-08 決定，完成第三章後開啟）。以「現實日期」計算。每日任務三項都完成就領 reward（金幣，另有 itemChance 機率得到一個小道具）；累計簽到＝累積登入的天數（中斷不歸零），到 milestones 的天數就領獎勵（金幣、小道具，部分有稱號）。獎勵的小道具直接放進道具欄，不受道具欄上限限制（才不會領不到）。這些都是遊戲平衡參數，可調。",

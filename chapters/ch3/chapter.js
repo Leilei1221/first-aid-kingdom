@@ -314,6 +314,13 @@ const PASSER_LINES={
   ch3_by_red:[['我剛剛看到他突然就倒下去了，嚇得不知道該怎麼辦。'],['剛才真的謝謝你！我以後也想學學急救。']],
   ch3_by_blue:[['不知道有沒有人會急救……我只敢站在這裡看。'],['你好厲害，那麼多人在，你還是第一個動手的。']],
   ch3_by_green:[['聽說港口的救生員很懂急救，他說不定有辦法。'],['有人在現場帶頭，大家就知道該做什麼了。']]};
+/* 南岸漁港的漁婦、漁夫（老師 2026-10-09 同意擬稿；只有日常閒聊，沒有醫療內容、沒有數字）。章末前後各一組；說完抽一次聊天運氣 */
+const FISH_LINES={
+  ch3_fishwife:[['歡迎來到南岸漁港！這裡的船天天進出，要去藍堡的話，找老船長買票就對了。'],['聽說你在藍堡的市集幫了大忙，港口的人都在談呢。'],],
+  ch3_fisher:[['今天的海面看起來很平靜，不過出海的人都知道，天氣說變就變。'],['你從藍堡回來啦？一個人闖過那麼多事，真不簡單。']]};
+FISH_LINES.ch3_fishwife[0].push('路上海風大，記得帶好自己的東西。');FISH_LINES.ch3_fishwife[1].push('學來的本事，要在最要緊的時候用得上才有意義。');
+FISH_LINES.ch3_fisher[0].push('我靠海吃飯一輩子，最怕的就是看輕了海。');FISH_LINES.ch3_fisher[1].push('海邊的人互相照應，有你這樣的人，我們放心多了。');
+const fishTalk=async id=>{await lines(id,FISH_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
 const passerTalk=async id=>{await lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
 let E3=null;
 const HBR=harborInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),extra:()=>E3?E3.boardExtra():''});
@@ -345,6 +352,7 @@ return {
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
     if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();
     if(PASSERS.includes(id))return passerTalk(id);
+    if(FISH_LINES[id])return fishTalk(id);
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */
 };
 }

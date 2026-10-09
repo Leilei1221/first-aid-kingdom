@@ -91,7 +91,7 @@ async def say_text(page):
     return '' if await hidden(page) else await page.inner_text('#dText')
 async def no_luck(page):
     """完成第三章後，跟角色聊天會多一次隨機的「聊天運氣」對話；這個測試只驗證台詞，所以把今天的運氣標成已抽過（運氣由 chat_luck_test 驗證）"""
-    await page.evaluate("() => { const d = new Date(), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); const S = window.__fa.S; S.c.chat = {date: t, done: {ch3_lifeg: true, ch3_sailor: true, ch3_by_red: true, ch3_by_blue: true, ch3_by_green: true}}; }")
+    await page.evaluate("() => { const d = new Date(), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); const S = window.__fa.S; S.c.chat = {date: t, done: {ch3_lifeg: true, ch3_sailor: true, ch3_by_red: true, ch3_by_blue: true, ch3_by_green: true, ch3_fishwife: true, ch3_fisher: true}}; }")
 async def talk_at(page, scene, x, y):
     await no_luck(page)
     await goto(page, scene, x, y)
@@ -163,6 +163,17 @@ async def main(url):
                 await talk_at(page, 'ch3_market', pos[0], pos[1] + 50)
                 t = await say_text(page); check(f'{pid}（章末{"後" if done else "前"}）：有台詞', key in t and '還沒' not in t, t)
                 await next_btn(page); await page.wait_for_timeout(300)
+        # --- 漁婦、漁夫（南岸漁港）：章末前後各一組，說完不是「之後才會加入」
+        for pid, key0, key1 in [('ch3_fishwife', '歡迎來到南岸漁港', '幫了大忙'), ('ch3_fisher', '天氣說變就變', '一個人闖過')]:
+            for done, key in [(False, key0), (True, key1)]:
+                await page.evaluate("(d) => { const S = window.__fa.S; if (d) S.c.ch3_done = true; else delete S.c.ch3_done; }", done)
+                pos = await page.evaluate("(id) => { const n = window.__fa.SCENES.ch3_fishport.npcs.find(n => n.id === id); return [n.x, n.y]; }", pid)
+                await talk_at(page, 'ch3_fishport', pos[0], pos[1] + 50)
+                t = await say_text(page); check(f'{pid}（章末{"後" if done else "前"}）：有台詞', key in t and '之後才會加入' not in t, t)
+                for _ in range(4):
+                    if await hidden(page): break
+                    await next_btn(page); await page.wait_for_timeout(300)
+                check(f'{pid}：說完對話關閉', await hidden(page))
         # --- 南岸水手：選單與四個話題
         sailor = await page.evaluate("() => { const n = window.__fa.SCENES.ch3_fishport.npcs.find(n => n.id === 'ch3_sailor'); return [n.x, n.y]; }")
         await talk_at(page, 'ch3_fishport', sailor[0], sailor[1] + 50)
