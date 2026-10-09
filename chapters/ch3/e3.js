@@ -49,22 +49,31 @@ function sellRows(k,D){
   const items=sp.kind==='kit'?[sp.item]:sp.items;
   return items.map(it=>{const n=S.kit.filter(x=>base(x)===it&&!expired(x)).length;return {id:it,icon:null,name:`${ITEMS[it].name} ×${n}`,desc:'',label:`賣 1（${sp.pay}）`,disabled:!n,done:`賣了 1 個${ITEMS[it].name}，${sp.pay} 金幣`,
     run(){const i=S.kit.findIndex(x=>base(x)===it&&!expired(x));if(i>=0){S.kit.splice(i,1);S.coins+=sp.pay;S.earned=(S.earned||0)+sp.pay;refresh();}}};});}
-async function merchant(){
-  const k=today();if(!k)return;const D=await data(),M=D.MERCHANTS[k],e=st();
+async function merchant(kk){
+  const k=kk||today();if(!k)return;const D=await data(),M=D.MERCHANTS[k],e=st();
   if(!e.seen[k]){e.seen[k]=true;await say({p:M.id,html:`${img(M.ship,110)}<p>${M.hello[0]}</p>`});await say({p:M.id,html:`<p>${M.hello[1]}</p>`});await fragment(k,M);}
   for(;;){
-    const i=await say({p:M.id,html:`${img(M.ship,90)}<p>${M.name.split('（')[0]}：要買點什麼嗎？ What would you like?</p>`,buttons:[{label:'買東西 Buy',primary:true},{label:'賣東西 Sell'},{label:'聊聊（學英文）'},{label:'離開 Bye'}]});
+    const alp=k==='np'&&!!FA.chCall('ch4','ready');  /* 第四章（雪嶺）開放條件都達成了：帕桑多一個「去雪嶺」 */
+    const i=await say({p:M.id,html:`${img(M.ship,90)}<p>${M.name.split('（')[0]}：要買點什麼嗎？ What would you like?</p>`,buttons:[{label:'買東西 Buy',primary:true},{label:'賣東西 Sell'},{label:'聊聊（學英文）'}].concat(alp?[{label:'跟帕桑去雪嶺'}]:[],[{label:'離開 Bye'}])});
     if(i===0)await pickFrom(M,()=>buyRows(k,D),'買東西');
     else if(i===1){await say({p:M.id,html:`<p>${M.sellNote}</p>`});await pickFrom(M,()=>sellRows(k,D),'賣東西');}
     else if(i===2){await lines(M.id,M.talk);}
+    else if(alp&&i===3){if(await FA.chCall('ch4','depart'))return;}
     else return;}}
-const things=id=>{if(id!=='ch3_harbor'||!on()||!today())return [];const M=D&&D.MERCHANTS[today()];return [{kind:'ch3_merchant',x:900,y:540,label:M?M.name.split('（')[0]:'商人'}];};
+/* 第四章（雪嶺）開放後，帕桑不管商船輪到誰都站在港口（另一個位置），可以買賣，也可以出發去雪嶺 */
+const PASANG_AT={x:1050,y:620};
+const pasangStays=()=>on()&&today()!=='np'&&!!FA.chCall('ch4','ready');
+const things=id=>{if(id!=='ch3_harbor'||!on())return [];const L=[];
+  if(today()){const M=D&&D.MERCHANTS[today()];L.push({kind:'ch3_merchant',x:900,y:540,label:M?M.name.split('（')[0]:'商人'});}
+  if(pasangStays())L.push({kind:'ch3_pasang',x:PASANG_AT.x,y:PASANG_AT.y,label:'帕桑'});
+  return L;};
 const build=(id,H,{sprite})=>{
   showBtn();W.update();
-  if(id!=='ch3_harbor'||!on()||!today())return;
-  const k=today(),key='ch3_m_'+k,s=sprite('shadow','',900,540,Math.round(H*1.05),RATIO[key]);s.querySelector('img').src=A[key];};
+  if(id!=='ch3_harbor'||!on())return;
+  if(today()){const k=today(),key='ch3_m_'+k,s=sprite('shadow','',900,540,Math.round(H*1.05),RATIO[key]);s.querySelector('img').src=A[key];}
+  if(pasangStays()){const s=sprite('shadow','',PASANG_AT.x,PASANG_AT.y,Math.round(H*1.05),RATIO.ch3_m_np);s.querySelector('img').src=A.ch3_m_np;}};
 const boardExtra=()=>{if(!on())return '';const k=today(),Dd=D;const nm=x=>Dd?Dd.MERCHANTS[x].from:x;
   if(k)return `<p>今天靠岸的商船：<b>${nm(k)}</b>（走到港口廣場找商人）</p>`;
   const nx=nextArrival(S.day);return nx?`<p>今天沒有商船靠岸。下一艘：第 ${nx} 天（${nm(merchantOn(nx))}）</p>`:'';};
-return {things,build,acts:{ch3_merchant:merchant},wardrobe:W.wardrobe,wear:W.wardrobe,boardExtra,load:data,st};
+return {things,build,acts:{ch3_merchant:()=>merchant(),ch3_pasang:()=>merchant('np')},wardrobe:W.wardrobe,wear:W.wardrobe,boardExtra,load:data,st};
 }

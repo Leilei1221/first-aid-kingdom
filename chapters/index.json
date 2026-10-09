@@ -8,5 +8,10 @@
   "id": "ch3",
   "name": "港口藍堡",
   "open": false
+ },
+ {
+  "id": "ch4",
+  "name": "雪嶺",
+  "open": false
  }
 ]

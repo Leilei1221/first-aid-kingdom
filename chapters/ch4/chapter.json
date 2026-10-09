@@ -1,0 +1,48 @@
+{
+ "id": "ch4",
+ "name": "雪嶺",
+ "files": {
+  "scenes": "scenes.json",
+  "characters": "characters.json",
+  "dialogues": "dialogues.json",
+  "ratios": "ratios.json",
+  "walks": "walks.json"
+ },
+ "assets": [
+  "ch4_guide",
+  "ch4_guide_face",
+  "ch4_inn",
+  "ch4_innk",
+  "ch4_innk_face",
+  "ch4_village"
+ ],
+ "region": {
+  "name": "雪嶺",
+  "pin": [
+   47,
+   10
+  ],
+  "unlock": "()=>!!(S.c&&S.c.ch4&&S.c.ch4.arrived)",
+  "center": {
+   "scene": "ch4_village",
+   "at": [
+    880,
+    620
+   ]
+  },
+  "home": {
+   "scene": "ch4_inn",
+   "at": [
+    420,
+    760
+   ]
+  },
+  "travelHint": "雪嶺在北方的高山裡。要跟著嚮導帕桑，搭他的船去（完成第三章、集滿 3 片海圖碎片後，到藍堡港口找帕桑）。",
+  "shopkeeper": "ch4_innk",
+  "wake": {
+   "mushroom": "ch4_faint.mushroomWake",
+   "other": "ch4_faint.otherWake"
+  }
+ },
+ "script": "chapter.js"
+}

@@ -1,0 +1,16 @@
+{
+ "PEOPLE": {
+  "ch4_guide": {
+   "name": "嚮導 帕桑",
+   "img": "ch4_guide",
+   "face": "ch4_guide_face",
+   "hk": 1
+  },
+  "ch4_innk": {
+   "name": "旅店老闆娘",
+   "img": "ch4_innk",
+   "face": "ch4_innk_face",
+   "hk": 0.98
+  }
+ }
+}

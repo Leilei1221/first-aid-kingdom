@@ -1,0 +1,88 @@
+{
+ "ch4_village": {
+  "name": "山腳村",
+  "spawn": [
+   880,
+   620
+  ],
+  "bg": "ch4_village",
+  "heroH": 125,
+  "npcs": [
+   {
+    "id": "ch4_guide",
+    "x": 1000,
+    "y": 600,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "door",
+    "x": 950,
+    "y": 372,
+    "label": "進入旅店",
+    "to": "ch4_inn",
+    "at": [
+     420,
+     760
+    ]
+   },
+   {
+    "kind": "ch4_trail",
+    "x": 400,
+    "y": 378,
+    "label": "上山的路"
+   },
+   {
+    "kind": "ch4_boat",
+    "x": 620,
+    "y": 700,
+    "label": "搭小船回藍堡"
+   }
+  ],
+  "exits": [],
+  "outdoor": true
+ },
+ "ch4_inn": {
+  "name": "山腳旅店",
+  "spawn": [
+   420,
+   760
+  ],
+  "bg": "ch4_inn",
+  "heroH": 190,
+  "npcs": [
+   {
+    "id": "ch4_innk",
+    "x": 700,
+    "y": 525
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch4_room",
+    "x": 1250,
+    "y": 470,
+    "label": "住一晚（20 金幣）"
+   },
+   {
+    "kind": "stash",
+    "x": 1480,
+    "y": 580,
+    "label": "防災包"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch4_village",
+    "at": [
+     950,
+     410
+    ],
+    "block": null,
+    "test": "(x,y)=>x<320&&y>620",
+    "need": null
+   }
+  ]
+ }
+}
