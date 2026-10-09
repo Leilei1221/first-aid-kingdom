@@ -274,6 +274,19 @@ async function restAct(){
   if(i!==0)return;
   $('fade').classList.add('on');await sleep(RM?0:500);const html=nextDay();S.sta=FA.staMax();refresh();$('fade').classList.remove('on');checkpoint();
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>在救生站的休息區睡了一覺，體力完全恢復了。</p>'+html});}
+/* 藍堡的急救用品補給點（老師 2026-10-09 同意加；藍堡沒有固定的雜貨店，只有商船來時的澳洲商人）：救生站的急救用品櫃，賣和綠葉谷雜貨店一樣的基本急救用品，
+ * 價格相同（不打折、不賒帳）；全部用 content/items.json 的 SHOP_MED，沒有新寫醫療文字。 */
+const SUPPLY_AT={x:990,y:490};
+async function supplyAct(){
+  let msg='';
+  for(;;){
+    let pick=null;const full=S.kit.length>=S.kitCap;
+    const rows=FA.SHOP_MED.map(k=>{const it=FA.ITEMS[k];return `<div class="row">${FA.badge(k)}<div class="info"><b>${it.name}　<span style="color:var(--gold)">背包裡有 ${kitCount(k)} 個</span></b><span>${it.price} 金幣　重量 ${it.w}　${it.desc}</span></div><button type="button" data-a="${k}" ${S.coins>=it.price&&!full?'':'disabled'}>${full?'背包已滿':'買 1 個'}</button></div>`;}).join('');
+    const r=await say({p:LIFEG,html:(msg?`<p class="good">${msg}</p>`:'')+`<p>這裡是救生站的急救用品櫃，需要什麼自己拿，照價錢付就好。</p><p class="small">金幣 ${S.coins}　急救背包 ${S.kit.length}/${S.kitCap}</p>`+rows,buttons:[{label:'離開',primary:true}],
+      onRender:(root,fin)=>root.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{pick=b.dataset.a;fin('pick');})});
+    if(r!=='pick')return;
+    const it=FA.ITEMS[pick];if(S.coins>=it.price&&S.kit.length<S.kitCap){S.coins-=it.price;S.kit.push(pick);msg=`已買下：${it.name} ×1（急救背包 ${S.kit.length}/${S.kitCap}）`;refresh();}
+  }}
 async function tsunami(){
   const i=await say({p:LIFEG,html:'<p>要不要聽聽海嘯警報是什麼聲音？聽過一次，真的響起的時候才認得出來。</p>',buttons:[{label:'聽聽看',primary:true},{label:'先不用'}]});
   if(i!==0)return;
@@ -334,13 +347,13 @@ const FSH=fishInit(FA,{on:DAILY_ON,debug:DEBUG,addRep:HBR.addRep,preview:PREV});
 E3=e3Init(FA,{on:DAILY_ON,preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
 HBR.load().catch(()=>{});E3.load().catch(()=>{});
 return {
-  acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed,ch3_rest:restAct}),
+  acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed,ch3_rest:restAct,ch3_supply:supplyAct}),
   build(sceneId,H,{sprite,npcEls}){
     HBR.build(sceneId,H,{sprite});FSH.build(sceneId,H,{sprite});E3.build(sceneId,H,{sprite});
     if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}
     if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;
       const m=sprite('shadow','',MASK.x,MASK.y,Math.round(H*.2),RATIO.ch3_face_shield);m.querySelector('img').src=A.ch3_face_shield;}},
-  things(sceneId){return HBR.things(sceneId).concat(FSH.things(sceneId),E3.things(sceneId),sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'},{kind:'ch3_rest',x:REST_AT.x,y:REST_AT.y,label:'休息（睡一晚）'}]:[]);},
+  things(sceneId){return HBR.things(sceneId).concat(FSH.things(sceneId),E3.things(sceneId),sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'},{kind:'ch3_rest',x:REST_AT.x,y:REST_AT.y,label:'休息（睡一晚）'},{kind:'ch3_supply',x:SUPPLY_AT.x,y:SUPPLY_AT.y,label:'急救用品櫃'}]:[]);},
   goalBase:()=>onShip()?'在船上度過兩個晚上：到艙口進船艙，在床上睡覺。':undefined,  /* 船上的場景算綠葉谷地區，目標要走這個接點 */
   goal(){  /* 畫面上方「目標」：依知識卡判斷做到哪一節，告訴玩家下一步去哪裡 */
     if(onShip())return '在船上度過兩個晚上：到艙口進船艙，在床上睡覺。';
