@@ -32,13 +32,14 @@
 | 登山裝備（擁有紀錄）：外套、毛帽、褲子、手套、登山鞋、護目鏡；小物計數：暖暖包、保暖毯、頭燈、毛襪 | `S.c.ch3_e3.own`（0/1）、`S.c.ch3_e3.cnt`；**目前沒有任何實際效果**，雪山章才要用 |
 | 登山包等級 1／2（急救背包 18／22 格、負重門檻提高） | `S.c.ch3_pack`；核心 `loadLim()`；`content/balance.json` 的 `PACKS` |
 | 整套裝扮（水手、登山探險、救生員、守護者）由**核心的「背包 → 裝扮」管**（另一個工作階段做的，完成第三章後開啟，設定在 `content/balance.json` 的 `OUTFITS`）；E3 只多了**外套、毛帽的疊件換色**（上方「換裝」鈕，疊在目前的裝扮外面） | `chapters/ch3/wear.js`、核心 `outfitBase／outfitSrc`；整套裝扮設定在 `content/balance.json` 的 `OUTFITS` |
-| 知識卡：預防失溫（`hypothermia`）、預防高山症（`altitude`）、迷路（`lost`）、求救訊號（`signal`）、過溪與溺水救援（`cross`）、野外用火安全（`campfire`）、山洪（`flood`）、颱風（`typhoon`） | `content/knowledge_cards.json`；**注意：這 4 張（`hypothermia`、`altitude`、`lost`、`signal`）在 `content/knowledge_cards.json` 仍標 `draft`，屬於 D4 野外內容（`docs/d4-review-checklist.md`），老師尚未審核**（先前這裡寫成已審核是錯的）。雪山章要用，需先請老師審；審過才拿掉標記 |
+| 知識卡：預防失溫（`hypothermia`）、預防高山症（`altitude`）、迷路（`lost`）、求救訊號（`signal`）、過溪與溺水救援（`cross`）、野外用火安全（`campfire`）、山洪（`flood`）、颱風（`typhoon`） | `content/knowledge_cards.json`；這 4 張（`hypothermia`、`altitude`、`lost`、`signal`）**老師 2026-10-09 確認審過沒問題**，`draft` 已拿掉、改記 `reviewed`（D4 的其餘卡片如 `typhoon`、`flood`、`cross`、`riverwater`、`campfire` 仍是 `draft`） |
 | 救援失敗框架（嚴重錯誤→正確知識卡→回早上存檔點、扣 200 金幣）與已有情境：山洪、颱風、失溫（`hypothermia`）、溺水、觸電 | 核心 `rescueFail()`、`content/rescue.json`；**新情境的說明文字要老師提供，不能自己寫** |
 | 野外項目（打火石、營火、阿鹿高山症支線、裝溪水、溺水救援） | `WILD_ON` 開關（不屬於任何班的人預設開；班級學生由後台控制）；`content/weather.json` |
 | 天氣引擎（颱風、豪雨、濃霧；由老師公告觸發，沒有隨機天災） | 核心；`content/weather.json` |
 | 章節框架：`chapters/chN/`、`chapter.json`（含 `region`：世界地圖釘點、住處、防災包位置、目標文字、昏倒醒來對話）、`chapter.js` 掛接點（`build／things／acts／talk／goal／goalBase／news`） | `docs/chapter-pack-format.md`；第二章 `chapters/ch2/`、第三章 `chapters/ch3/` 是範例 |
 | 交通工具（竹蜻蜓、熱氣球、復古滑翔機、無人機；世界地圖點其他地區搭乘，颱風豪雨不能飛、濃霧只有無人機能飛） | 核心 `VEHICLES`、`S.c.air`（另一個工作階段做的） |
 | 防災包（一個物件：放在爺爺家、各地區住處或隨身；出發時 `stashDepart()` 詢問要不要帶） | 核心；章節的出發流程要呼叫它 |
+| 每日任務「處理一次事件或傷口」：呼叫 `FA.dailyDone('care')` 即可算（第三章港口求助已接上，老師 2026-10-09 決定；雪山章山屋求助照做，不需要新掛接點） | 核心 `dailyDone` |
 | 好感度、聊天掉落（NPC 聊聊）、每日任務與累計簽到（完成第三章後開啟） | 核心 |
 | 老師端進度頁（`teacher.html`、`js/teacher.js`）：已顯示第三章狀態與章末星數（另一個工作階段加的；雪山章如果要顯示進度，要改這裡與 `tools/teacher_test.py`） | `js/teacher.js` |
 | 老師預覽（`preview.html`，`?preview=場景id`，不存進度） | 要為新章節新增入口與測試 |

@@ -9,7 +9,7 @@ const ORDER=['ch3_h_octopus','ch3_h_jelly','ch3_h_cut','ch3_h_vibrio'];
 export const title=rep=>HB.titles.filter(t=>rep>=t[0]).pop()[1];
 export const evIdOf=day=>ORDER[((day*3)%ORDER.length+ORDER.length)%ORDER.length];  /* 每天輪一件，4 天輪完，不用亂數 */
 export default function(FA,{on,extra}){
-const {say,quiz,toast,refresh,CARDS,A,RATIO,takeKit,needCheck,ITEMS,sprite}=FA;
+const {say,quiz,toast,refresh,CARDS,A,RATIO,takeKit,needCheck,ITEMS,sprite,dailyDone}=FA;
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
 let DATA=null;
 const data=async()=>DATA||(DATA=(await (await fetch(new URL('harbor.json',import.meta.url))).json()).EVENTS);
@@ -36,6 +36,7 @@ async function help(){
   await say({p:e.who,html:`<p>${e.thanks}</p><p class="good">獲得 ${HB.reward} 金幣，港口信譽 +${HB.repPerEvent}${first?`、知識卡：${CARDS[e.card].title}`:''}</p>`});
   if(e.emph)await say({icon:'！',who:'請記住',html:'<p style="font-size:1.2em"><b>傷口碰過海水或生海鮮，紅腫、發熱、起水泡、發燒，一定要先就醫。</b></p>'});
   const t=title(h.rep);if(HB.titles.some(x=>x[1]===t&&x[0]===h.rep&&h.rep>0))await say({icon:'★',who:'稱號提升',html:`<p>你現在是<b>${t}</b>了！</p>`});
+  await dailyDone('care');  /* 每日任務「處理一次事件或傷口」（老師 2026-10-09 決定港口求助也算） */
   refresh();
 }
 const things=id=>{

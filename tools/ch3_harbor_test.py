@@ -92,6 +92,7 @@ async def main(url):
             rep += 1
             check(f'{e["name"]}：題目都出現', all(q['q'] in t for q in e['qs']), t[:150])
             check(f'{e["name"]}：獲得知識卡、金幣 +30、信譽 +1、用品用掉', await st(page, f"S.cards.{e['card']} === true") and await st(page, 'S.coins') == coins + 30 * rep and await st(page, 'S.c.ch3_hb.rep') == rep and await st(page, 'S.kit.length') == 0)
+            if k == 0: check('港口求助也算每日任務「處理一次事件或傷口」', await page.evaluate("() => window.__fa.dailyState().done.care === true"))
             if e.get('emph'): check('海洋弧菌：特別強調「一定要先就醫」', t.count('一定要先就醫') >= 2, t[-300:])
             await act_at(page, 880, 785)
             check(f'{e["name"]}：同一天不能重複處理', await hidden(page))
