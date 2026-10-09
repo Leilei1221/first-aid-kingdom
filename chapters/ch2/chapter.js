@@ -1,6 +1,7 @@
 /* 第二章「熔岩鍛造鎮」章節程式。
  * 由 V3.2 原型的第二章與渡海函式機械轉換而來（只加上 ch2_ 前綴與 FA 介面），對話與題目文字與 V3.2 逐字相同。
  * 章節開放時才載入；核心程式透過回傳的掛接點呼叫它。 */
+import {makeVoyage} from '../voyage.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,orderQuiz,checkpoint,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
@@ -175,51 +176,13 @@ async function fireReport(){
   await say({p:'ch2_cap',html:'<p>火終於撲滅了……多虧你，沒有人受重傷。迷霧商人已經逃走了，但他留下的油桶就是證據。</p>'});
   await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>`+items.map(([k,t])=>`<div class="row"><div class="info"><b>${t}</b><span style="color:${c[k]==='ok'?'var(--ok)':c[k]==='wrong'?'var(--warn)':'var(--bad)'}">${c[k]==='ok'?'處置正確':c[k]==='wrong'?'處置有誤':'缺少用品'}</span></div></div>`).join('')+'<p class="good">第二章「熔岩鍛造鎮」完成！</p>',buttons:[{label:'完成',primary:true}]});
   await go('ch2_town',[860,860]);}
-const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const stormy=()=>FA.stormy();  /* 颱風、豪雨（今天或明天）船長拒絕出航 */
-async function captTalk(){
-  if(S.scene==='ch2_deck'){const v=S.voyage;return say({p:'ch2_capt',html:`<p>${v.left>1?'還要再航行兩個晚上才會到。':'明天早上就會靠岸了！'}累了就到船艙休息吧。</p>`});}
-  const toForge=S.scene==='ch2_port';
-  if(stormy()){await say({p:'ch2_capt',html:'<p>颱風或豪雨就要來了，今天停航！海上的風浪可不是開玩笑的，等天氣好轉再出發。</p>'});return;}
-  const r=kitCount('ration')?S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length:0,w=kitCount('water');
-  const i=await say({p:'ch2_capt',html:`<p>要去${toForge?'熔岩鍛造鎮':'綠葉谷'}嗎？船票 ${FARE} 金幣，要在海上過兩夜。</p><p>船上每天吃一包乾糧、喝一瓶水，自己帶最划算；船上也有賣，乾糧 ${SHIP_RATION}、開水 ${SHIP_WATER} 金幣。</p><p class="small">你的背包：有效乾糧 ${r} 包、開水 ${w} 瓶　金幣 ${S.coins}</p>`,
-    buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'}]});
-  if(i!==0)return;
-  if(!S.cards.ch2_lifejacket){
-    await quiz('ch2_capt','上船前要穿救生衣，哪一種穿法正確？',['鬆鬆地披著就好，比較舒服','選合身的尺寸，所有扣帶扣好拉緊，往上拉也不會從頭部脫出','先放在旁邊，落水時再穿'],1,CARDS.ch2_lifejacket.text);S.cards.ch2_lifejacket=true;}
-  await stashDepart();  /* 防災包是旅行行李：放在這個地區就問要不要帶上 */
-  S.coins-=FARE;S.voyage={to:toForge?'ch2_vport':'ch2_port',left:2,sick:false,mob:false};
-  await go('ch2_deck',[600,560]);
-  await say({p:'ch2_capt',html:'<p>起錨！出發囉——！</p><p class="small">可以在甲板上走動，累了就到船艙休息。</p>'});
-}
-async function voyageMeal(){
-  const carry=S.stashAt==='carry';  /* 帶在身上的防災包也算自己帶的行李 */
-  const take=(pred)=>{let i=S.kit.findIndex(pred);if(i>=0){S.kit.splice(i,1);return true;}if(carry){i=S.stash.findIndex(pred);if(i>=0){S.stash.splice(i,1);return true;}}return false;};
-  const hasR=take(k=>base(k)==='ration'&&!expired(k))?1:-1;let msg=[];
-  if(hasR>=0){msg.push('吃了一包自己帶的乾糧');}
-  else if(S.coins>=SHIP_RATION){S.coins-=SHIP_RATION;msg.push(`跟船長買了乾糧（${SHIP_RATION} 金幣）`);}
-  else{S.sta=Math.max(0,S.sta-30);msg.push('<span class="bad">沒有食物也沒有錢，只能餓著肚子（體力 -30）</span>');}
-  const hw=take(k=>base(k)==='water')?1:-1;
-  if(hw>=0){msg.push('喝了一瓶自己帶的開水');}
-  else if(S.coins>=SHIP_WATER){S.coins-=SHIP_WATER;msg.push(`跟船長買了開水（${SHIP_WATER} 金幣）`);}
-  else{S.sta=Math.max(0,S.sta-30);msg.push('<span class="bad">沒有水也沒有錢，口乾舌燥（體力 -30）</span>');}
-  return msg;}
-async function voyageSleep(){
-  const v=S.voyage;if(!v)return;
-  if(!v.sick){await say({p:'hero',html:'<p>船搖來搖去，胃裡一陣翻騰，頭好暈……好像暈船了。</p>'});
-    await quiz('hero','暈船了，怎麼做比較好？',['躲進船艙看書轉移注意力','到通風的甲板上，看著遠方的地平線','大吃一頓就不會暈了'],1,CARDS.ch2_seasick.text);S.cards.ch2_seasick=true;v.sick=true;return;}
-  if(v.left===1&&!v.mob){await say({p:'ch2_capt',html:'<p class="bad">有人落水了！一位船員被大浪捲下船！</p>'});
-    const i=await say({p:'hero',html:'<p class="q">你要怎麼做？</p>',buttons:[{label:'立刻跳下海去救他'},{label:'大聲呼救，把救生圈拋給他'}]});
-    await say({p:'ch2_capt',html:`<p class="${i===1?'good':'bad'}">${i===1?'做得好！船員抓住了救生圈，被拉回船上了。':'別跳！在海上跳下去，只會多一個需要救的人！快拋救生圈！'}</p><p>他在水裡很冷靜，一直用<b>仰漂</b>的方式浮著等我們。</p>`});
-    await say({p:'ch2_capt',html:`<div class="card"><b>${CARDS.ch2_overboard.title}</b><p>${CARDS.ch2_overboard.text}</p></div>`});S.cards.ch2_overboard=true;v.mob=true;return;}
-  const msg=await voyageMeal();
-  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,FA.staMax()-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
-  if(v.left>0){await say({icon:'⚓',who:`第 ${S.day} 天・海上`,html:`<p>${msg.join('。')}。</p><p>在船艙睡了一晚，船還在海上航行。</p>`+html});return;}
-  const to=v.to;S.voyage=null;
-  await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});
-  await go(to,to==='ch2_vport'?[560,690]:[1180,620]);
-  if(to==='ch2_vport'&&!S.c.intro){S.c.intro=true;await lines('ch2_smith',['喔！你就是老團長的孫子？我是鐵匠老鐵，特地來碼頭接你！','歡迎來到熔岩鍛造鎮！沿著碼頭往右上走就是鎮上，先來我的鐵匠鋪坐坐吧。']);}
-}
+const {captTalk,sleepAtSea:voyageSleep}=makeVoyage(FA,S,{capt:'ch2_capt',onShip:()=>S.scene==='ch2_deck',
+  route:()=>S.scene==='ch2_port'?{to:'ch2_vport',name:'熔岩鍛造鎮'}:{to:'ch2_port',name:'綠葉谷'},
+  deck:()=>['ch2_deck',[600,560]],arrive:{ch2_vport:[560,690],ch2_port:[1180,620]},
+  beforeBoard:async()=>{if(!S.cards.ch2_lifejacket){
+    await quiz('ch2_capt','上船前要穿救生衣，哪一種穿法正確？',['鬆鬆地披著就好，比較舒服','選合身的尺寸，所有扣帶扣好拉緊，往上拉也不會從頭部脫出','先放在旁邊，落水時再穿'],1,CARDS.ch2_lifejacket.text);S.cards.ch2_lifejacket=true;}},
+  onArrive:async to=>{if(to==='ch2_vport'&&!S.c.intro){S.c.intro=true;await lines('ch2_smith',['喔！你就是老團長的孫子？我是鐵匠老鐵，特地來碼頭接你！','歡迎來到熔岩鍛造鎮！沿著碼頭往右上走就是鎮上，先來我的鐵匠鋪坐坐吧。']);}}});  /* 航行共用程式在 chapters/voyage.js */
 return {
   build(sceneId,H,{sprite,npcEls}){
     CHECKS.filter(c=>c.scene===sceneId&&!c.painted).forEach(c=>{const k=c.type==='ext'?'ch2_extinguisher':'ch2_alarm';const e=sprite('',A[k],c.x,c.y,c.type==='ext'?Math.round(H*.42):Math.round(H*.22),RATIO[k]);e.querySelector('img').src=A[k];});

@@ -8,6 +8,7 @@ import * as AED from './aed.js';
 import harborInit from './harbor.js';
 import fishInit from './fish.js';
 import e3Init from './e3.js';
+import {makeVoyage} from '../voyage.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
@@ -15,53 +16,16 @@ const QS=new URLSearchParams(location.search),PREV=!!QS.get('preview');
 /* 「藍堡的日常」E1～E3（老師 2026-10-09 審核通過，全部照現有文字）：完成章末演練（S.c.ch3_done）後對所有人開放；老師預覽一直開著。傷口名稱在第一次開放時才註冊，傷口圖鑑不會提前多出格子。 */
 let woundsReg=false;
 const DAILY_ON=()=>{const ok=PREV||!!(S.c&&S.c.ch3_done);if(ok&&!woundsReg){woundsReg=true;Object.assign(FA.WOUNDS,{octopus:'藍環章魚咬傷',jelly:'水母螫傷',rockcut:'岩石割傷',vibrio:'海洋弧菌感染'});}return ok;};  /* 圖在 assets/w_*.webp；草稿期間只在 E1 開啟時加入，傷口圖鑑不會多出格子 */
-const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const FISHPORT='ch3_fishport',HARBOR='ch3_harbor',CABIN='ch3_ship_cabin';
 const deckOf=left=>left>=2?'ch3_ship_day':'ch3_ship_dusk';  /* 第一天白天、第二天黃昏 */
 const ARRIVE={[HARBOR]:[820,640],[FISHPORT]:[760,110]};
 const onShip=()=>['ch3_ship_day','ch3_ship_dusk',CABIN].includes(S.scene);
-async function captTalk(){
-  if(onShip()){const v=S.voyage;if(!v)return;return say({p:'ch3_captain',html:`<p>${v.left>1?'還要再航行兩個晚上才會到。':'明天早上就會靠岸了！'}累了就到船艙休息吧。</p>`});}
-  const toHarbor=S.scene===FISHPORT;
-  if(stormy()){await say({p:'ch3_captain',html:'<p>颱風或豪雨就要來了，今天停航！海上的風浪可不是開玩笑的，等天氣好轉再出發。</p>'});return;}
-  const r=S.kit.filter(k=>base(k)==='ration'&&!expired(k)).length,w=kitCount('water');
-  const i=await say({p:'ch3_captain',html:`<p>要去${toHarbor?'港口藍堡':'綠葉谷'}嗎？船票 ${FARE} 金幣，要在海上過兩夜。</p><p>船上每天吃一包乾糧、喝一瓶水，自己帶最划算；船上也有賣，乾糧 ${SHIP_RATION}、開水 ${SHIP_WATER} 金幣。</p><p class="small">你的背包：有效乾糧 ${r} 包、開水 ${w} 瓶　金幣 ${S.coins}</p>`,
-    buttons:[{label:`買票上船（${FARE} 金幣）`,primary:true,disabled:S.coins<FARE},{label:'再準備一下'}]});
-  if(i!==0)return;
-  await stashDepart();  /* 防災包是旅行行李：放在這個地區就問要不要帶上 */
-  S.coins-=FARE;S.voyage={to:toHarbor?HARBOR:FISHPORT,left:2,sick:false,mob:false};
-  await go(deckOf(2),[800,660]);
-  await say({p:'ch3_captain',html:'<p>起錨！出發囉——！</p><p class="small">可以在甲板上走動，累了就到船艙休息。</p>'});
-}
-function voyageMeal(){
-  const carry=S.stashAt==='carry';  /* 帶在身上的防災包也算自己帶的行李 */
-  const take=pred=>{let i=S.kit.findIndex(pred);if(i>=0){S.kit.splice(i,1);return true;}if(carry){i=S.stash.findIndex(pred);if(i>=0){S.stash.splice(i,1);return true;}}return false;};
-  const msg=[];
-  if(take(k=>base(k)==='ration'&&!expired(k)))msg.push('吃了一包自己帶的乾糧');
-  else if(S.coins>=SHIP_RATION){S.coins-=SHIP_RATION;msg.push(`跟船長買了乾糧（${SHIP_RATION} 金幣）`);}
-  else{S.sta=Math.max(0,S.sta-30);msg.push('<span class="bad">沒有食物也沒有錢，只能餓著肚子（體力 -30）</span>');}
-  if(take(k=>base(k)==='water'))msg.push('喝了一瓶自己帶的開水');
-  else if(S.coins>=SHIP_WATER){S.coins-=SHIP_WATER;msg.push(`跟船長買了開水（${SHIP_WATER} 金幣）`);}
-  else{S.sta=Math.max(0,S.sta-30);msg.push('<span class="bad">沒有水也沒有錢，口乾舌燥（體力 -30）</span>');}
-  return msg;}
+const {captTalk,sleepAtSea:bed}=makeVoyage(FA,S,{capt:'ch3_captain',onShip,
+  route:()=>S.scene===FISHPORT?{to:HARBOR,name:'港口藍堡'}:{to:FISHPORT,name:'綠葉谷'},
+  deck:left=>[deckOf(left),[800,660]],arrive:ARRIVE,
+  onArrive:async to=>{if(to===HARBOR){S.c=S.c||{};if(!S.c.ch3_intro){S.c.ch3_intro=true;await lines(SAILOR,['你就是老團長的孫子吧？一路辛苦了！','你爺爺的老朋友在廣場的另一頭等你，是港口的救生員。往右下方走，救生站旁邊就是了。']);}}}});  /* 航行共用程式在 chapters/voyage.js */
 async function hatch(){const v=S.voyage;if(!v)return;await go(CABIN,[870,600]);}
 async function ladder(){const v=S.voyage;await go(deckOf(v?v.left:2),[1000,600]);}
-async function bed(){
-  const v=S.voyage;if(!v)return;
-  if(!v.sick){await say({p:'hero',html:'<p>船搖來搖去，胃裡一陣翻騰，頭好暈……好像暈船了。</p>'});
-    await quiz('hero','暈船了，怎麼做比較好？',['躲進船艙看書轉移注意力','到通風的甲板上，看著遠方的地平線','大吃一頓就不會暈了'],1,CARDS.ch2_seasick.text);S.cards.ch2_seasick=true;v.sick=true;return;}
-  if(v.left===1&&!v.mob){await say({p:'ch3_captain',html:'<p class="bad">有人落水了！一位船員被大浪捲下船！</p>'});
-    const i=await say({p:'hero',html:'<p class="q">你要怎麼做？</p>',buttons:[{label:'立刻跳下海去救他'},{label:'大聲呼救，把救生圈拋給他'}]});
-    await say({p:'ch3_captain',html:`<p class="${i===1?'good':'bad'}">${i===1?'做得好！船員抓住了救生圈，被拉回船上了。':'別跳！在海上跳下去，只會多一個需要救的人！快拋救生圈！'}</p><p>他在水裡很冷靜，一直用<b>仰漂</b>的方式浮著等我們。</p>`});
-    await say({p:'ch3_captain',html:`<div class="card"><b>${CARDS.ch2_overboard.title}</b><p>${CARDS.ch2_overboard.text}</p></div>`});S.cards.ch2_overboard=true;v.mob=true;return;}
-  const msg=voyageMeal();
-  $('fade').classList.add('on');await sleep(RM?0:600);const html=nextDay();S.sta=Math.max(S.sta,FA.staMax()-20);v.left--;refresh();$('fade').classList.remove('on');checkpoint();
-  if(v.left>0){await say({icon:'⚓',who:`第 ${S.day} 天・海上`,html:`<p>${msg.join('。')}。</p><p>在船艙睡了一晚，船還在海上航行。</p>`+html});return;}
-  const to=v.to;S.voyage=null;
-  await say({icon:'⚓',who:`第 ${S.day} 天・靠岸`,html:`<p>${msg.join('。')}。</p><p class="good">船靠岸了！</p>`+html});
-  await go(to,ARRIVE[to]);
-  if(to===HARBOR){S.c=S.c||{};if(!S.c.ch3_intro){S.c.ch3_intro=true;await lines(SAILOR,['你就是老團長的孫子吧？一路辛苦了！','你爺爺的老朋友在廣場的另一頭等你，是港口的救生員。往右下方走，救生站旁邊就是了。']);}}
-}
 /* ---------- 第 1 節：市集倒地者（知識卡 K1-1～K1-3、題目 Q1-1～Q1-7；資料在 dialogues.json、cards.json） ---------- */
 {const q=new URLSearchParams(location.search);if(q.get('preview')&&q.get('lessons')==='1')['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3','ch3_k4_4'].forEach(k=>{S.cards[k]=true;});}  /* 老師預覽用：不影響一般進入 */
 const DOWN={x:790,y:575},PASSERS=['ch3_by_red','ch3_by_blue','ch3_by_green'],PNAME={ch3_by_red:'紅衣路人',ch3_by_blue:'藍衣路人',ch3_by_green:'綠衣路人'};
