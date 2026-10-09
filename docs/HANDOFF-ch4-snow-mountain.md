@@ -2,6 +2,8 @@
 
 整理日期：2026 年 10 月 9 日（同日晚上更新：E1～E3 已審核通過並上線）。負責老師：黃雅蕾（蕾蕾）。這份是**規劃階段**的交班：新對話的第一件事是讀完下面幾份文件，然後依「工作守則」先出摘要給老師確認，**不要直接動程式**。
 
+> **2026-10-09 更新：規劃已完成，見 `docs/ch4-plan.md`（老師已按建議確認第 5 節的 8 項決定）。下一步是 F0：老師回覆該文件第 7 節的待辦。**
+
 ## 0. 先讀
 1. `AGENTS.md`（專案守則、測試方式、推送流程；「★ 目前狀態」那一節比下方舊敘述新，與本檔衝突時以本檔＋程式為準）
 2. `chapters/ch3/REVIEW.md`（第三章與 E1～E3 的完整狀態與參數；**E1～E3 老師 2026-10-09 已審核通過、全部照現有文字，完成第三章章末演練後對所有人開放，已推上線（`1ac28a6`）**，REVIEW.md 裡的「草稿／只有預覽看得到」是審核前的歷史紀錄）
@@ -30,7 +32,7 @@
 | 登山裝備（擁有紀錄）：外套、毛帽、褲子、手套、登山鞋、護目鏡；小物計數：暖暖包、保暖毯、頭燈、毛襪 | `S.c.ch3_e3.own`（0/1）、`S.c.ch3_e3.cnt`；**目前沒有任何實際效果**，雪山章才要用 |
 | 登山包等級 1／2（急救背包 18／22 格、負重門檻提高） | `S.c.ch3_pack`；核心 `loadLim()`；`content/balance.json` 的 `PACKS` |
 | 整套裝扮（水手、登山探險、救生員、守護者）由**核心的「背包 → 裝扮」管**（另一個工作階段做的，完成第三章後開啟，設定在 `content/balance.json` 的 `OUTFITS`）；E3 只多了**外套、毛帽的疊件換色**（上方「換裝」鈕，疊在目前的裝扮外面） | `chapters/ch3/wear.js`、核心 `outfitBase／outfitSrc`；整套裝扮設定在 `content/balance.json` 的 `OUTFITS` |
-| 知識卡：預防失溫（`hypothermia`）、預防高山症（`altitude`）、迷路（`lost`）、求救訊號（`signal`）、過溪與溺水救援（`cross`）、野外用火安全（`campfire`）、山洪（`flood`）、颱風（`typhoon`） | `content/knowledge_cards.json`；**老師已審核**（序章／野外內容） |
+| 知識卡：預防失溫（`hypothermia`）、預防高山症（`altitude`）、迷路（`lost`）、求救訊號（`signal`）、過溪與溺水救援（`cross`）、野外用火安全（`campfire`）、山洪（`flood`）、颱風（`typhoon`） | `content/knowledge_cards.json`；**注意：這 4 張（`hypothermia`、`altitude`、`lost`、`signal`）在 `content/knowledge_cards.json` 仍標 `draft`，屬於 D4 野外內容（`docs/d4-review-checklist.md`），老師尚未審核**（先前這裡寫成已審核是錯的）。雪山章要用，需先請老師審；審過才拿掉標記 |
 | 救援失敗框架（嚴重錯誤→正確知識卡→回早上存檔點、扣 200 金幣）與已有情境：山洪、颱風、失溫（`hypothermia`）、溺水、觸電 | 核心 `rescueFail()`、`content/rescue.json`；**新情境的說明文字要老師提供，不能自己寫** |
 | 野外項目（打火石、營火、阿鹿高山症支線、裝溪水、溺水救援） | `WILD_ON` 開關（不屬於任何班的人預設開；班級學生由後台控制）；`content/weather.json` |
 | 天氣引擎（颱風、豪雨、濃霧；由老師公告觸發，沒有隨機天災） | 核心；`content/weather.json` |
