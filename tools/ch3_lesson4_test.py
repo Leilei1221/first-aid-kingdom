@@ -93,7 +93,7 @@ async def main(url):
         page, errs = await boot(ctx, url)
         c4 = ['ch3_k4_1', 'ch3_k4_2', 'ch3_k4_4']
         cards = json.load(open(pathlib.Path(__file__).parent.parent / 'chapters/ch3/cards.json', encoding='utf-8'))['CARDS']
-        check('資料：沒有海嘯警報（K4-3、Q4-4）', 'ch3_k4_3' not in cards and 'ch3_q4_4' not in QZ)
+        check('資料：海嘯警報（K4-3、Q4-4）是選配支線（2026-10-09 加入），不在第 4 節本身的流程裡，另由 ch3_tsunami_test 測', 'ch3_k4_3' in cards and 'ch3_q4_4' in QZ)
         check('資料：第 4 節題目與分工題都在（Q4-1、2、3、5、6、D-1～3）', all(k in QZ for k in ['ch3_q4_1', 'ch3_q4_2', 'ch3_q4_3', 'ch3_q4_5', 'ch3_q4_6', 'ch3_d1', 'ch3_d2', 'ch3_d3']))
         check('嚴重錯誤只標記：Q4-1 E1、D-1 E1、E2、D-2 E4、D-3 E1', QZ['ch3_q4_1']['severe'] == 'E1' and QZ['ch3_d1']['severe'] == 'E1、E2' and QZ['ch3_d2']['severe'] == 'E4' and QZ['ch3_d3']['severe'] == 'E1')
         await goto(page, 'ch3_harbor', 1250, 800)
