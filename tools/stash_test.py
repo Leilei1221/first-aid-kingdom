@@ -54,13 +54,13 @@ async def main(url):
         # T4 放入：背包乾糧與開水放進防災包
         await page.click('#act'); await page.wait_for_selector('#dialog:not([hidden])')
         txt = await page.inner_text('#dText')
-        check('T4 查看畫面顯示一週目標與容量', '0/20' in txt and '乾糧 0/7' in txt and '開水 0/7' in txt, txt)
+        check('T4 查看畫面顯示三天目標與容量', '0/20' in txt and '乾糧 0/3' in txt and '開水 0/3' in txt, txt)
         for _ in range(4):
             await page.click('#dText button[data-p]'); await page.wait_for_timeout(80)
         r = await ev("() => ({stash: window.__fa.S.stash, kit: window.__fa.S.kit})")
         check('T4 放入後背包清空、防災包 4 件', r['kit'] == [] and len(r['stash']) == 4, str(r))
         txt = await page.inner_text('#dText')
-        check('T4 查看顯示乾糧 2 包、開水 2 瓶、最快到期', '乾糧 2/7' in txt and '開水 2/7' in txt and '第 12 天' in txt, txt)
+        check('T4 查看顯示乾糧 2 包、開水 2 瓶、最快到期', '乾糧 2/3' in txt and '開水 2/3' in txt and '第 12 天' in txt, txt)
 
         # T5 取出 + 負重
         await page.click('#dText button[data-o]'); await page.wait_for_timeout(80)

@@ -250,6 +250,28 @@ async function downAct(){  /* 市集倒地的人：第 1～4 節都做完就多�
 
 /* ---------- NPC 對話（2026-10-07 老師同意的擬稿；沒有醫療數字，只用遊戲現有規則與已審核內容） ---------- */
 const LIFEG='ch3_lifeg',SAILOR='ch3_sailor';
+/* 海嘯警報選配支線（老師 2026-10-09 同意做；K4-3、Q4-4 文字照老師草稿）：第 4 節做完後，救生員選單多一項「海嘯警報」：
+ * 先聽一次警報（鳴 5 秒、停 5 秒、鳴 5 秒，聲音由程式合成，可以跳過），再出情境題 Q4-4，最後給知識卡 K4-3。警報秒數來自草稿；救生員那句邀請與警報字幕是我加的非醫療用語。 */
+const ALARM={on:5000,off:5000};
+async function alarmPlay(){
+  const T=Object.assign({},ALARM,DEBUG&&window.__ch3Tune&&window.__ch3Tune.alarm||{}),AC=window.AudioContext||window.webkitAudioContext;
+  let ctx=null,timers=[];
+  const stop=()=>{timers.forEach(clearTimeout);timers=[];try{ctx&&ctx.close();}catch(e){}ctx=null;};
+  const tone=ms=>{if(!AC)return;try{ctx=ctx||new AC();const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime;o.type='triangle';g.gain.value=.07;o.connect(g);g.connect(ctx.destination);
+    for(let k=0;k<Math.ceil(ms/500);k++)o.frequency.setValueAtTime(k%2?660:880,t+k*.5);o.start(t);o.stop(t+ms/1000);}catch(e){}};
+  try{await say({p:'hero',who:'海嘯警報',html:'<p id="al" style="font-size:1.4em;text-align:center;margin:14px 0">……</p>',buttons:[{label:'跳過'}],
+    onRender:(root,fin)=>{const al=root.querySelector('#al'),at=(ms,fn)=>timers.push(setTimeout(fn,ms));
+      al.textContent='鳴——';tone(T.on);
+      at(T.on,()=>{al.textContent='（停）';});
+      at(T.on+T.off,()=>{al.textContent='鳴——';tone(T.on);});
+      at(T.on*2+T.off,()=>{al.innerHTML='語音：「海嘯警報，請所有民眾迅速往高處疏散」';});
+      at(T.on*2+T.off+2200,()=>fin('done'));}});}
+  finally{stop();}}
+async function tsunami(){
+  const i=await say({p:LIFEG,html:'<p>要不要聽聽海嘯警報是什麼聲音？聽過一次，真的響起的時候才認得出來。</p>',buttons:[{label:'聽聽看',primary:true},{label:'先不用'}]});
+  if(i!==0)return;
+  await alarmPlay();
+  await ask('ch3_q4_4');await showCard('ch3_k4_3');}
 async function lifegHarbor(){
   S.c=S.c||{};
   if(!S.c.ch3_met){
@@ -258,10 +280,11 @@ async function lifegHarbor(){
   }
   for(;;){
     const ready=PREV||['ch3_k1_3','ch3_k2_3','ch3_k3_1','ch3_k3_3'].every(k=>S.cards[k]);  /* 第 1～3 節做完才開放專線與防災 */
-    const labels=ready?['請教救生員','聊聊','先離開']:['接下來做什麼','聊聊','先離開'];
+    const labels=ready?['請教救生員'].concat(S.cards.ch3_k4_4?['海嘯警報']:[],['聊聊','先離開']):['接下來做什麼','聊聊','先離開'];
     const i=await say({p:LIFEG,html:ready?'<p>想聊聊，還是想請教急救和防災的事？</p>':'<p>港口人多，想聊聊嗎？市集和救生站都可以去看看。</p>',buttons:labels.map((l,k)=>({label:l,primary:k===0}))});
     const lab=labels[i];
     if(lab==='請教救生員')return lesson4();
+    if(lab==='海嘯警報'){await tsunami();continue;}
     if(lab==='接下來做什麼'){await lines(LIFEG,[!S.cards.ch3_k1_3?'市集的空地上有人倒下了，快過去看看！':!S.cards.ch3_k2_3?'去救生站吧，假人旁邊可以練習按壓。':!S.cards.ch3_k3_1?'假人旁邊的面罩，可以練習人工呼吸。':'救生站牆上的 AED，也要練習怎麼用。']);continue;}
     if(lab!=='聊聊')return;
     const c=S.c||{};
