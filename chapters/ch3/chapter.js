@@ -257,8 +257,11 @@ async function alarmPlay(){
   const T=Object.assign({},ALARM,DEBUG&&window.__ch3Tune&&window.__ch3Tune.alarm||{}),AC=window.AudioContext||window.webkitAudioContext;
   let ctx=null,timers=[];
   const stop=()=>{timers.forEach(clearTimeout);timers=[];try{ctx&&ctx.close();}catch(e){}ctx=null;};
-  const tone=ms=>{if(!AC)return;try{ctx=ctx||new AC();const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime;o.type='triangle';g.gain.value=.07;o.connect(g);g.connect(ctx.destination);
-    for(let k=0;k<Math.ceil(ms/500);k++)o.frequency.setValueAtTime(k%2?660:880,t+k*.5);o.start(t);o.stop(t+ms/1000);}catch(e){}};
+  /* 警報聲：單一音高緩緩升高再降低的長鳴（不是兩個音交替，那會像救護車）。老師 2026-10-09 聽了覺得像救護車而改；真實警報聲若有錄音，之後可以換成音檔 */
+  const tone=ms=>{if(!AC)return;try{ctx=ctx||new AC();const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime,d=ms/1000;o.type='sine';
+    o.frequency.setValueAtTime(380,t);o.frequency.linearRampToValueAtTime(520,t+d/2);o.frequency.linearRampToValueAtTime(380,t+d);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.2);g.gain.setValueAtTime(.12,t+Math.max(.2,d-.2));g.gain.linearRampToValueAtTime(0,t+d);
+    o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d);}catch(e){}};
   try{await say({p:'hero',who:'海嘯警報',html:'<p id="al" style="font-size:1.4em;text-align:center;margin:14px 0">……</p>',buttons:[{label:'跳過'}],
     onRender:(root,fin)=>{const al=root.querySelector('#al'),at=(ms,fn)=>timers.push(setTimeout(fn,ms));
       al.textContent='鳴——';tone(T.on);
