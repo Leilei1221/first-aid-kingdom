@@ -111,7 +111,7 @@ async def main(url):
         # --- 其他場景之間的門
         await page.evaluate("() => { window.__fa.S.wxNext = null; }")
         await goto(page, 'ch3_harbor', 820, 640)
-        for (label, x, y, dest) in [('市集', 1490, 290, 'ch3_market'), ('救生站', 1390, 790, 'ch3_rescue'), ('燈塔', 716, 508, 'ch3_lighthouse')]:
+        for (label, x, y, dest) in [('市集', 1490, 290, 'ch3_market'), ('救生站', 1390, 790, 'ch3_rescue'), ('燈塔', 695, 236, 'ch3_lighthouse')]:
             await goto(page, 'ch3_harbor', 820, 640); await act_at(page, x, y); await page.wait_for_timeout(900)
             check(f'港口 → {label}', await st(page, 'S.scene') == dest, await st(page, 'S.scene'))
         # --- 暈船與落水（第二章的事件，已審核的題目與知識卡）、下船迎接、救生員見面
