@@ -11,6 +11,10 @@
   "ch4_hiker_cold": 0.6481,
   "ch4_elder": 0.4904,
   "ch4_elder_face": 1.0,
-  "ch4_elder_sick": 0.4788
+  "ch4_elder_sick": 0.4788,
+  "ch4_photog": 0.4077,
+  "ch4_photog_face": 1.0,
+  "ch4_photog_snowblind": 0.4596,
+  "ch4_photog_cold": 0.3596
  }
 }

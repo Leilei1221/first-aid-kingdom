@@ -252,5 +252,54 @@
   ],
   "exits": [],
   "outdoor": true
+ },
+ "ch4_snowline": {
+  "name": "雪線",
+  "spawn": [
+   320,
+   700
+  ],
+  "bg": "ch4_snowline",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_photog",
+    "x": 1000,
+    "y": 500
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 1180,
+    "y": 560,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch4_shelter",
+    "x": 1235,
+    "y": 322,
+    "label": "避風小屋（休息）"
+   },
+   {
+    "kind": "ch4_up3",
+    "x": 1440,
+    "y": 352,
+    "label": "往山屋的小徑"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch4_camp2",
+    "at": [
+     1290,
+     420
+    ],
+    "block": null,
+    "test": "(x,y)=>x<300&&y>830",
+    "need": null
+   }
+  ],
+  "outdoor": true
  }
 }

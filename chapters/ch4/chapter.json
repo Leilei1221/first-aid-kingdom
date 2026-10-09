@@ -27,6 +27,11 @@
   "ch4_inn",
   "ch4_innk",
   "ch4_innk_face",
+  "ch4_photog",
+  "ch4_photog_cold",
+  "ch4_photog_face",
+  "ch4_photog_snowblind",
+  "ch4_snowline",
   "ch4_village"
  ],
  "region": {

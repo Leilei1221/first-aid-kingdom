@@ -29,6 +29,12 @@
    "img": "ch4_elder",
    "face": "ch4_elder_face",
    "hk": 1
+  },
+  "ch4_photog": {
+   "name": "登山攝影師 阿岩",
+   "img": "ch4_photog",
+   "face": "ch4_photog_face",
+   "hk": 1
   }
  }
 }

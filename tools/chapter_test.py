@@ -132,7 +132,7 @@ async def main(url):
         page, errs, logs = await boot(ctx, url)
         r = await page.evaluate("() => ({ch: Object.keys(window.__fa.CHAPTERS), scenes: Object.keys(window.__fa.SCENES).length})")
         IDX_OPEN = json.load(open(os.path.join(ROOT, 'chapters/index.json')))[0]['open']
-        check('預設載入序章與第二章資料（章節一律載入，開放與否在執行時判斷）', r == {'ch': ['ch2', 'ch3', 'ch4'], 'scenes': 34}, str(r))
+        check('預設載入序章與第二章資料（章節一律載入，開放與否在執行時判斷）', r == {'ch': ['ch2', 'ch3', 'ch4'], 'scenes': 35}, str(r))
         check('預設沒有頁面錯誤', not errs, str(errs))
         # 第二章關閉時，東方草原東邊的出口擋下並提示「還沒開放」
         await start(page)

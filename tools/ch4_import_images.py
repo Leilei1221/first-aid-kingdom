@@ -17,7 +17,12 @@ MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  ('ch4_young_hiker_cold.png', 'ch4_hiker_cold', 'body', 520),
  # F3：營地 2（白天、夜晚）、資深登山客老周（站立、不適、頭像）
  ('喜馬拉雅高山營地.png', 'ch4_camp2', 'scene', None), ('喜馬拉雅高山營地_夜景.png', 'ch4_camp2_night', 'scene', None),
- ('ch4_elder.png', 'ch4_elder', 'body', 520), ('ch4_elder_face.png', 'ch4_elder_face', 'face', 160), ('ch4_elder_sick.png', 'ch4_elder_sick', 'body', 520)]
+ ('ch4_elder.png', 'ch4_elder', 'body', 520), ('ch4_elder_face.png', 'ch4_elder_face', 'face', 160), ('ch4_elder_sick.png', 'ch4_elder_sick', 'body', 520),
+ # F4：雪線、登山攝影師（站立、雪盲、凍傷、頭像）、三張傷口圖（放在 assets/，key 由章節程式註冊）
+ ('喜馬拉雅雪線雪原.png', 'ch4_snowline', 'scene', None),
+ ('ch4_photog.png', 'ch4_photog', 'body', 520), ('ch4_photog_face.png', 'ch4_photog_face', 'face', 160),
+ ('ch4_photog_snowblind.png', 'ch4_photog_snowblind', 'body', 520), ('ch4_photog_cold.png', 'ch4_photog_cold', 'body', 520),
+ ('w_frostbite.png', 'w_frostbite', 'wound', 420), ('w_frostface.png', 'w_frostface', 'wound', 420), ('w_snowblind.png', 'w_snowblind', 'wound', 420)]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]
@@ -27,14 +32,15 @@ def find(n):
 sizes = {}
 for n, name, kind, size in MAP:
     im = Image.open(find(n))
-    if kind == 'scene': out = im.convert('RGB').resize((1672, 941), Image.LANCZOS); dst = OUT / f'{name}.webp'; out.save(dst, 'WEBP', quality=82)
+    if kind == 'wound': out = im.convert('RGB').resize((size, size), Image.LANCZOS); dst = ROOT / 'assets' / f'{name}.webp'; out.save(dst, 'WEBP', quality=88)
+    elif kind == 'scene': out = im.convert('RGB').resize((1672, 941), Image.LANCZOS); dst = OUT / f'{name}.webp'; out.save(dst, 'WEBP', quality=82)
     else:
         cut = e12.cutout(im, enclosed=kind != 'face')
         if kind == 'face':
             s = min(cut.size); x0 = (cut.width - s) // 2; out = cut.crop((x0, 0, x0 + s, s)).resize((size, size), Image.LANCZOS)
         else: out = cut.copy(); out.thumbnail((size, size), Image.LANCZOS)
         dst = OUT / f'{name}.webp'; out.save(dst, 'WEBP', quality=90)
-    if kind != 'scene': sizes[name] = round(out.width / out.height, 4)
+    if kind not in ('scene', 'wound'): sizes[name] = round(out.width / out.height, 4)
     print(name, out.size, dst.stat().st_size // 1024, 'KB')
 rp = ROOT / 'chapters/ch4/ratios.json'; r = json.load(open(rp, encoding='utf-8')) if rp.exists() else {'RATIO': {}}
 r['RATIO'].update(sizes); json.dump(r, open(rp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
