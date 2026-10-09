@@ -4,13 +4,15 @@
  * 魚尺、價格、機率都是遊戲參數，不是真實的法規或公分數字。 */
 export const FISH={rodPrice:60,castSta:4,bagMax:8,sizeLine:40,smallChance:.35,protectedChance:.08,eatSta:12,relPerRep:3,
   biteZone:26,biteSpeed:75,  /* 咬鉤條：綠色範圍寬度、游標每秒移動的格數（0～100） */
-  spots:{pier:{x:720,y:600,label:'釣魚（碼頭）'}},stallAt:{x:1150,y:520}};
+  spots:{pier:{x:720,y:600,label:'釣魚（碼頭）'},lh:{x:820,y:800,label:'釣魚（燈塔岩邊）'}},stallAt:{x:1150,y:520},
+  /* 燈塔岩邊（老師 2026-10-09 要求；港口信譽 3 以上開放）：魚比碼頭大、比較容易遇到保育類（要放回）。沒有新增魚種，只是機率不同；都是遊戲參數 */
+  lh:{protectedChance:.15,smallChance:.2,w:{mackerel:5,horse:10,snapper:35,grouper:50}}};
 export const SPECIES=[
   {id:'mackerel',name:'鯖魚',price:20,w:40},{id:'horse',name:'竹筴魚',price:25,w:30},
   {id:'snapper',name:'鯛魚',price:40,w:20},{id:'grouper',name:'石斑魚',price:70,w:10}];
 export const PROTECTED=[{id:'turtle',name:'綠蠵龜（海龜）'},{id:'ray',name:'鬼蝠魟（蝠鱝）'}];
-export const pickSpecies=r=>{const tot=SPECIES.reduce((a,b)=>a+b.w,0);let x=r*tot;for(const s of SPECIES){if((x-=s.w)<0)return s;}return SPECIES[SPECIES.length-1];};
-export default function(FA,{on,debug,addRep,preview}){
+export const pickSpecies=(r,w)=>{const L=SPECIES.map(s=>({s,w:w&&w[s.id]!=null?w[s.id]:s.w})),tot=L.reduce((a,b)=>a+b.w,0);let x=r*tot;for(const o of L){if((x-=o.w)<0)return o.s;}return L[L.length-1].s;};
+export default function(FA,{on,debug,addRep,preview,lhOpen}){
 const {say,quiz,toast,refresh,CARDS,staMax,A,RATIO}=FA;
 const img=(k,h)=>`<img src="${A[k]}" alt="" style="display:block;margin:6px auto;max-height:${h}px;max-width:100%">`;
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
@@ -55,17 +57,17 @@ async function fishOutcome(sp,size){
   if(bagN()>=bagMax()){await say({p:'hero',html:`<p class="bad">魚簍滿了（${bagMax()} 隻），裝不下。到魚攤賣一些吧。</p>`});return;}
   f.bag[sp.id]=(f.bag[sp.id]||0)+1;
   await say({p:'hero',html:`<p class="good">留下了一隻${sp.name}。</p><p class="small">魚簍 ${bagN()}/${bagMax()}。可以拿去魚攤賣，或請老闆娘烤來吃。</p>`});}
-async function fishSpot(){
-  const f=st();
+async function fishSpot(spot){
+  const P=spot==='lh'?FISH.lh:FISH,f=st();
   if(!f.rod){await say({p:'hero',html:'<p>這裡可以釣魚，不過我沒有釣竿。魚攤有賣。</p>'});return;}
   if(S.sta<FISH.castSta){await say({p:'hero',html:'<p>太累了，先休息一下再釣吧。</p>'});return;}
   S.sta-=FISH.castSta;refresh();f.n++;
   const hit=await biteGame();
   if(!hit){await say({p:'hero',html:'<p>魚跑掉了……再試一次吧。</p>'});return;}
   const fo=F(),r=fo&&fo.roll!=null?fo.roll:Math.random();
-  if(r<FISH.protectedChance){const sp=PROTECTED[fo&&fo.pi!=null?fo.pi:Math.floor(Math.random()*PROTECTED.length)];return protectedCatch(sp);}
-  const sp=fo&&fo.sp?SPECIES.find(s=>s.id===fo.sp):pickSpecies(Math.random());
-  const size=fo&&fo.size!=null?fo.size:(Math.random()<FISH.smallChance?10+Math.floor(Math.random()*(FISH.sizeLine-10)):FISH.sizeLine+Math.floor(Math.random()*(100-FISH.sizeLine+1)));
+  if(r<P.protectedChance){const sp=PROTECTED[fo&&fo.pi!=null?fo.pi:Math.floor(Math.random()*PROTECTED.length)];return protectedCatch(sp);}
+  const sp=fo&&fo.sp?SPECIES.find(s=>s.id===fo.sp):pickSpecies(Math.random(),spot==='lh'?FISH.lh.w:null);
+  const size=fo&&fo.size!=null?fo.size:(Math.random()<P.smallChance?10+Math.floor(Math.random()*(FISH.sizeLine-10)):FISH.sizeLine+Math.floor(Math.random()*(100-FISH.sizeLine+1)));
   return fishOutcome(sp,size);}
 async function stall(){
   for(;;){
@@ -92,6 +94,7 @@ async function stall(){
 const things=id=>{
   if(!on())return [];
   if(id==='ch3_harbor')return [{kind:'ch3_fishspot',x:FISH.spots.pier.x,y:FISH.spots.pier.y,label:FISH.spots.pier.label}];
+  if(id==='ch3_lighthouse')return lhOpen&&lhOpen()?[{kind:'ch3_fishspot_lh',x:FISH.spots.lh.x,y:FISH.spots.lh.y,label:FISH.spots.lh.label}]:[];
   if(id==='ch3_market')return [{kind:'ch3_stall',x:FISH.stallAt.x,y:FISH.stallAt.y,label:'魚攤'}];
   return [];};
 const build=(id,H,{sprite})=>{
@@ -99,5 +102,5 @@ const build=(id,H,{sprite})=>{
   const put=(x,y,k,h)=>{const e=sprite('shadow','',x,y,Math.round(H*h),RATIO[k]);e.querySelector('img').src=A[k];};
   if(id==='ch3_harbor')put(FISH.spots.pier.x,FISH.spots.pier.y,'ch3_fish_spot',2.1);
   if(id==='ch3_market')put(FISH.stallAt.x,FISH.stallAt.y,'ch3_fish_stall',2.0);};
-return {things,build,acts:{ch3_fishspot:fishSpot,ch3_stall:stall},st};
+return {things,build,acts:{ch3_fishspot:()=>fishSpot('pier'),ch3_fishspot_lh:()=>fishSpot('lh'),ch3_stall:stall},st};
 }

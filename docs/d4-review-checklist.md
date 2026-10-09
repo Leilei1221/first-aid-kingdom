@@ -2,6 +2,8 @@
 
 以下文字都是**照 V3 原型逐字搬入**（村長與救援失敗敘述除外，是我依你的指定語氣新擬），標 `draft`，**未經老師逐字審核前，對應開關保持關閉**。
 
+> **2026-10-09 老師審核通過**：九張知識卡、情境題目與解說、救援失敗敘述、村長 6 句與發放量（乾糧 2、開水 2）、天氣預報文字，全部照現有文字；`draft` 標記已拿掉，改記 `reviewed:"2026-10-09"`。高山症支線（`STORIES.hunt`）原本靠 `draft` 在野外項目關閉時隱藏，改用 `wild:true` 標記，行為不變。開關（`WILD_ON`、`RELIEF_ON`）與天災仍由班級後台控制，預設沒有改。
+
 ## 一、九張新知識卡（`content/knowledge_cards.json`，欄位 `draft:true`）
 `typhoon` 颱風來時／`flood` 山洪暴發的徵兆／`lost` 迷路時怎麼辦／`signal` 求救訊號／`hypothermia` 預防失溫／`cross` 過溪與溺水救援／`riverwater` 野外找水／`campfire` 野外用火安全／`altitude` 預防高山症
 （`altitude` 另有阿鹿支線故事在 `content/characters.json` 的 `STORIES.hunt`，`draft:true`，WILD 開啟前不出現）

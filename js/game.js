@@ -252,7 +252,7 @@ function applyAnnouncement(){const w=CONTROL&&CONTROL.weather;if(!S||!w||!WX[w.t
 const wxToday=()=>S.wx&&S.wx.day===S.day?S.wx.type:null;
 const wxTomorrow=()=>S.wxNext&&S.wxNext.day===S.day+1?S.wxNext.type:null;
 const wild=()=>flagOn('wild',WILD_ON)||WILD_FORCE;  /* 野外項目（溺水、裝溪水、營火、阿鹿的支線）：內容審過後在 content/weather.json 的 WILD_ON 開啟 */
-const storyOf=id=>{const s=STORIES[id];return s&&(!s.draft||wild())?s:null;};  /* draft 的支線在 WILD 開啟前不出現 */
+const storyOf=id=>{const s=STORIES[id];return s&&(!s.wild||wild())?s:null;};  /* 標了 wild 的支線在野外項目開啟前不出現（高山症：老師 2026-10-09 審核通過，文字沒改） */
 const isOutdoor=id=>{const s=C.scenes[id];return s&&s.outdoor!=null?!!s.outdoor:OUTDOOR.includes(id);};
 const stormy=()=>['typhoon','flood'].includes(wxToday())||['typhoon','flood'].includes(wxTomorrow());  /* 船長停航 */
 /* 排定「明天」的天災；之後老師端（D5）發布的天災也走這裡 */
@@ -1077,7 +1077,7 @@ async function stashBox(){
     const kitRows=S.kit.map((k,i)=>[k,i]).filter(([k])=>['ration','water'].includes(base(k))).map(([k,i])=>`<div class="row">${badge(k)}<div class="info"><b>${ITEMS[base(k)].name}</b><span>${note(k)}</span></div><button type="button" data-p="${i}">放入</button></div>`).join('')||'<p class="small">急救背包裡沒有乾糧或開水。</p>';
     await say({p:'hero',who:'防災包',html:`<h4>家中防災包 ${S.stash.length}/${STASH_CAP}</h4>
       <p>乾糧 ${goodR.length} 包${fast!=null?`（最快保存到第 ${fast} 天）`:''}　開水 ${water} 瓶</p>
-      <p class="small">家中儲備目標（一週）：乾糧 ${goodR.length}/7　開水 ${water}/7</p>${inRows}
+      <p class="small">家中儲備目標（三天）：乾糧 ${goodR.length}/${RATION_NEED}　開水 ${water}/${WATER_NEED}</p>${inRows}
       <h4>急救背包 ${S.kit.length}/${S.kitCap}</h4>${kitRows}`,buttons:[{label:'關閉',primary:true}],
       onRender:(root,fin)=>{root.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{act=['o',+b.dataset.o];fin('act');});root.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{act=['p',+b.dataset.p];fin('act');});}}).then(r=>{if(r!=='act')act=null;});
     if(!act)return;
@@ -1367,7 +1367,7 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,WOUNDS,PACKS:C.balance.PACKS||[],A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,chCall:(id,name,...a)=>{const h=chOpen(id)?CHH[id]:null;return h&&h[name]?h[name](...a):undefined;},stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
+  SHOP_MED,badge,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,chCall:(id,name,...a)=>{const h=chOpen(id)?CHH[id]:null;return h&&h[name]?h[name](...a):undefined;},stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save,setHeroLook:(f,onBaseChange)=>{heroLook=f;heroLookChanged=onBaseChange||null;},refreshHero:()=>{if(heroImg)heroImg.src=outfitSrc();},outfitBase};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
