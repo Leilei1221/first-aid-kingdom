@@ -54,10 +54,14 @@ async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
         await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
-        # --- 沒有 e1：沒有魚攤與釣點
+        # --- 還沒完成章末演練：沒有魚攤；完成後（不需 e1）就有
         page, errs = await boot(ctx, url, '')
+        await page.evaluate("() => { window.__fa.S.c.ch3_done = false; }")
         await goto(page, 'ch3_market', 830, 800); await act_at(page, 1150, 520)
-        check('沒有 e1：市集沒有魚攤', await hidden(page))
+        check('還沒完成章末演練：市集沒有魚攤', await hidden(page))
+        await page.evaluate("() => { window.__fa.S.c.ch3_done = true; }")
+        await goto(page, 'ch3_market', 830, 800); await act_at(page, 1150, 520)
+        check('完成章末演練後（沒有 e1）：魚攤開放給所有人', not await hidden(page))
         await page.close()
         page, errs = await boot(ctx, url, '&e1=1')
         # --- 魚攤：買釣竿

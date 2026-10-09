@@ -40,7 +40,10 @@ async def main(url):
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
         await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
         page, errs = await boot(ctx, url, '')
-        await meet(page, 15); check('沒有 e1：港口沒有商人、沒有換裝鈕', await hidden(page) and await page.evaluate("() => document.getElementById('btnWear').hidden")); await page.close()
+        await page.evaluate("() => { window.__fa.S.c.ch3_done = false; }")
+        await meet(page, 15); check('還沒完成章末演練：港口沒有商人、沒有換裝鈕', await hidden(page) and await page.evaluate("() => document.getElementById('btnWear').hidden"))
+        await page.evaluate("() => { window.__fa.S.c.ch3_done = true; }")
+        await meet(page, 15); check('完成章末演練後（沒有 e1）：商人開放給所有人', not await hidden(page)); await page.close()
         page, errs = await boot(ctx, url, '&e1=1')
         # --- 商船輪流：第 9、10 天日本、11 天沒有、12、13 澳洲、15 尼泊爾
         # --- 尼泊爾（第 15 天）：第一次見面、海圖碎片、買東西

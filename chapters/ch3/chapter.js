@@ -12,8 +12,9 @@ export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
 const QS=new URLSearchParams(location.search),PREV=!!QS.get('preview');
-const E1_ON=PREV||(location.hash==='#debug'&&QS.get('e1')==='1');  /* 「藍堡的日常」E1 是草稿：只有老師預覽或本機 #debug ?e1=1 看得到 */
-if(E1_ON)Object.assign(FA.WOUNDS,{octopus:'藍環章魚咬傷',jelly:'水母螫傷',rockcut:'岩石割傷',vibrio:'海洋弧菌感染'});  /* 圖在 assets/w_*.webp；草稿期間只在 E1 開啟時加入，傷口圖鑑不會多出格子 */
+/* 「藍堡的日常」E1～E3（老師 2026-10-09 審核通過，全部照現有文字）：完成章末演練（S.c.ch3_done）後對所有人開放；老師預覽一直開著。傷口名稱在第一次開放時才註冊，傷口圖鑑不會提前多出格子。 */
+let woundsReg=false;
+const DAILY_ON=()=>{const ok=PREV||!!(S.c&&S.c.ch3_done);if(ok&&!woundsReg){woundsReg=true;Object.assign(FA.WOUNDS,{octopus:'藍環章魚咬傷',jelly:'水母螫傷',rockcut:'岩石割傷',vibrio:'海洋弧菌感染'});}return ok;};  /* 圖在 assets/w_*.webp；草稿期間只在 E1 開啟時加入，傷口圖鑑不會多出格子 */
 const FARE=30,SHIP_RATION=40,SHIP_WATER=30;
 const FISHPORT='ch3_fishport',HARBOR='ch3_harbor',CABIN='ch3_ship_cabin';
 const deckOf=left=>left>=2?'ch3_ship_day':'ch3_ship_dusk';  /* 第一天白天、第二天黃昏 */
@@ -323,9 +324,9 @@ FISH_LINES.ch3_fisher[0].push('我靠海吃飯一輩子，最怕的就是看輕�
 const fishTalk=async id=>{await lines(id,FISH_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
 const passerTalk=async id=>{await lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
 let E3=null;
-const HBR=harborInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),extra:()=>E3?E3.boardExtra():''});
-const FSH=fishInit(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),debug:DEBUG,addRep:HBR.addRep,preview:PREV});
-E3=e3Init(FA,{on:()=>E1_ON&&(PREV||!!(S.c&&S.c.ch3_done)),preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
+const HBR=harborInit(FA,{on:DAILY_ON,extra:()=>E3?E3.boardExtra():''});
+const FSH=fishInit(FA,{on:DAILY_ON,debug:DEBUG,addRep:HBR.addRep,preview:PREV});
+E3=e3Init(FA,{on:DAILY_ON,preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
 HBR.load().catch(()=>{});E3.load().catch(()=>{});
 return {
   acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed}),
@@ -345,8 +346,7 @@ return {
     if(!S.cards.ch3_k3_3)return '在救生站，牆邊的 AED 可以練習。';
     if(!S.cards.ch3_k4_4)return '到港口，找救生員請教專線與防災。';
     if(!(S.c&&S.c.ch3_done))return '到港口市集，查看倒在地上的人，進行章末整合演練。';
-    {const g=HBR.goal();if(g)return g;}
-    return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`;},
+    return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`+(HBR.goal()?'港口今天有人需要幫忙，看看公告板。':'');},
   wear:()=>E3.wardrobe(),
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();

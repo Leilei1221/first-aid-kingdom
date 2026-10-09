@@ -1,5 +1,5 @@
 """第三章「藍堡的日常」E1（草稿）：港口公告板、每天輪一件海洋傷害求助（藍環章魚、水母、割傷、海洋弧菌）、港口信譽。
-只有老師預覽或 #debug 加 ?e1=1 才會出現；沒有 e1 時一點影響都沒有。
+老師 2026-10-09 審核通過：完成第三章章末演練（S.c.ch3_done）後對所有人開放，不再需要 ?e1=1（參數留著不影響）。
 用法：`python3 -m http.server 8765` 之後 `python3 -u tools/ch3_harbor_test.py http://localhost:8765/index.html`"""
 import asyncio, json, pathlib, sys
 from playwright.async_api import async_playwright
@@ -51,13 +51,16 @@ async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
         await ctx.add_init_script("localStorage.setItem('fa-debug','1')")
-        # --- 沒有 ?e1=1：沒有公告板
+        # --- 還沒完成章末演練：沒有公告板；完成後不需要 e1 就有
         page, errs = await boot(ctx, url, '')
-        await page.evaluate("() => { window.__fa.S.c.ch3_done = true; }")
+        await page.evaluate("() => { window.__fa.S.c.ch3_done = false; }")
         await goto(page, 'ch3_harbor', 820, 640)
         await act_at(page, 1050, 640)
-        check('沒有 e1：港口沒有公告板（草稿不外露）', await hidden(page))
-        check('沒有 e1：目標不提公告板', '公告板' not in await page.inner_text('#goal'))
+        check('還沒完成章末演練：港口沒有公告板', await hidden(page))
+        check('還沒完成章末演練：目標不提公告板', '公告板' not in await page.inner_text('#goal'))
+        await page.evaluate("() => { window.__fa.S.c.ch3_done = true; }")
+        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1050, 640)
+        check('完成章末演練後（沒有 e1）：公告板開放給所有人', not await hidden(page))
         await page.close()
         # --- ?e1=1
         page, errs = await boot(ctx, url, '&e1=1')
