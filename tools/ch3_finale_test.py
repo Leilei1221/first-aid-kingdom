@@ -52,15 +52,19 @@ async def drive(page, wrong_first=False, log=None):
     return texts
 LESSONS = ['ch3_k1_3', 'ch3_k2_3', 'ch3_k3_1', 'ch3_k3_3', 'ch3_k4_4']
 async def tune(page, **kw): await page.evaluate("(t) => { window.__ch3Tune = t; }", kw)
+SEV_FORCE = {'q': None}   # 若設定：題幹含這段文字的題目，選第一個「嚴重錯誤」的選項
+def is_sev(z, i): return bool(z.get('severe')) and (not z.get('severeOpts') or i in z['severeOpts'])
 async def pick_quiz(page, wrong_first=False, seen=None):
-    """目前對話若是題目就作答；回傳是否處理了"""
+    """目前對話若是題目就作答；回傳是否處理了。答錯時盡量選「不是嚴重錯誤」的選項（嚴重錯誤會讓演練失敗）；全都是嚴重錯誤的題就答對"""
     txt = await page.inner_text('#dText')
     z = next((v for q, v in ByQ.items() if q in txt), None)
     btns = page.locator('#dBtns button:not([disabled])')
     if z and await btns.count() == len(z['opts']):
         pick = z['ans']
-        if wrong_first and z['q'] not in seen:
-            seen.add(z['q']); pick = (z['ans'] + 1) % len(z['opts'])
+        if SEV_FORCE['q'] and SEV_FORCE['q'] in z['q']:
+            pick = next(i for i in range(len(z['opts'])) if i != z['ans'] and is_sev(z, i))
+        elif wrong_first and z['q'] not in seen:
+            seen.add(z['q']); pick = next((i for i in range(len(z['opts'])) if i != z['ans'] and not is_sev(z, i)), z['ans'])
         await btns.nth(pick).click(); return True
     return False
 async def until(page, selector, wrong_first=False, seen=None, max_steps=80):
@@ -79,6 +83,24 @@ async def taps(page, n, gap=545):
 async def hold(page, ms):
     await page.evaluate("async (ms) => { const h = document.getElementById('bh'); h.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); await new Promise(r => setTimeout(r, ms)); h.dispatchEvent(new PointerEvent('pointerup', {bubbles: true})); }", ms)
     await page.wait_for_timeout(150)
+async def drive_to_fail(page):
+    """從市集倒地者開始章末演練，答題直到出現「演練失敗」，再按完對話；回傳失敗畫面與知識卡的文字"""
+    await page.evaluate("() => { window.__fa.S.pos = {x: 790, y: 650}; }"); await page.wait_for_timeout(300)
+    await act(page); await page.wait_for_selector('#dBtns button')
+    await page.locator('#dBtns button', has_text='章末演練').click(); await page.wait_for_timeout(300)
+    await page.locator('#dBtns button', has_text='開始').click(); await page.wait_for_timeout(300)
+    seen, texts = set(), []
+    for _ in range(60):
+        if await hidden(page):
+            await page.wait_for_timeout(500)
+            if await hidden(page) and any('演練失敗' in x for x in texts): break
+            continue
+        t = await page.inner_text('#dText'); texts.append(t)
+        if not await pick_quiz(page, False, seen):
+            btns = page.locator('#dBtns button:not([disabled])')
+            if await btns.count(): await btns.nth(0).click()
+        await page.wait_for_timeout(150)
+    return '\n'.join(texts)
 async def run_finale(page, good=True, stop_at=None, slow_gap=0):
     """從市集倒地者開始，走完章末演練（good＝全部做對；good=False 時每題先答錯、吹氣不先開呼吸道、AED 每步先選錯）。回傳最後的文字"""
     seen = set()
@@ -114,7 +136,7 @@ async def run_finale(page, good=True, stop_at=None, slow_gap=0):
     await page.wait_for_selector('text=章末演練結果', timeout=15000) if False else None
     for _ in range(40):
         t = await page.inner_text('#dText') if not await hidden(page) else ''
-        if '演練完成' in t or '中途停止' in t: return t
+        if '演練完成' in t or '中途停止' in t or '演練失敗' in t: return t
         btns = page.locator('#dBtns button:not([disabled])')
         if await btns.count(): await btns.nth(0).click()
         await page.wait_for_timeout(200)
@@ -207,11 +229,29 @@ async def main(url):
         await page.evaluate("(k) => { k.forEach(c => window.__fa.S.cards[c] = true); }", LESSONS)
         t = await run_finale(page, good=True, stop_at='A')
         fin = await page.evaluate("() => window.__ch3Finale")
-        check('停止急救：結算顯示中途停止、持續沒有星', '中途停止' in t and '中途停止了急救' in t and fin['score']['stars']['keep'] is False and fin['completed'] is False, t)
-        check('停止急救：記 E6，不算完成、沒有心跳之匣、不扣錢', any(e['code'] == 'E6' for e in fin['rec']['errs']) and await st(page, "!S.c.ch3_done && !S.c.ch3_box && !S.c.ch3_stars") and await st(page, 'S.coins') == 300)
+        check('停止急救：演練失敗，顯示對應的知識卡（換手與不中斷），不是結算畫面', '演練失敗' in t or '換手與不中斷' in t, t)
+        fin = await page.evaluate("() => window.__ch3Finale")
+        check('停止急救：記 E6、失敗、不算完成、沒有心跳之匣、不扣錢、不收回獎勵', fin['failed'] is True and fin['rec']['failed']['code'] == 'E6' and any(e['code'] == 'E6' for e in fin['rec']['errs']) and await st(page, "!S.c.ch3_done && !S.c.ch3_box && !S.c.ch3_stars") and await st(page, 'S.coins') == 300)
+        check('失敗後看過知識卡「換手與不中斷」', await st(page, '!!S.cards.ch3_k2_3'))
         await page.evaluate("() => window.__fa.refresh()"); await page.wait_for_timeout(300)
-        check('停止急救後：目標仍是進行章末演練', '章末' in await page.inner_text('#goal'), await page.inner_text('#goal'))
+        check('失敗後：目標仍是進行章末演練', '章末' in await page.inner_text('#goal'), await page.inner_text('#goal'))
         check('章末（停止）測試沒有頁面錯誤', not errs, str(errs))
+        await page.close()
+        # --- 選到嚴重錯誤的選項（Q1-3 僅喘息判斷成「還在呼吸」，E7）→ 演練失敗；之後重新挑戰可以正常完成
+        page, errs = await boot(ctx, url)
+        await tune(page, fatigueSec=6, compress=4, afterSwap=3)
+        await goto(page, 'ch3_market', 830, 800)
+        await page.evaluate("(k) => { k.forEach(c => window.__fa.S.cards[c] = true); }", LESSONS)
+        SEV_FORCE['q'] = '約 10 秒內只出現一次大口抽氣'
+        t = await drive_to_fail(page)
+        SEV_FORCE['q'] = None
+        fin = await page.evaluate("() => window.__ch3Finale")
+        check('嚴重錯誤（E7）：演練失敗、顯示知識卡「看呼吸」、不扣錢、不算完成', '演練失敗' in t and '看呼吸' in t and fin['failed'] is True and fin['rec']['failed']['code'] == 'E7' and await st(page, '!S.c.ch3_done && !S.c.ch3_box') and await st(page, 'S.coins') == 300 and await st(page, '!!S.cards.ch3_k1_2'), t)
+        check('失敗後沒有進到結算（沒有星數）', fin['completed'] is False and 'score' not in fin)
+        t = await run_finale(page, good=True)
+        fin = await page.evaluate("() => window.__ch3Finale")
+        check('重新挑戰：全對可以完成、5 顆星', '演練完成' in t and fin['completed'] and await st(page, 'S.c.ch3_done === true'), t)
+        check('章末（嚴重錯誤）測試沒有頁面錯誤', not errs, str(errs))
         await page.close(); await b.close()
 asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8765/index.html'))
 print('第三章章末演練測試全過' if not fails else f'{fails} 項失敗'); sys.exit(1 if fails else 0)
