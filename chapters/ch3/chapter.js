@@ -343,7 +343,7 @@ const fishTalk=async id=>{await lines(id,FISH_LINES[id][(S.c&&S.c.ch3_done)?1:0]
 const passerTalk=async id=>{await lines(id,PASSER_LINES[id][(S.c&&S.c.ch3_done)?1:0]);await FA.chatLuck(id);};
 let E3=null;
 const HBR=harborInit(FA,{on:DAILY_ON,extra:()=>E3?E3.boardExtra():''});
-const FSH=fishInit(FA,{on:DAILY_ON,debug:DEBUG,addRep:HBR.addRep,preview:PREV});
+const FSH=fishInit(FA,{on:DAILY_ON,debug:DEBUG,addRep:HBR.addRep,preview:PREV,lhOpen:HBR.lhOpen});
 E3=e3Init(FA,{on:DAILY_ON,preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
 HBR.load().catch(()=>{});E3.load().catch(()=>{});
 return {
