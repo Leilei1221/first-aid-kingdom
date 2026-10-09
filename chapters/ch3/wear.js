@@ -2,9 +2,17 @@
  * 草稿：只有老師預覽或 #debug ?e1=1 看得到。狀態記在 S.c.ch3_e3（wear）。
  * 換色用逐像素的色相旋轉（不用 canvas filter，因為 iPad Safari 不支援）。疊件的位置是遊戲參數，可調。 */
 export const COLORS=[['紅',0],['橙',28],['黃',52],['綠',120],['青',170],['藍',215],['紫',275],['粉',325],['灰',-1],['黑',-2]];
-export const LAYERS={  /* 疊件在 330×520 主角畫布上的位置（x、y、寬），高度依圖片比例 */
+export const LAYERS={  /* 疊件的圖與預設位置（x、y、寬，在 330×520 主角畫布上），高度依圖片比例。crop＝只取圖的這一塊（毛帽去掉頭頂的毛球，因為主角的頭頂就貼著畫布上緣，毛球會被切掉） */
   jacket:{name:'外套',img:'ch3_g_jacket',x:62,y:96,w:190},
-  hat:{name:'毛帽',img:'ch3_g_hat',x:92,y:-58,w:92}};
+  hat:{name:'毛帽',img:'ch3_g_hat',x:92,y:-58,w:92,crop:[0,75,331,285]}};
+/* 每套裝扮各自的疊件位置（老師 2026-10-10 說外套像貼紙、帽子飄在頭上：外套縮小、對準身體，帽子戴到頭上）。數字是 [x, y, 寬]，頭與身體的位置依各套裝扮圖量的；沒有列到的裝扮用 LAYERS 的預設 */
+export const FIT={
+  default:{jacket:[62,92,142],hat:[96,-18,72]},
+  sailor:{jacket:[56,92,146],hat:[88,-18,72]},
+  mountain:{jacket:[50,92,146],hat:[76,-18,72]},
+  lifeguard:{jacket:[52,92,146],hat:[78,-18,72]},
+  guardian:{jacket:[40,92,146],hat:[62,-18,72]}};
+export const fitOf=(base,k)=>{const m=/outfit_(\w+)\.webp/.exec(String(base||''));const f=FIT[m?m[1]:'default'];return f&&f[k]?{x:f[k][0],y:f[k][1],w:f[k][2]}:null;};
 function recolor(ctx,x,y,w,h,mode){
   if(mode===0)return;
   const d=ctx.getImageData(x,y,w,h),a=d.data;
@@ -12,7 +20,7 @@ function recolor(ctx,x,y,w,h,mode){
     let r=a[i]/255,g=a[i+1]/255,b=a[i+2]/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,dl=mx-mn;
     let hh=0,s=0;if(dl>0){s=dl/(1-Math.abs(2*l-1));hh=mx===r?((g-b)/dl)%6:mx===g?(b-r)/dl+2:(r-g)/dl+4;hh*=60;if(hh<0)hh+=360;}
     let nl=l;
-    if(mode===-1){s*=.08;}else if(mode===-2){s*=.08;nl=l*.5;}else hh=(hh+mode)%360;
+    if(mode===-1){s*=.08;}else if(mode===-2){s*=.08;nl=l*.5;}else{hh=(hh+mode)%360;s*=.62;nl=Math.min(.58,l*.96);}  /* 柔和的自然色：降低飽和度、壓低亮度，不要螢光色（老師 2026-10-10） */
     const c=(1-Math.abs(2*nl-1))*s,x2=c*(1-Math.abs((hh/60)%2-1)),m=nl-c/2;
     let R,G,B;const k=Math.floor(hh/60);[R,G,B]=[[c,x2,0],[x2,c,0],[0,c,x2],[0,x2,c],[x2,0,c],[c,0,x2]][k%6];
     a[i]=Math.round((R+m)*255);a[i+1]=Math.round((G+m)*255);a[i+2]=Math.round((B+m)*255);}
@@ -27,9 +35,11 @@ const wornKey=()=>{const e=st();return JSON.stringify([FA.outfitBase(),e.wear]);
 async function compose(e){
   const cv=document.createElement('canvas');cv.width=330;cv.height=520;const ctx=cv.getContext('2d');
   ctx.drawImage(await loadImg(FA.outfitBase()),0,0,330,520);
-  for(const [k,L] of Object.entries(LAYERS)){const w=e.wear[k];if(!w||!w.on||!e.own[k])continue;
-    const im=await loadImg(A[L.img]),h=Math.round(L.w/(im.width/im.height));
-    const t=document.createElement('canvas');t.width=L.w;t.height=h;const tc=t.getContext('2d');tc.drawImage(im,0,0,L.w,h);recolor(tc,0,0,L.w,h,COLORS[w.c||0][1]);
+  const base=FA.outfitBase();
+  for(const [k,L0] of Object.entries(LAYERS)){const w=e.wear[k];if(!w||!w.on||!e.own[k])continue;
+    const L=Object.assign({},L0,fitOf(base,k)||{});
+    const im=await loadImg(A[L.img]),cr=L.crop||[0,0,im.width,im.height],h=Math.round(L.w*cr[3]/cr[2]);
+    const t=document.createElement('canvas');t.width=L.w;t.height=h;const tc=t.getContext('2d');tc.drawImage(im,cr[0],cr[1],cr[2],cr[3],0,0,L.w,h);recolor(tc,0,0,L.w,h,COLORS[w.c||0][1]);
     ctx.drawImage(t,L.x,L.y);}
   return cv;}
 async function update(){
