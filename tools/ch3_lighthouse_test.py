@@ -59,7 +59,9 @@ async def main(url):
         await page.evaluate("() => { window.__fa.go('ch3_harbor', [820, 640]); }"); await page.wait_for_timeout(900)
         await page.evaluate("([x, y]) => { window.__fa.S.pos = {x, y}; }", [door['x'], door['y'] + 20]); await page.wait_for_timeout(400)
         act = await page.inner_text('#act'); check('走到入口：互動鈕「前往燈塔」', '燈塔' in act, act)
-        await page.evaluate("() => { window.__fa.S.pos = {x: 800, y: 380}; }"); await page.wait_for_timeout(400)
+        await page.evaluate("() => { window.__fa.S.pos = {x: 800, y: 380}; }")
+        try: await page.wait_for_function("() => document.getElementById('act').textContent.includes('燈塔')", timeout=4000)   # 互動鈕在遊戲迴圈裡更新，機器忙的時候會慢一點
+        except Exception: pass
         act = await page.inner_text('#act'); check('離入口 200px 左右（在石階中段，離搭船處更近）也優先出現「前往燈塔」', '燈塔' in act, act)
         await page.evaluate("() => { window.__fa.S.pos = {x: 1100, y: 520}; }"); await page.wait_for_timeout(400)
         act = await page.inner_text('#act'); check('離得太遠（廣場中間）不會出現', '燈塔' not in act, act)
