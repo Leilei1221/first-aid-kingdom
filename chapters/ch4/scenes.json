@@ -171,5 +171,86 @@
   ],
   "exits": [],
   "outdoor": true
+ },
+ "ch4_camp2": {
+  "name": "營地 2",
+  "spawn": [
+   420,
+   800
+  ],
+  "bg": "ch4_camp2",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_elder",
+    "x": 950,
+    "y": 450
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 1150,
+    "y": 520,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch4_tent",
+    "x": 330,
+    "y": 335,
+    "label": "帳篷（過夜）"
+   },
+   {
+    "kind": "ch4_up2",
+    "x": 1330,
+    "y": 365,
+    "label": "往雪線的小徑"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch4_camp1",
+    "at": [
+     1380,
+     440
+    ],
+    "block": null,
+    "test": "(x,y)=>x<330&&y>800",
+    "need": null
+   }
+  ],
+  "outdoor": true
+ },
+ "ch4_camp2_night": {
+  "name": "營地 2（夜）",
+  "spawn": [
+   600,
+   500
+  ],
+  "bg": "ch4_camp2_night",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_elder",
+    "x": 1000,
+    "y": 430
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 1150,
+    "y": 520,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "ch4_tent",
+    "x": 330,
+    "y": 335,
+    "label": "進帳篷睡覺"
+   }
+  ],
+  "exits": [],
+  "outdoor": true
  }
 }

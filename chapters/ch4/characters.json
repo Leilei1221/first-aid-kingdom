@@ -23,6 +23,12 @@
    "img": "ch4_hiker",
    "face": "ch4_hiker_face",
    "hk": 1
+  },
+  "ch4_elder": {
+   "name": "資深登山客 老周",
+   "img": "ch4_elder",
+   "face": "ch4_elder_face",
+   "hk": 1
   }
  }
 }

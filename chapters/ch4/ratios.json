@@ -7,6 +7,10 @@
   "ch4_hiker": 0.3577,
   "ch4_hiker_face": 1.0,
   "ch4_guide_up": 0.5096,
-  "ch4_guide_up_face": 1.0
+  "ch4_guide_up_face": 1.0,
+  "ch4_hiker_cold": 0.6481,
+  "ch4_elder": 0.4904,
+  "ch4_elder_face": 1.0,
+  "ch4_elder_sick": 0.4788
  }
 }

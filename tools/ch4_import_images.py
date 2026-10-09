@@ -13,7 +13,11 @@ MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  # F2：營地 1（白天、夜晚）、同行登山客、山上版的帕桑
  ('喜馬拉雅中山營地.png', 'ch4_camp1', 'scene', None), ('喜馬拉雅中山營地_夜景.png', 'ch4_camp1_night', 'scene', None),
  ('ch4_young_hiker.png', 'ch4_hiker', 'body', 520), ('ch4_young_hiker_portrait.png', 'ch4_hiker_face', 'face', 160),
- ('ch4_guide_mountain.png', 'ch4_guide_up', 'body', 520), ('ch4_guide_portrait.png', 'ch4_guide_up_face', 'face', 160)]
+ ('ch4_guide_mountain.png', 'ch4_guide_up', 'body', 520), ('ch4_guide_portrait.png', 'ch4_guide_up_face', 'face', 160),
+ ('ch4_young_hiker_cold.png', 'ch4_hiker_cold', 'body', 520),
+ # F3：營地 2（白天、夜晚）、資深登山客老周（站立、不適、頭像）
+ ('喜馬拉雅高山營地.png', 'ch4_camp2', 'scene', None), ('喜馬拉雅高山營地_夜景.png', 'ch4_camp2_night', 'scene', None),
+ ('ch4_elder.png', 'ch4_elder', 'body', 520), ('ch4_elder_face.png', 'ch4_elder_face', 'face', 160), ('ch4_elder_sick.png', 'ch4_elder_sick', 'body', 520)]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]
