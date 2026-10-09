@@ -165,13 +165,23 @@ async function lesson4(){  /* 入口在救生員的選單（lifegHarbor），選
 /* ---------- 章末整合演練（第 4 節 4b）：判斷 → 分工 → 壓胸＋吹氣 → AED 送到 → 續壓與換手 → 救護人員接手 → 結算 ----------
  * 沒有逐步提示：沒有「太慢／太快」文字、沒有「該換手了」文字、吹氣沒有步驟說明。
  * 完成、星數、心跳之匣記在現有的 S.c（各章進度）：S.c.ch3_done、S.c.ch3_stars、S.c.ch3_box，不新增存檔欄位。
- * 嚴重錯誤（E1～E7）只記錄，不觸發救援失敗；記在 window.__ch3Finale（只有 #debug）。 */
+ * 嚴重錯誤（E1～E7）：章末演練裡選到標了嚴重錯誤的選項（E1、E2、E4、E7）或中途按「停止急救」（E6）→ 演練失敗（老師 2026-10-09 授權我決定：只在章末演練觸發；
+ * 顯示對應的現有知識卡、不扣金幣、不回存檔點、不影響已拿的星級獎勵與已完成狀態，回到演練前重來）。AED 練習的錯誤示範與「中斷超過 10 秒」只記錄、不觸發。
+ * 記在 window.__ch3Finale（只有 #debug）。 */
+const FAIL_CARD={E1:'ch3_k1_3',E2:'ch3_k3_2',E3:'ch3_k2_1',E4:'ch3_k2_3',E5:'ch3_k3_2',E6:'ch3_k2_3',E7:'ch3_k1_2'};  /* 失敗時顯示的現有知識卡（文字不改） */
+const FIN_FAIL={finFail:true};
+async function finaleFail(rec,code,what){
+  rec.failed={code,what};if(DEBUG)window.__ch3Finale={rec,completed:false,failed:true};
+  await say({p:'hero',who:'章末演練',html:`<p class="bad">演練失敗。</p><p>${what}</p><p class="small">先看看下面這張知識卡，再回來重新挑戰。這是演練，不扣金幣，已拿到的星級獎勵也不會收回。</p>`});
+  await showCard(FAIL_CARD[code]);
+  throw FIN_FAIL;}
 async function askScored(key,rec){  /* 同核心的 quiz（答錯顯示說明、可再選），另外記錄答錯幾次與選到的嚴重錯誤 */
   const z=(await quizzes())[key];let wrong=0;
   for(;;){
     const i=await say({p:'hero',hideCap:true,html:`<p class="q">${z.q}</p>`,buttons:z.opts.map(o=>({label:o}))});
     const ok=i===z.ans;
-    if(!ok){wrong++;if(z.severe&&(!z.severeOpts||z.severeOpts.includes(i)))rec.errs.push({key,code:z.severe,opt:i});}
+    if(!ok){wrong++;if(z.severe&&(!z.severeOpts||z.severeOpts.includes(i))){rec.errs.push({key,code:z.severe,opt:i});
+      if(rec.fatal&&FAIL_CARD[z.severe.slice(0,2)])await finaleFail(rec,z.severe.slice(0,2),`你選了「${z.opts[i]}」。`);}}
     await say({p:'hero',html:`<p class="${ok?'good':'bad'}">${ok?'處置正確！':'這個做法不對。'}</p><p>${z.explain}</p>`,buttons:[{label:ok?'繼續':'再選一次',primary:true}]});
     if(ok){FA.luckyBonus();return wrong;}}}
 async function finaleCompress(ses,T,{count,untilSwap}){  /* 一段按壓：count 下就結束；或換手後再壓 afterSwap 下就結束。回傳 'done' 或 'stop'（停止急救） */
@@ -192,10 +202,11 @@ async function finaleCompress(ses,T,{count,untilSwap}){  /* 一段按壓：count
       $q('rs').onclick=()=>{ses.swaps++;ses.fatigueMs=0;ses.sinceSwap=0;$q('rs').disabled=true;};
       const beat=setInterval(()=>{const b=$q('rb');b.style.opacity=1;setTimeout(()=>b.style.opacity=.25,120);},60000/R.GUIDE_BPM);
       const tick=setInterval(()=>{const f=Math.min(1,ses.fatigueMs/(T.fatigueSec*1000));$q('rf').style.width=Math.round(f*100)+'%';$q('rs').disabled=f<1;},100);}});}
-async function finale(){
+async function finale(){try{await finaleRun();}catch(e){if(e!==FIN_FAIL)throw e;}}  /* 演練失敗（FIN_FAIL）：已顯示知識卡，直接結束，回到演練前 */
+async function finaleRun(){
   const T=Object.assign({},R.DEFAULTS,R.FINALE,DEBUG&&window.__ch3Tune||{});
   const ses={taps:[],segs:[],fatigueMs:0,swaps:0,sinceSwap:0,cut(){if(ses.taps.length)ses.segs.push(ses.taps);ses.taps=[];}};
-  const rec={errs:[],judgeWrong:[],d1Wrong:null,breath:null,aedErrors:null,stopped:false};
+  const rec={errs:[],judgeWrong:[],d1Wrong:null,breath:null,aedErrors:null,stopped:false,fatal:true};
   const go1=await say({p:'hero',who:'章末演練',html:'<p>市集的人群圍了過來，有人倒在地上。這是章末演練，不會有逐步提示。</p>',buttons:[{label:'開始',primary:true},{label:'先離開'}]});
   if(go1!==0)return;
   for(const k of ['ch3_q1_1','ch3_q1_2','ch3_q1_3'])rec.judgeWrong.push(await askScored(k,rec));
@@ -210,7 +221,7 @@ async function finale(){
     await askScored('ch3_d2',rec);rec.aedErrors=(await aedGame()).errors;for(const e of ['E2','E4','E5'])rec.aedErrors.filter(x=>x.code===e).forEach(x=>rec.errs.push({key:'aed:'+x.step,code:x.code}));rec.aedErrors=rec.aedErrors.length;
     if(await finaleCompress(ses,T,{untilSwap:true})==='stop')return false;
     return true;};
-  const completed=await run();rec.stopped=!completed;if(rec.stopped)rec.errs.push({key:'stop',code:'E6'});
+  const completed=await run();rec.stopped=!completed;if(rec.stopped){rec.errs.push({key:'stop',code:'E6'});await finaleFail(rec,'E6','你中途停止了急救。');}
   ses.cut();
   if(completed)await say({p:'hero',html:'<p>救護人員到了，接手急救。</p>'});
   const st=R.combine(ses.segs.map(x=>R.stats(x,T)));
