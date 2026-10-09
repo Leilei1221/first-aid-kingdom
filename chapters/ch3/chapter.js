@@ -8,7 +8,7 @@ import * as AED from './aed.js';
 import harborInit from './harbor.js';
 import fishInit from './fish.js';
 import e3Init from './e3.js';
-import {makeVoyage} from '../voyage.js';
+import {makeVoyage,SHIP_RATION,SHIP_WATER} from '../voyage.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {RM,STA_MAX,$,say,lines,quiz,orderQuiz,go,toast,refresh,nextDay,sleep,kitCount,base,expired,stashDepart,stormy,checkpoint,CARDS,A,RATIO}=FA;
@@ -295,6 +295,29 @@ async function allClearPlay(){
         g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.3);g.gain.setValueAtTime(.1,t+Math.max(.3,d-.3));g.gain.linearRampToValueAtTime(0,t+d);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+d);}catch(e){}
       timers.push(setTimeout(()=>fin('done'),T.ms));}});}
   finally{stop();}}
+/* 藍堡的港口小店（老師 2026-10-09 同意加「小型固定商店」）：港口市集的水果攤，一開始就能用（不用完成章末）。
+ * 賣乾糧與開水（價格和船上賣的一樣，才不會買低賣高）、能量點心與豐盛便當（體力，價格同雜貨店的體能補給）、哨子／手電筒／雨衣（價格同雜貨店）。
+ * 全部沿用現有物品，沒有新寫任何醫療文字；沒有好感度折扣。急救用品在救生站的急救用品櫃。 */
+const SHOP3_AT={x:650,y:420};
+async function shop3Act(){
+  let msg='';
+  for(;;){
+    let pick=null;const full=S.kit.length>=S.kitCap;
+    const rows=[
+      {id:'ration',name:'乾糧',price:SHIP_RATION,desc:`免烹煮、耐保存，保存 ${FA.RATION_LIFE} 天。放進急救背包或防災包。`,kit:true},
+      {id:'water',name:'開水',price:SHIP_WATER,desc:'煮沸過的乾淨開水，防災包要放。',kit:true}]
+      .concat(FA.STAMINA_SHOP.food.map(f=>({id:'sta:'+f.id,name:f.name,price:f.cost,desc:`${f.desc}（現在吃下，目前體力 ${S.sta}/${FA.staMax()}）`,eat:f})))
+      .concat(FA.SHOP_EXTRA.map(k=>({id:k,name:FA.ITEMS[k].name,price:FA.ITEMS[k].price,desc:FA.ITEMS[k].desc,kit:true})));
+    const html=(msg?`<p class="good">${msg}</p>`:'')+`<p>這裡是港口的小店，賣一些出門在外用得上的東西。</p><p class="small">金幣 ${S.coins}　急救背包 ${S.kit.length}/${S.kitCap}</p>`+rows.map(r=>{
+      const dis=S.coins<r.price||(r.kit&&full)||(r.eat&&S.sta>=FA.staMax());
+      return `<div class="row"><div class="info"><b>${r.name}</b><span>${r.price} 金幣　${r.desc}</span></div><button type="button" data-a="${r.id}" ${dis?'disabled':''}>${r.kit&&full?'背包已滿':r.eat&&S.sta>=FA.staMax()?'體力已滿':'買 1 個'}</button></div>`;}).join('');
+    const r=await say({p:'hero',who:'港口小店',html,buttons:[{label:'離開',primary:true}],
+      onRender:(root,fin)=>root.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{pick=b.dataset.a;fin('pick');})});
+    if(r!=='pick')return;
+    const it=rows.find(x=>x.id===pick);if(!it||S.coins<it.price)continue;
+    if(it.kit){if(S.kit.length>=S.kitCap)continue;S.coins-=it.price;S.kit.push(it.id==='ration'?'ration@'+(S.day+FA.RATION_LIFE):it.id);msg=`已買下：${it.name} ×1（急救背包 ${S.kit.length}/${S.kitCap}）`;}
+    else{if(S.sta>=FA.staMax())continue;S.coins-=it.price;const b4=S.sta;S.sta=Math.min(FA.staMax(),S.sta+it.eat.restore);msg=`吃了${it.name}，體力 +${S.sta-b4}`;}
+    refresh();}}
 async function tsunami(){
   const i=await say({p:LIFEG,html:'<p>要不要聽聽海嘯警報是什麼聲音？聽過一次，真的響起的時候才認得出來。</p>',buttons:[{label:'聽聽看',primary:true},{label:'先不用'}]});
   if(i!==0)return;
@@ -357,16 +380,17 @@ const FSH=fishInit(FA,{on:DAILY_ON,debug:DEBUG,addRep:HBR.addRep,preview:PREV,lh
 E3=e3Init(FA,{on:DAILY_ON,preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
 HBR.load().catch(()=>{});E3.load().catch(()=>{});
 return {
-  acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed,ch3_rest:restAct,ch3_supply:supplyAct}),
+  acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed,ch3_rest:restAct,ch3_supply:supplyAct,ch3_shop:shop3Act}),
   build(sceneId,H,{sprite,npcEls}){
     HBR.build(sceneId,H,{sprite});FSH.build(sceneId,H,{sprite});E3.build(sceneId,H,{sprite});
+    if(sceneId==='ch3_market'){const m=sprite('shadow','',SHOP3_AT.x,SHOP3_AT.y-40,60,1);m.style.pointerEvents='none';m.innerHTML='<span class="badge lg" style="--c:#2F7D4F;--tc:#fff;--s:60px;opacity:.92">小店</span>';m.style.zIndex=Math.round(SHOP3_AT.y)+5;}  /* 水果攤前的標記 */
     if(sceneId==='ch3_harbor'){  /* 去燈塔的路標：石階下方一個小的、棧橋起點（入口）一個大的（老師 2026-10-09 要求觸發方式更明確） */
       const mark=(x,y,big,t)=>{const m=sprite('shadow','',x,y,big?70:46,1);m.style.pointerEvents='none';m.innerHTML=`<span class="badge ${big?'lg':''}" style="--c:#2B6CB0;--tc:#fff;${big?'--s:64px':'--s:40px'};opacity:.92">${t}</span>`;m.style.zIndex=Math.round(y)+5;};
       mark(820,420,false,'↖');mark(695,236,true,'燈塔');}
     if(sceneId==='ch3_market'){const e=sprite('shadow','',DOWN.x,DOWN.y,Math.round(H*.85),RATIO.ch3_fisher_down);e.querySelector('img').src=A.ch3_fisher_down;}
     if(sceneId==='ch3_rescue'){const e=sprite('shadow','',MANI.x,MANI.y,Math.round(H*.55),RATIO.ch3_cpr_manikin);e.querySelector('img').src=A.ch3_cpr_manikin;
       const m=sprite('shadow','',MASK.x,MASK.y,Math.round(H*.2),RATIO.ch3_face_shield);m.querySelector('img').src=A.ch3_face_shield;}},
-  things(sceneId){return HBR.things(sceneId).concat(FSH.things(sceneId),E3.things(sceneId),sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'},{kind:'ch3_rest',x:REST_AT.x,y:REST_AT.y,label:'休息（睡一晚）'},{kind:'ch3_supply',x:SUPPLY_AT.x,y:SUPPLY_AT.y,label:'急救用品櫃'}]:[]);},
+  things(sceneId){return HBR.things(sceneId).concat(FSH.things(sceneId),E3.things(sceneId),sceneId==='ch3_market'?[{kind:'ch3_down',x:DOWN.x,y:DOWN.y+50,label:'查看倒地的人'},{kind:'ch3_shop',x:SHOP3_AT.x,y:SHOP3_AT.y,label:'港口小店'}]:sceneId==='ch3_rescue'?[{kind:'ch3_mani',x:MANI.x,y:MANI.y+60,label:'練習按壓'},{kind:'ch3_breath',x:MASK.x,y:MASK.y+20,label:'練習人工呼吸'},{kind:'ch3_aed',x:AED_AT.x,y:AED_AT.y,label:'練習 AED'},{kind:'ch3_rest',x:REST_AT.x,y:REST_AT.y,label:'休息（睡一晚）'},{kind:'ch3_supply',x:SUPPLY_AT.x,y:SUPPLY_AT.y,label:'急救用品櫃'}]:[]);},
   goalBase:()=>onShip()?'在船上度過兩個晚上：到艙口進船艙，在床上睡覺。':undefined,  /* 船上的場景算綠葉谷地區，目標要走這個接點 */
   goal(){  /* 畫面上方「目標」：依知識卡判斷做到哪一節，告訴玩家下一步去哪裡 */
     if(onShip())return '在船上度過兩個晚上：到艙口進船艙，在床上睡覺。';
