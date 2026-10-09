@@ -15,6 +15,11 @@
   "ch4_photog": 0.4077,
   "ch4_photog_face": 1.0,
   "ch4_photog_snowblind": 0.4596,
-  "ch4_photog_cold": 0.3596
+  "ch4_photog_cold": 0.3596,
+  "ch4_keeper": 0.4135,
+  "ch4_keeper_face": 1.0,
+  "ch4_i_whistle": 1.2611,
+  "ch4_i_mirror": 1.0281,
+  "ch4_i_torch": 1.3333
  }
 }

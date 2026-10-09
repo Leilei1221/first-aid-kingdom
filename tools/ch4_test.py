@@ -149,6 +149,11 @@ async def main(url):
                     if await hidden(page): return False
                 t = await text(page); z = next((z for q, z in byq.items() if q in t), None)
                 bt = await page.locator('#dBtns button:not([disabled])').all_inner_texts()
+                if '按「吹」三下' in t:
+                    for _ in range(2):
+                        for _ in range(3): await page.locator('#dBtns button', has_text='吹！').first.click(); await page.wait_for_timeout(150)
+                        await page.wait_for_timeout(1300)
+                    await page.wait_for_timeout(900); continue
                 if z and z['opts'][z['ans']] in bt: await click(page, z['opts'][z['ans']], 350); continue
                 if any('再選一次' in b for b in bt): await click(page, '再選一次', 350); continue
                 await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
@@ -220,7 +225,7 @@ async def main(url):
         await click(page, '出發', 1200); await play_until(page, lambda: False, 6)
         check('上山後到了雪線', await ev(page, "S.scene") == 'ch4_snowline', await ev(page, "S.scene"))
         await drain(page, 4)
-        await act_at(page, 1440, 352); check('往山屋的小徑還不通', '還不能' in await text(page), await text(page)); await drain(page, 3)
+        await act_at(page, 1440, 352); check('第 4 節沒做完，往山屋的小徑被擋下', '先把雪線' in await text(page), await text(page)); await drain(page, 3)
         await act_at(page, 1000, 540)
         check('阿岩開頭：說眼睛痛', '眼睛' in await text(page), await text(page))
         await play_until(page, lambda: False, 80)
@@ -233,6 +238,35 @@ async def main(url):
         check('雪線左下的石階是出口，回營地 2', t[0] and not t[1] and t[2] == 'ch4_camp2', str(t))
         await act_at(page, 1235, 322); check('避風小屋有說明', '擋住了風' in await text(page), await text(page)); await drain(page, 3)
         check('沒有新增頂層存檔欄位（第 4 節也只用 S.c）', await ev(page, "!('ch4' in S)"))
+        # --- F5：雪線 → 山屋、第 5 節（迷路、求救訊號、分工）
+        await act_at(page, 1440, 352); check('第 4 節完成後，右上小徑問要不要上山屋', '山屋' in await text(page), await text(page))
+        await click(page, '出發', 1200); await play_until(page, lambda: False, 6)
+        check('上山後到了山屋', await ev(page, "S.scene") == 'ch4_lodge', await ev(page, "S.scene"))
+        await drain(page, 4)
+        await act_at(page, 1440, 430); check('往更高處的小徑還不通', '還不能' in await text(page), await text(page)); await drain(page, 3)
+        await act_at(page, 1430, 385); check('公告板有說明', '公告板' in await text(page), await text(page)); await drain(page, 3)
+        await act_at(page, 880, 540)
+        check('管理員開頭：歡迎來到山屋', '歡迎來到山屋' in await text(page), await text(page))
+        await play_until(page, lambda: False, 90)
+        check('第 5 節：做完（s5）、拿到 ch4_k5_1 與既有的 lost、signal 卡', await has("!!S.c.ch4.s5 && !!S.cards.ch4_k5_1 && !!S.cards.lost && !!S.cards.signal"), await ev(page, "JSON.stringify(S.c.ch4)"))
+        await drain(page, 4)
+        log = await page.evaluate("() => window.__ch4Log || []")
+        check('第 5 節全部答對：沒有記錄嚴重錯誤', log == [], str(log))
+        await act_at(page, 620, 335); check('進山屋：到了室內', await ev(page, "S.scene") == 'ch4_lodge_in', await ev(page, "S.scene"))
+        d0, c0 = await ev(page, "S.day"), await ev(page, "S.coins")
+        await act_at(page, 1330, 520); await click(page, '住一晚', 1500); await drain(page, 3)
+        check('山屋住一晚：天數 +1、金幣 −20', await ev(page, "S.day") == d0 + 1 and await ev(page, "S.coins") == c0 - 20, f'{await ev(page, "S.day")} {await ev(page, "S.coins")}')
+        await act_at(page, 1560, 575); check('山屋裡的防災包可以開啟', not await hidden(page))
+        for _ in range(4):
+            if await hidden(page): break
+            bt = await btns(page)
+            if any('關閉' in t for t in bt): await click(page, '關閉', 500)
+            else: await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(450)
+        t = await page.evaluate("() => { const e = window.__fa.SCENES.ch4_lodge_in.exits[0]; return [e.test(250, 560), e.test(600, 600), e.to]; }")
+        check('山屋室內左邊的門是出口，回山屋室外', t[0] and not t[1] and t[2] == 'ch4_lodge', str(t))
+        t = await page.evaluate("() => { const e = window.__fa.SCENES.ch4_lodge.exits[0]; return [e.test(250, 880), e.test(600, 600), e.to]; }")
+        check('山屋左下的石階是出口，回雪線', t[0] and not t[1] and t[2] == 'ch4_snowline', str(t))
+        check('沒有新增頂層存檔欄位（第 5 節也只用 S.c）', await ev(page, "!('ch4' in S)"))
         # 答錯選項會被記錄
         await goto(page, 'ch4_camp1', 420, 780); await page.evaluate("() => { window.__ch4Log = []; window.__fa.S.c.ch4.s2a = false; }")
         await act_at(page, 900, 450)

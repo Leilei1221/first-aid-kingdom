@@ -1,4 +1,4 @@
-/* 第四章「雪嶺」章節程式（F1：章節骨架；F2：第 1 節出發前準備與裝備檢查、營地 1 與第 2 節失溫；F3：營地 2 與第 3 節高山症；F4：雪線與第 4 節雪盲、凍傷）。
+/* 第四章「雪嶺」章節程式（F1：章節骨架；F2：第 1 節出發前準備與裝備檢查、營地 1 與第 2 節失溫；F3：營地 2 與第 3 節高山症；F4：雪線與第 4 節雪盲、凍傷；F5：山屋與第 5 節迷路、求救訊號、分工）。
  * 草稿：沒登入的人預設也「開放」章節，所以進入條件在這裡自己擋：只有老師預覽（preview.html）或 #debug 的 ?open=ch4 才進得去。
  * 對白全部是擬稿（沒有醫療內容），見 chapters/ch4/REVIEW.md。狀態記在 S.c.ch4，不新增頂層欄位。 */
 export default function(FA){
@@ -9,7 +9,8 @@ const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
 const DRAFT_OK=PREV||(DEBUG&&(QS.get('open')||'').split(',').includes('ch4'));
 const INN_COST=20;  /* 住一晚的價錢（遊戲參數，和鍛造鎮旅館一樣） */
 const HARBOR={scene:'ch3_harbor',at:[820,640]},VILLAGE={scene:'ch4_village',at:[880,620]};
-const CAMP1={scene:'ch4_camp1',at:[420,780]},CAMP2={scene:'ch4_camp2',at:[420,800]},SNOW={scene:'ch4_snowline',at:[320,700]};
+const CAMP1={scene:'ch4_camp1',at:[420,780]},CAMP2={scene:'ch4_camp2',at:[420,800]},SNOW={scene:'ch4_snowline',at:[320,700]},LODGE={scene:'ch4_lodge',at:[330,800]};
+const WHISTLE={gap:1000,groups:2};  /* 求救哨聲小遊戲（遊戲參數）：三短聲為一組，兩組之間停一下（超過 gap 毫秒算一組結束），做對 groups 組就過關 */
 let QZ=null;const quizzes=async()=>QZ||(QZ=(await (await fetch(new URL('dialogues.json',import.meta.url))).json()).quizzes);
 /* 嚴重錯誤（C1～C6）只記錄、不觸發救援失敗（說明文字等老師提供）；只有 #debug 看得到 */
 const LOG=()=>(window.__ch4Log=window.__ch4Log||[]);
@@ -59,7 +60,8 @@ async function trail(){
   await trip(CAMP1,{icon:'🥾',who:'上山',html:'<p>沿著石階一路往上，走了大半天，山腰的營地 1 出現在眼前。</p>'});
   if(first)await say({p:'ch4_guide_up',html:'<p>營地 1 到了！先喘口氣……咦，那邊好像有個年輕人不太對勁。</p>'});}
 async function room(){
-  const i=await say({p:'ch4_innk',who:'山腳旅店',html:`<p>要住一晚嗎？一晚 ${INN_COST} 金幣，體力會完全恢復，進入下一天。</p><p class="small">金幣 ${S.coins}</p>`,buttons:[{label:'住一晚',primary:true,disabled:S.coins<INN_COST},{label:'不用了'}]});
+  const lodge=S.scene==='ch4_lodge_in';
+  const i=await say({p:lodge?'ch4_keeper':'ch4_innk',who:lodge?'山屋':'山腳旅店',html:`<p>要住一晚嗎？一晚 ${INN_COST} 金幣，體力會完全恢復，進入下一天。</p><p class="small">金幣 ${S.coins}</p>`,buttons:[{label:'住一晚',primary:true,disabled:S.coins<INN_COST},{label:'不用了'}]});
   if(i!==0)return;
   S.coins-=INN_COST;$('fade').classList.add('on');await sleep(RM?0:500);
   const html=nextDay();S.sta=FA.staMax();refresh();$('fade').classList.remove('on');checkpoint();
@@ -67,7 +69,7 @@ async function room(){
 async function ask(key,p){  /* 同第三章：答錯顯示說明、可再選；選到標了嚴重錯誤的選項只記錄 */
   const z=(await quizzes())[key];
   for(;;){
-    const pic=z.img&&FA.A[z.img]?`<img src="${FA.A[z.img]}" alt="" style="display:block;margin:4px auto;max-height:150px;max-width:100%">`:'';
+    const pic=(z.img&&FA.A[z.img]?`<img src="${FA.A[z.img]}" alt="" style="display:block;margin:4px auto;max-height:150px;max-width:100%">`:'')+(z.imgs?`<div style="display:flex;gap:10px;justify-content:center;margin:4px 0">${z.imgs.filter(k=>FA.A[k]).map(k=>`<img src="${FA.A[k]}" alt="" style="height:64px">`).join('')}</div>`:'');
     const i=await say({p,hideCap:true,wound:z.wound,html:`${pic}<p class="q">${z.q}</p>`,buttons:z.opts.map(o=>({label:o}))});
     const ok=i===z.ans;
     if(!ok&&z.sev&&z.sev[i])LOG().push({key,code:z.sev[i],opt:i});
@@ -182,7 +184,41 @@ async function up2(){
   const first=!e.c3;e.c3=true;
   await trip(SNOW,{icon:'🥾',who:'上山',html:'<p>沿著雪坡一路往上，樹越來越少，最後只剩下白茫茫的雪和岩石。陽光照在雪上，亮得讓人睜不開眼。</p>'});
   if(first)await say({p:'ch4_guide_up',html:'<p>雪線到了。這裡的雪會把陽光整個反射回來，特別刺眼，也特別冷。……那邊有人蹲在地上，過去看看。</p>'});}
-async function up3(){await say({p:'hero',html:'<p>往上的小徑拉著繩子，遠處的山屋冒著煙，現在還不能上去。</p>'});}
+async function up3(){
+  const e=st();
+  if(!e.s4){await say({p:'hero',html:'<p>往上的小徑拉著繩子。帕桑說：「先把雪線的事做完，我們再上去。」</p>'});return;}
+  const i=await say({p:'ch4_guide_up',who:'上山',html:'<p>要上山屋嗎？再走一小段就到了。</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
+  if(i!==0)return;
+  await stashDepart();
+  const first=!e.c4;e.c4=true;
+  await trip(LODGE,{icon:'🥾',who:'上山',html:'<p>沿著繩索標示的路線，再爬一段緩坡，煙囪冒著煙的山屋終於出現在眼前。</p>'});
+  if(first)await lines('ch4_guide_up',['山屋到了！這裡是雪嶺最高的一個落腳處，也是我們整趟路的終點。','管理員達瓦在這裡守了很多年，什麼天氣、什麼狀況都見過。']);}
+/* 求救哨聲小遊戲：按「吹」三下為一組，停一下再來一組；做對 WHISTLE.groups 組過關 */
+async function whistleGame(){
+  await say({p:'hero',who:'吹哨求救',html:`<img src="${FA.A.ch4_i_whistle}" alt="" style="display:block;margin:4px auto;height:70px"><p>三短聲為一組：按「吹」三下，停一下，再吹三下。</p><div class="meter" style="height:18px"><i id="whBar" style="width:0%"></i></div><p id="whTxt" class="small">已完成 0 組</p>`,
+    buttons:[{label:'吹！',primary:true},{label:'放棄'}],
+    onRender:(root,fin)=>{let n=0,good=0,timer=null;const bar=root.querySelector('#whBar'),txt=root.querySelector('#whTxt');
+      const btn=root.closest('.box').querySelectorAll('#dBtns button');
+      const close=()=>{if(n===3){good++;txt.textContent=`很好！三短聲。已完成 ${good} 組`;}else{good=0;txt.textContent=`這一組吹了 ${n} 下，三短聲要剛好三下。重新來。已完成 0 組`;}
+        n=0;bar.style.width=(good/WHISTLE.groups*100)+'%';if(good>=WHISTLE.groups)setTimeout(()=>fin('ok'),400);};
+      btn[0].onclick=()=>{clearTimeout(timer);n++;txt.textContent=`吹了 ${n} 下……`;timer=setTimeout(close,WHISTLE.gap);};
+      btn[1].onclick=()=>{clearTimeout(timer);fin('quit');};}});}
+async function lesson5(){
+  const e=st();
+  await lines('ch4_keeper',['歡迎來到山屋。帕桑都跟我說了，你一路上幫了不少人。','這裡是山上最後一道防線，所以我要再問你幾件事。']);
+  await ask('ch4_q5_1','ch4_keeper');
+  await ask('ch4_q5_2','ch4_keeper');
+  await say({p:'ch4_keeper',html:'<p>知道是知道，真的吹出來是另一回事。來，吹一次給我聽聽。</p>'});
+  await whistleGame();
+  await say({p:'ch4_keeper',html:'<p>很好，記住那個節奏。</p>'});
+  await ask('ch4_q5_3','ch4_keeper');
+  await ask('ch4_q5_4','ch4_keeper');
+  await giveCard('ch4_k5_1');S.cards.lost=true;S.cards.signal=true;
+  e.s5=true;
+  await say({p:'ch4_keeper',html:'<p>你已經學會山上最重要的幾件事了。山屋隨時歡迎你，累了就在樓上休息。</p>'});
+  await say({icon:'🏔',who:'第 5 節完成！',html:'<p>山屋的課完成了。接下來是整趟旅程的章末演練，之後才會開放。</p>'});}
+async function board(){await say({p:'hero',html:'<p>木製公告板上釘著幾張紙，畫著太陽、雲和雪花的小圖案。（每天的天氣與求助，之後才會貼上來。）</p>'});}
+async function up4(){await say({p:'hero',html:'<p>往更高處的小徑拉著繩子，現在還不能上去。</p>'});}
 async function shelter(){await say({p:'hero',html:'<p>石頭砌成的小屋擋住了風，坐在裡面，身體慢慢暖了起來。</p>'});}
 async function stall(){
   const r=await FA.chCall('ch3','gearShop');
@@ -201,21 +237,24 @@ async function innkTalk(){
   if(!e.innk){e.innk=true;await lines('ch4_innk',['歡迎！你是帕桑帶來的客人吧？','旅店有熱茶，也有乾淨的床。累了就在床上好好睡一覺。']);return;}
   await lines('ch4_innk',['山上的天氣說變就變，趕路的人最需要一個暖暖的地方休息。','想睡覺就走到床邊，住一晚 '+INN_COST+' 金幣。']);}
 return {
-  acts:{ch4_boat:boat,ch4_trail:trail,ch4_room:room,ch4_stall:stall,ch4_tent:tent,ch4_up:up,ch4_up2:up2,ch4_up3:up3,ch4_shelter:shelter},
+  acts:{ch4_boat:boat,ch4_trail:trail,ch4_room:room,ch4_stall:stall,ch4_tent:tent,ch4_up:up,ch4_up2:up2,ch4_up3:up3,ch4_up4:up4,ch4_board:board,ch4_shelter:shelter},
   talk(id){if(id==='ch4_hiker'){const e=st();if(e.s2a)return lines('ch4_hiker',['多虧你們，我暖和多了。']);return lesson2();}
+    if(id==='ch4_keeper'){if(st().s5)return lines('ch4_keeper',['外面風大，進來暖暖身子吧。']);return lesson5();}
     if(id==='ch4_photog'){if(st().s4)return lines('ch4_photog',['手指和眼睛都好多了。戴好護目鏡，我才敢再拍。']);return lesson4();}
     if(id==='ch4_elder'){if(st().s3a)return lines('ch4_elder',['頭痛好多了。山不會跑，慢慢來才是真本事。']);return lesson3();}
-    if(id==='ch4_guide_up'){const e=st();if(S.scene.startsWith('ch4_snow'))return lines('ch4_guide_up',[e.s4?'雪線的事都處理好了。再往上是山屋，路還在整理。':'先去看看那個蹲在地上的人吧。']);
+    if(id==='ch4_guide_up'){const e=st();if(S.scene.startsWith('ch4_lodge'))return lines('ch4_guide_up',[e.s5?'整趟路的課你都學完了。章末的演練，等我準備好再叫你。':'去跟管理員達瓦聊聊吧。']);
+      if(S.scene.startsWith('ch4_snow'))return lines('ch4_guide_up',[e.s4?'雪線的事都處理好了。再往上是山屋，路還在整理。':'先去看看那個蹲在地上的人吧。']);
       if(S.scene.startsWith('ch4_camp2'))return lines('ch4_guide_up',[e.s3a?'今晚就在營地 2 過夜，讓身體適應高度。':'先去看看老周吧，他好像很不舒服。']);
       return lines('ch4_guide_up',[e.s2?'營地 1 右上的小徑可以去營地 2，記得慢慢走。':e.s2a?'今晚就在營地 1 過夜，明天再看看路況。':'先去看看那個年輕人吧，他好像很冷。']);}
     if(id==='ch4_guide')return guideTalk();if(id==='ch4_innk')return innkTalk();},
   goal(){const e=st();
-    if(S.scene.startsWith('ch4_snow')){if(!e.s4)return '雪線有人蹲在地上，去看看（第 4 節）。';return '第 4 節完成！往山屋的路之後才開放。';}
+    if(S.scene.startsWith('ch4_lodge')){if(!e.s5)return '和山屋管理員達瓦聊聊（第 5 節）。';return '第 5 節完成！章末演練之後才開放。';}
+    if(S.scene.startsWith('ch4_snow')){if(!e.s4)return '雪線有人蹲在地上，去看看（第 4 節）。';return e.s5?'第 5 節完成！章末演練之後才開放。':'第 4 節完成！右上的小徑可以上山屋（第 5 節）。';}
     if(S.scene.startsWith('ch4_camp2')){if(!e.s3a)return '營地 2 的資深登山客老周頭很痛，去看看他（第 3 節）。';if(!e.s3)return '到帳篷過夜、適應高度（第 3 節）。';return e.s4?'第 4 節完成！往山屋的路之後才開放。':'第 3 節完成！右上的小徑可以上雪線（第 4 節）。';}
     if(S.scene.startsWith('ch4_camp1')){if(!e.s2a)return '營地 1 有個年輕登山客發抖，去看看他（第 2 節）。';if(!e.s2)return '到帳篷過夜（第 2 節）。';if(!e.s3)return '營地 1 右上的小徑可以上營地 2（第 3 節）。';return e.s4?'第 4 節完成！往山屋的路之後才開放。':'第 3 節完成！營地 2 右上的小徑可以上雪線（第 4 節）。';}
     if(!e.s1)return '和帕桑聊聊，做上山前的準備（第 1 節）。';
     if(!e.c1||!e.s2)return '從山腳村左上的石階上山，到營地 1（第 2 節）。';
-    return e.s4?'第 4 節完成！往山屋的路之後才開放。':e.s3?'從營地 2 右上的小徑上雪線（第 4 節）。':'從營地 1 右上的小徑上營地 2（第 3 節）。';},
-  news(id){const e=st();return (id==='ch4_guide'&&!e.s1)||(id==='ch4_hiker'&&!e.s2a)||(id==='ch4_elder'&&!e.s3a)||(id==='ch4_photog'&&!e.s4);},
+    return e.s5?'第 5 節完成！章末演練之後才開放。':e.s4?'第 4 節完成！從雪線右上的小徑上山屋（第 5 節）。':e.s3?'從營地 2 右上的小徑上雪線（第 4 節）。':'從營地 1 右上的小徑上營地 2（第 3 節）。';},
+  news(id){const e=st();return (id==='ch4_guide'&&!e.s1)||(id==='ch4_hiker'&&!e.s2a)||(id==='ch4_elder'&&!e.s3a)||(id==='ch4_photog'&&!e.s4)||(id==='ch4_keeper'&&!e.s5);},
   ready,depart};
 }

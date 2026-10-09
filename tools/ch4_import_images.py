@@ -22,7 +22,11 @@ MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  ('喜馬拉雅雪線雪原.png', 'ch4_snowline', 'scene', None),
  ('ch4_photog.png', 'ch4_photog', 'body', 520), ('ch4_photog_face.png', 'ch4_photog_face', 'face', 160),
  ('ch4_photog_snowblind.png', 'ch4_photog_snowblind', 'body', 520), ('ch4_photog_cold.png', 'ch4_photog_cold', 'body', 520),
- ('w_frostbite.png', 'w_frostbite', 'wound', 420), ('w_frostface.png', 'w_frostface', 'wound', 420), ('w_snowblind.png', 'w_snowblind', 'wound', 420)]
+ ('w_frostbite.png', 'w_frostbite', 'wound', 420), ('w_frostface.png', 'w_frostface', 'wound', 420), ('w_snowblind.png', 'w_snowblind', 'wound', 420),
+ # F5：山屋室外（白天）、山屋室內、管理員、暴風雪情境圖、求救訊號圖示（夜晚版『喜馬拉雅高山山莊_夜景.png』還沒用到，之後的階段才接）
+ ('喜馬拉雅高山山莊.png', 'ch4_lodge', 'scene', None), ('喜馬拉雅山屋室內.png', 'ch4_lodge_in', 'scene', None), ('喜馬拉雅白茫風雪.png', 'ch4_whiteout', 'scene', None),
+ ('ch4_keeper.png', 'ch4_keeper', 'body', 520), ('ch4_keeper_face.png', 'ch4_keeper_face', 'face', 160),
+ ('ch4_i_whistle.png', 'ch4_i_whistle', 'obj', 256), ('ch4_i_mirro.png', 'ch4_i_mirror', 'obj', 256), ('ch4_i_torch.png', 'ch4_i_torch', 'obj', 256)]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]

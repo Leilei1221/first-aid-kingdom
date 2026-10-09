@@ -301,5 +301,101 @@
    }
   ],
   "outdoor": true
+ },
+ "ch4_lodge": {
+  "name": "山屋",
+  "spawn": [
+   330,
+   800
+  ],
+  "bg": "ch4_lodge",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_keeper",
+    "x": 880,
+    "y": 500
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 1020,
+    "y": 580,
+    "flip": true
+   }
+  ],
+  "things": [
+   {
+    "kind": "door",
+    "x": 620,
+    "y": 335,
+    "label": "進入山屋",
+    "to": "ch4_lodge_in",
+    "at": [
+     420,
+     620
+    ]
+   },
+   {
+    "kind": "ch4_board",
+    "x": 1430,
+    "y": 385,
+    "label": "公告板"
+   },
+   {
+    "kind": "ch4_up4",
+    "x": 1440,
+    "y": 430,
+    "label": "往更高處的小徑"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch4_snowline",
+    "at": [
+     1400,
+     410
+    ],
+    "block": null,
+    "test": "(x,y)=>x<340&&y>840",
+    "need": null
+   }
+  ],
+  "outdoor": true
+ },
+ "ch4_lodge_in": {
+  "name": "山屋室內",
+  "spawn": [
+   420,
+   620
+  ],
+  "bg": "ch4_lodge_in",
+  "heroH": 190,
+  "npcs": [],
+  "things": [
+   {
+    "kind": "ch4_room",
+    "x": 1330,
+    "y": 520,
+    "label": "住一晚（20 金幣）"
+   },
+   {
+    "kind": "stash",
+    "x": 1560,
+    "y": 575,
+    "label": "防災包"
+   }
+  ],
+  "exits": [
+   {
+    "to": "ch4_lodge",
+    "at": [
+     620,
+     372
+    ],
+    "block": null,
+    "test": "(x,y)=>x<320&&y<640",
+    "need": null
+   }
+  ]
  }
 }

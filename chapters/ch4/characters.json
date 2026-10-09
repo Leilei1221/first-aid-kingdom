@@ -35,6 +35,12 @@
    "img": "ch4_photog",
    "face": "ch4_photog_face",
    "hk": 1
+  },
+  "ch4_keeper": {
+   "name": "山屋管理員 達瓦",
+   "img": "ch4_keeper",
+   "face": "ch4_keeper_face",
+   "hk": 1
   }
  }
 }
