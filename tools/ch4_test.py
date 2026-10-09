@@ -267,6 +267,37 @@ async def main(url):
         t = await page.evaluate("() => { const e = window.__fa.SCENES.ch4_lodge.exits[0]; return [e.test(250, 880), e.test(600, 600), e.to]; }")
         check('山屋左下的石階是出口，回雪線', t[0] and not t[1] and t[2] == 'ch4_snowline', str(t))
         check('沒有新增頂層存檔欄位（第 5 節也只用 S.c）', await ev(page, "!('ch4' in S)"))
+        # --- F6：章末演練
+        await goto(page, 'ch4_lodge', 820, 700); await page.evaluate("() => { window.__ch4Log = []; }")
+        c0 = await ev(page, "S.coins")
+        await act_at(page, 1020, 580); check('山屋的帕桑：第 5 節完成後有「章末演練」', any('章末演練' in t for t in await btns(page)), str(await btns(page)))
+        await click(page, '章末演練', 1500)
+        check('章末演練：到了暴風雪山屋', await ev(page, "S.scene") == 'ch4_lodge_storm', await ev(page, "S.scene"))
+        await play_until(page, lambda: False, 120)
+        await page.wait_for_timeout(2500)
+        fin = await page.evaluate("() => window.__ch4Finale || null")
+        check('章末演練：全部第一次答對 → 5 顆星', fin and fin['total'] == 5, str(fin))
+        check('章末演練：完成、最高星數 5、取得紀念物（S.c.ch4.done／stars／box）', await has("!!S.c.ch4.done && S.c.ch4.stars === 5 && !!S.c.ch4.box"), await ev(page, "JSON.stringify(S.c.ch4)"))
+        check('星級獎勵：3、4、5 顆星一次補齊，共 +700 金幣', await ev(page, "S.coins") - c0 == 700 and await has("S.c.starPaid.ch4 === 5"), f'{await ev(page, "S.coins") - c0} {await ev(page, "JSON.stringify(S.c.starPaid)")}')
+        check('演練的傷口圖：手指凍傷已看過', await has("!!S.wounds.frostbite"))
+        await drain(page, 6)
+        check('章末演練結束後回到山屋室外', await ev(page, "S.scene") == 'ch4_lodge', await ev(page, "S.scene"))
+        log = await page.evaluate("() => window.__ch4Log || []")
+        check('章末演練全部答對：沒有記錄嚴重錯誤', log == [], str(log))
+        # 重打：答錯第一題會少一顆星、不重複領已領的星級、不再給紀念物
+        c1 = await ev(page, "S.coins"); await page.evaluate("() => { window.__ch4Finale = null; }")
+        await act_at(page, 1020, 580); await click(page, '章末演練', 1500)
+        z = byq[[z for z in QZ.values() if z['q'].startswith('你在山屋門口發現小宇')][0]['q']]
+        for _ in range(12):
+            if '山屋門口發現小宇' in await text(page): break
+            await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+        await click(page, z['opts'][0], 400)
+        await play_until(page, lambda: False, 120); await page.wait_for_timeout(2500)
+        fin = await page.evaluate("() => window.__ch4Finale || null")
+        check('重打：第一題答錯 → 4 顆星，最高星數仍是 5，沒有重複領獎', fin and fin['total'] == 4 and await has("S.c.ch4.stars === 5") and await ev(page, "S.coins") == c1, f'{fin} {await ev(page, "S.coins") - c1}')
+        check('重打：嚴重錯誤記錄 C6', (await page.evaluate("() => window.__ch4Log || []"))[:1] == [{'key': 'ch4_f1', 'code': 'C6', 'opt': 0}], str(await page.evaluate("() => window.__ch4Log")))
+        await drain(page, 6); await page.evaluate("() => { window.__ch4Log = []; }")
+        check('沒有新增頂層存檔欄位（章末也只用 S.c）', await ev(page, "!('ch4' in S)"))
         # 答錯選項會被記錄
         await goto(page, 'ch4_camp1', 420, 780); await page.evaluate("() => { window.__ch4Log = []; window.__fa.S.c.ch4.s2a = false; }")
         await act_at(page, 900, 450)

@@ -26,7 +26,10 @@ MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  # F5：山屋室外（白天）、山屋室內、管理員、暴風雪情境圖、求救訊號圖示（夜晚版『喜馬拉雅高山山莊_夜景.png』還沒用到，之後的階段才接）
  ('喜馬拉雅高山山莊.png', 'ch4_lodge', 'scene', None), ('喜馬拉雅山屋室內.png', 'ch4_lodge_in', 'scene', None), ('喜馬拉雅白茫風雪.png', 'ch4_whiteout', 'scene', None),
  ('ch4_keeper.png', 'ch4_keeper', 'body', 520), ('ch4_keeper_face.png', 'ch4_keeper_face', 'face', 160),
- ('ch4_i_whistle.png', 'ch4_i_whistle', 'obj', 256), ('ch4_i_mirro.png', 'ch4_i_mirror', 'obj', 256), ('ch4_i_torch.png', 'ch4_i_torch', 'obj', 256)]
+ ('ch4_i_whistle.png', 'ch4_i_whistle', 'obj', 256), ('ch4_i_mirro.png', 'ch4_i_mirror', 'obj', 256), ('ch4_i_torch.png', 'ch4_i_torch', 'obj', 256),
+ # F6：章末演練（暴風雪山屋、嚴重失溫的小宇、救援隊、紀念物）；『見習嚮導徽章』沒有生，之後再接
+ ('喜馬拉雅高山山莊_暴風雪.png', 'ch4_lodge_storm', 'scene', None), ('喜馬拉雅風雪救援隊.png', 'ch4_rescue', 'scene', None),
+ ('ch4_hiker_severely_cold.png', 'ch4_hiker_sev', 'body', 520), ('ch4_i_firstaid_case.png', 'ch4_i_case', 'obj', 320)]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]

@@ -41,6 +41,12 @@
    "img": "ch4_keeper",
    "face": "ch4_keeper_face",
    "hk": 1
+  },
+  "ch4_hiker_sev": {
+   "name": "小宇（嚴重受寒）",
+   "img": "ch4_hiker_sev",
+   "face": "ch4_hiker_face",
+   "hk": 0.6
   }
  }
 }

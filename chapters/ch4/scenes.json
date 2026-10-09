@@ -397,5 +397,35 @@
     "need": null
    }
   ]
+ },
+ "ch4_lodge_storm": {
+  "name": "山屋（暴風雪）",
+  "spawn": [
+   330,
+   800
+  ],
+  "bg": "ch4_lodge_storm",
+  "heroH": 130,
+  "npcs": [
+   {
+    "id": "ch4_hiker_sev",
+    "x": 760,
+    "y": 420
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 880,
+    "y": 500,
+    "flip": true
+   },
+   {
+    "id": "ch4_keeper",
+    "x": 700,
+    "y": 480
+   }
+  ],
+  "things": [],
+  "exits": [],
+  "outdoor": true
  }
 }
