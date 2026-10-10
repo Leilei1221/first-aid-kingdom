@@ -6,7 +6,7 @@ export const HB={reward:30,repPerEvent:1,
   titles:[[0,'見習志工'],[3,'港口志工'],[8,'資深志工'],[15,'港口隊長']],  /* [需要的信譽, 稱號] */
   boardAt:{x:1050,y:640},victimAt:{x:880,y:740},
   /* 燈塔夜間求助（老師 2026-10-09 要求）：港口信譽 lhRep 以上開放；每天一件，用同一批求助（題目與知識卡沒有改），輪的順序和港口錯開 */
-  lhRep:3,lhLogAt:{x:1250,y:520},lhVictimAt:{x:900,y:660}};
+  lhRep:3,lhLogAt:{x:1120,y:560},lhVictimAt:{x:900,y:660}};
 const ORDER=['ch3_h_octopus','ch3_h_jelly','ch3_h_cut','ch3_h_vibrio'];
 export const title=rep=>HB.titles.filter(t=>rep>=t[0]).pop()[1];
 export const lhEvIdOf=day=>ORDER[((day*3+2)%ORDER.length+ORDER.length)%ORDER.length];  /* 和港口當天的那件一定不同 */

@@ -65,6 +65,12 @@
    "img": "ch3_m_np",
    "face": "ch3_m_np_face",
    "hk": 1
+  },
+  "ch3_keeper": {
+   "name": "燈塔管理員",
+   "img": "ch3_keeper",
+   "face": "ch3_keeper_face",
+   "hk": 1
   }
  }
 }

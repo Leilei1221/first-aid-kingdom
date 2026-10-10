@@ -72,7 +72,9 @@
   "ch3_ship_day",
   "ch3_ship_dusk",
   "ch3_ship_jp",
-  "ch3_ship_np"
+  "ch3_ship_np",
+  "ch3_keeper",
+  "ch3_keeper_face"
  ],
  "region": {
   "name": "港口藍堡",

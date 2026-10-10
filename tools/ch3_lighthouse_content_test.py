@@ -45,8 +45,8 @@ async def main(url):
             return out
         # --- 港口信譽不夠：只有燈塔日誌
         await page.evaluate("() => { window.__fa.S.c.ch3_hb = {rep: 0, done: 0, n: 0}; }"); await enter()
-        check('信譽 0：燈塔只有「燈塔日誌」，沒有求助與釣魚', await act_at(1250, 545) == '燈塔日誌' and await act_at(900, 700) != '求助' and '釣魚' not in await act_at(820, 830))
-        await act_at(1250, 545); await click_act(); t = '\n'.join(await finish())
+        check('信譽 0：燈塔只有「燈塔日誌」，沒有求助與釣魚', await act_at(1120, 585) == '燈塔日誌' and await act_at(900, 700) != '求助' and '釣魚' not in await act_at(820, 830))
+        await act_at(1120, 585); await click_act(); t = '\n'.join(await finish())
         check('燈塔日誌說明條件（信譽 3、港口志工）與目前信譽', '3' in t and '港口志工' in t and '燈塔夜裡有人需要幫忙' in t and '你現在的港口信譽：0' in t, t)
         # --- 信譽夠：夜間求助與釣魚點
         await page.evaluate("() => { window.__fa.S.c.ch3_hb = {rep: 3, done: 0, n: 0}; window.__fa.S.day = 6; }"); await enter()
@@ -62,7 +62,7 @@ async def main(url):
         check(f'獲得知識卡 {e["card"]}、記在 S.c.ch3_hb.lh（沒有新增頂層欄位）', await st(f"!!S.cards.{e['card']}") and await st('S.c.ch3_hb.lh.done') == 6 and await st('S.c.ch3_hb.lh.n') == 1 and await page.evaluate("() => !('lh' in window.__fa.S)"))
         check('做完後今晚沒有第二次求助', not (await act_at(900, 705)).startswith('求助'))
         await click_act() if False else None
-        await act_at(1250, 545); await click_act(); t = '\n'.join(await finish())
+        await act_at(1120, 585); await click_act(); t = '\n'.join(await finish())
         check('燈塔日誌：今晚的求助都處理好了', '今晚的求助都處理好了' in t, t)
         await page.evaluate("() => { window.__fa.S.day = 7; window.__fa.refresh(); }"); await enter()
         check('隔天又有新的求助，而且是不同的事件', (await act_at(900, 705)).startswith('求助') and EV[lh_id(7)]['name'] in await page.inner_text('#act') and lh_id(7) != lh_id(6))

@@ -264,6 +264,14 @@ async function alarmPlay(){
       at(T.ms,()=>{al.innerHTML='語音：「海嘯警報，請所有民眾迅速往高處疏散」';});
       at(T.ms+2200,()=>fin('done'));}});}
   finally{stop();}}
+/* 燈塔管理員（老師 2026-10-10 生圖；對白是我擬的閒聊，沒有醫療內容、沒有數字，老師可改字）：燈塔場景，依港口信譽與今晚求助有沒有處理三種話，說完抽一次聊天運氣 */
+async function keeperTalk(){
+  const KP='ch3_keeper';S.c=S.c||{};
+  if(!S.c.ch3_keeper_met){S.c.ch3_keeper_met=true;await lines(KP,['爬上來累了吧？這裡風景不錯，慢慢看。']);}
+  if(!HBR.lhOpen())await lines(KP,['這座燈塔從我爺爺那代就點著，海上的船看到它，就知道港口在哪裡。','夜裡風大，浪也大，所以我常常守在這裡。']);
+  else if(HBR.lhActive())await lines(KP,['你就是常常幫港口忙的那個孩子吧？港口的人都說你可靠。','今晚要是有人需要幫忙，長椅那邊會有人等你。']);
+  else await lines(KP,['辛苦了。燈亮著，大家就安心。','早點休息，明天港口還有事情等你。']);
+  await FA.chatLuck(KP);}
 /* 藍堡的休息處（老師 2026-10-09 同意加；藍堡原本沒有床，只有船艙）：救生站的休息區，免費睡一晚，沿用爺爺家床的規則（進入下一天、體力完全恢復、建立存檔點） */
 const REST_AT={x:800,y:450};
 async function restAct(){
@@ -408,6 +416,7 @@ return {
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
     if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();
     if(PASSERS.includes(id))return passerTalk(id);
+    if(id==='ch3_keeper')return keeperTalk();
     if(FISH_LINES[id])return fishTalk(id);
     if(id.startsWith('ch3_'))return say({p:id,html:'<p>……</p><p class="small">（這位角色的對話之後才會加入。）</p>'});}  /* 草稿沒有 NPC 對白：先給個提示，不要讓按鈕沒反應 */
 };
