@@ -519,8 +519,8 @@ function interactables(){const s=sc(),L=[];
   (S.forage[S.scene]||[]).forEach((f,i)=>L.push({kind:'pick',x:f.x,y:f.y,label:'撿起來',i}));
   return L;}
 let near=null;
-function updateNear(){const H=sc().heroH;let best=null,bd=H*.95;
-  for(const it of interactables()){const d=Math.hypot(it.x-S.pos.x,(it.y-S.pos.y)*1.3);if(d<bd){bd=d;best=it;}}
+function updateNear(){const H=sc().heroH;let best=null,bd=Infinity,bp=-1;
+  for(const it of interactables()){const d=Math.hypot(it.x-S.pos.x,(it.y-S.pos.y)*1.3),pr=it.pri||0;if(d<(it.r||H*.95)&&(pr>bp||(pr===bp&&d<bd))){bd=d;bp=pr;best=it;}}  /* it.r：這個互動點自己的範圍；it.pri：優先順序，範圍內優先順序高的先選（都沒指定＝和以前一樣，只選最近的） */
   near=best;const a=$('act');
   if(best){a.classList.add('ready');a.textContent=best.label;ringEl.classList.add('on');ringEl.style.setProperty('--x',best.x);ringEl.style.setProperty('--y',best.y);ringEl.style.setProperty('--r',Math.round(H*.45));ringEl.style.zIndex=Math.round(best.y)-1;}
   else{a.classList.remove('ready');a.textContent='動作';ringEl.classList.remove('on');}}
@@ -1367,7 +1367,7 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,WOUNDS,PACKS:C.balance.PACKS||[],A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  SHOP_MED,badge,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,chCall:(id,name,...a)=>{const h=chOpen(id)?CHH[id]:null;return h&&h[name]?h[name](...a):undefined;},stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
+  SHOP_MED,SHOP_EXTRA,STAMINA_SHOP,RATION_LIFE,badge,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart,chCall:(id,name,...a)=>{const h=chOpen(id)?CHH[id]:null;return h&&h[name]?h[name](...a):undefined;},stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save,setHeroLook:(f,onBaseChange)=>{heroLook=f;heroLookChanged=onBaseChange||null;},refreshHero:()=>{if(heroImg)heroImg.src=outfitSrc();},outfitBase};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
