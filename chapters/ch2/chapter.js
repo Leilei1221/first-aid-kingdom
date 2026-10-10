@@ -3,13 +3,14 @@
  * 章節開放時才載入；核心程式透過回傳的掛接點呼叫它。 */
 import {makeVoyage} from '../voyage.js';
 import {openStore} from '../store.js';
+import dailyInit from './daily.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
 const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,orderQuiz,checkpoint,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
 const CHECKS=[{"id": "c_town", "scene": "ch2_town", "x": 900, "y": 430, "type": "ext", "ok": true, "where": "廣場消防隊門口（滅火器）"}, {"id": "c_smithy", "scene": "ch2_smithy", "x": 1200, "y": 470, "type": "ext", "ok": false, "where": "鐵匠鋪（滅火器）"}, {"id": "c_inn", "scene": "ch2_inn", "x": 420, "y": 450, "type": "alarm", "ok": true, "where": "旅館門口（警報器）"}, {"id": "c_inn2e", "scene": "ch2_inn2", "x": 347, "y": 627, "ix": 450, "iy": 720, "painted": true, "type": "ext", "ok": true, "where": "旅館二樓走廊（滅火器）"}, {"id": "c_inn2a", "scene": "ch2_inn2", "x": 331, "y": 407, "ix": 520, "iy": 580, "painted": true, "type": "alarm", "ok": false, "where": "旅館二樓走廊（警報器）"}];
 const FIRES=[[1250, 430], [1360, 520], [1160, 400]];
 function goal2(){const c=S.c;
-  if(c.done)return '第二章完成！';
+  if(c.done)return D2.goal()||'第二章完成！';
   if(c.fire){const left=['r_119','r_ext','r_clothes','r_smith','r_guest'].filter(k=>!c[k]).length;return `鍛造鎮大火！處理現場狀況（剩 ${left} 項）。旅館二樓可能還有人受困。`;}
   if(!c.smith)return '到鐵匠鋪找爺爺的老朋友：鐵匠老鐵。';
   if(!c.appr)return '看看學徒阿焰的燙傷。';
@@ -185,8 +186,10 @@ const {captTalk,sleepAtSea:voyageSleep}=makeVoyage(FA,S,{capt:'ch2_capt',onShip:
     await quiz('ch2_capt','上船前要穿救生衣，哪一種穿法正確？',['鬆鬆地披著就好，比較舒服','選合身的尺寸，所有扣帶扣好拉緊，往上拉也不會從頭部脫出','先放在旁邊，落水時再穿'],1,CARDS.ch2_lifejacket.text);S.cards.ch2_lifejacket=true;}},
   onArrive:async to=>{if(to==='ch2_vport'&&!S.c.intro){S.c.intro=true;await lines('ch2_smith',['喔！你就是老團長的孫子？我是鐵匠老鐵，特地來碼頭接你！','歡迎來到熔岩鍛造鎮！沿著碼頭往右上走就是鎮上，先來我的鐵匠鋪坐坐吧。']);}}});  /* 航行共用程式在 chapters/voyage.js */
 const STORE_AT={x:330,y:640};
+const D2=dailyInit(FA,{on:()=>!!(S.c&&S.c.done)});
 return {
   build(sceneId,H,{sprite,npcEls}){
+    D2.build(sceneId,H,{sprite});
     if(sceneId==='ch2_town'&&S.c.done){const m=sprite('shadow','',STORE_AT.x,STORE_AT.y-40,60,1);m.style.pointerEvents='none';m.innerHTML='<span class="badge lg" style="--c:#2F7D4F;--tc:#fff;--s:60px;opacity:.92">小店</span>';m.style.zIndex=Math.round(STORE_AT.y)+5;}
     CHECKS.filter(c=>c.scene===sceneId&&!c.painted).forEach(c=>{const k=c.type==='ext'?'ch2_extinguisher':'ch2_alarm';const e=sprite('',A[k],c.x,c.y,c.type==='ext'?Math.round(H*.42):Math.round(H*.22),RATIO[k]);e.querySelector('img').src=A[k];});
     if(sceneId==='ch2_townfire'){FIRES.forEach((f,i)=>{if(i===0&&S.c.extOut)return;const e=sprite('',A.fire,f[0],f[1],Math.round(H*(i===0?.8:1.4)),RATIO.fire);e.querySelector('img').src=A.fire;const sm=sprite('',A.ch2_smoke,f[0]+30,f[1]-H*.8,Math.round(H*1.6),RATIO.ch2_smoke);sm.querySelector('img').src=A.ch2_smoke;sm.style.opacity=.85;});}
@@ -198,8 +201,8 @@ return {
     CHECKS.filter(c=>c.scene===sceneId).forEach(c=>{if(S.c.checking&&!(S.c.chk||{})[c.id])L.push({kind:'ch2_check',x:c.ix||c.x,y:c.iy||c.y+40,label:c.type==='ext'?'檢查滅火器':'測試警報器',c});});
     if(sceneId==='ch2_inn2'&&S.c.fire&&!S.c.done&&!S.c.r_guest)L.push({kind:'npc',x:1200,y:260,label:'救援',id:'ch2_guest'});
     if(sceneId==='ch2_town'&&S.c.done)L.push({kind:'ch2_store',x:STORE_AT.x,y:STORE_AT.y,label:'鍛造鎮小店'});  /* 第二章完成後才有（老師 2026-10-10 同意加玩法，不影響還在進行第二章的人） */
-    return L;},
-  acts:{ch2_store:openStore(FA,S,{who:'鍛造鎮小店',intro:'這是鍛造鎮的小店，工匠和旅人出門在外用得上的東西都有。'}),ch2_check:it=>check(it.c),ch2_warehouse:warehouse,ch2_fountain:fountain,ch2_forge:forge,ch2_grinder:grinder,ch2_bigfire:bigFire,ch2_room:innRoom,ch2_board:captTalk,ch2_hatch:voyageSleep},
+    return L.concat(D2.things(sceneId));},
+  acts:{ch2_hbboard:D2.acts.ch2_hbboard,ch2_hbhelp:D2.acts.ch2_hbhelp,ch2_store:openStore(FA,S,{who:'鍛造鎮小店',intro:'這是鍛造鎮的小店，工匠和旅人出門在外用得上的東西都有。'}),ch2_check:it=>check(it.c),ch2_warehouse:warehouse,ch2_fountain:fountain,ch2_forge:forge,ch2_grinder:grinder,ch2_bigfire:bigFire,ch2_room:innRoom,ch2_board:captTalk,ch2_hatch:voyageSleep},
   talk(id){
     if(id==='ch2_capt')return captTalk();
     if(['ch2_town','ch2_townfire','ch2_smithy','ch2_lavamine','ch2_inn','ch2_inn2'].includes(S.scene))return talk2(id);},
