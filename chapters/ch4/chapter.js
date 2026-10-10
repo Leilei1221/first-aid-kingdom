@@ -1,5 +1,6 @@
-/* 第四章「雪嶺」章節程式（F1：章節骨架；F2：第 1 節出發前準備與裝備檢查、營地 1 與第 2 節失溫；F3：營地 2 與第 3 節高山症；F4：雪線與第 4 節雪盲、凍傷；F5：山屋與第 5 節迷路、求救訊號、分工；F6：章末演練與紀念物；F7：山屋的日常）。
- * 草稿：沒登入的人預設也「開放」章節，所以進入條件在這裡自己擋：只有老師預覽（preview.html）或 #debug 的 ?open=ch4 才進得去。
+/* 【2026-10-10 老師審核通過、正式開放】第四章「雪嶺」章節程式（F1：章節骨架；F2：第 1 節出發前準備與裝備檢查、營地 1 與第 2 節失溫；F3：營地 2 與第 3 節高山症；F4：雪線與第 4 節雪盲、凍傷；F5：山屋與第 5 節迷路、求救訊號、分工；F6：章末演練與紀念物；F7：山屋的日常）。
+ * 開放規則同第三章：不屬於任何班的人（老師、訪客、沒登入）完成第三章、見過帕桑、集滿 3 片海圖碎片就能出發；有班級的學生由老師端 ch4 開關決定。
+ * 嚴重錯誤（C1～C7）會觸發「救援失敗」：顯示現有知識卡、扣救援費、送回山腳村（見 rescueFail）；嚮導訓練是練習，只記錄、不觸發。
  * 對白全部是擬稿（沒有醫療內容），見 chapters/ch4/REVIEW.md。狀態記在 S.c.ch4，不新增頂層欄位。 */
 import dailyInit from './daily.js';
 export default function(FA){
@@ -7,7 +8,6 @@ const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}})
 const {$,say,lines,go,toast,refresh,nextDay,sleep,checkpoint,stashDepart,RM}=FA;
 const QS=new URLSearchParams(location.search),PREV=!!QS.get('preview');
 const DEBUG=location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1';
-const DRAFT_OK=PREV||(DEBUG&&(QS.get('open')||'').split(',').includes('ch4'));
 const INN_COST=20;  /* 住一晚的價錢（遊戲參數，和鍛造鎮旅館一樣） */
 const HARBOR={scene:'ch3_harbor',at:[820,640]},VILLAGE={scene:'ch4_village',at:[880,620]};
 const CAMP1={scene:'ch4_camp1',at:[420,780]},CAMP2={scene:'ch4_camp2',at:[420,800]},SNOW={scene:'ch4_snowline',at:[320,700]},LODGE={scene:'ch4_lodge',at:[330,800]};
@@ -25,13 +25,14 @@ const e3=()=>{const e=(S.c.ch3_e3=S.c.ch3_e3||{});e.own=e.own||{};e.cnt=e.cnt||{
   return e;};
 const have=k=>{const e=e3();return e.own[k]?1:(e.cnt[k]||0);};
 const warmLevel=()=>{const n=WEAR.filter(([k])=>e3().own[k]).length;return n>=WARM.full?'full':n>=WARM.part?'part':'low';};
-if(DRAFT_OK)Object.assign(FA.WOUNDS,{frostbite:'手指凍傷',frostface:'臉部凍傷',snowblind:'雪盲'});
+let wRegd=false;const regWounds=()=>{if(!wRegd){wRegd=true;Object.assign(FA.WOUNDS,{frostbite:'手指凍傷',frostface:'臉部凍傷',snowblind:'雪盲'});}};  /* 傷口名稱到過雪嶺才註冊，傷口圖鑑平常不會多出格子 */
 const st=()=>{const c=S.c;c.ch4=c.ch4||{};return c.ch4;};
+if(st().arrived||(PREV&&String(QS.get('preview')).startsWith('ch4_')))regWounds();
 if(PREV&&String(QS.get('preview')).startsWith('ch4_'))st().arrived=true;  /* 預覽直接站在雪嶺：當作已經到過 */
 if(PREV&&(QS.get('lessons')==='1'||QS.get('daily')==='1')){const e=st();['s1','s2a','s2','s3a','s3','s4','s5','c1','c2','c3','c4'].forEach(k=>e[k]=true);}  /* 預覽：?lessons=1 當作第 1～5 節都做完（章末演練用）；?daily=1 再加上章末已完成（山屋日常用） */
 if(PREV&&QS.get('daily')==='1'){const e=st();e.done=true;e.stars=e.stars||3;e.box=true;}
 /* 開放條件：完成第三章章末、見過帕桑、集滿 3 片海圖碎片（第三章 E3 的 S.c.ch3_e3）；預覽不需要 */
-const ready=()=>{if(!DRAFT_OK)return false;if(PREV)return true;const e=(S.c&&S.c.ch3_e3)||{};return !!(S.c&&S.c.ch3_done&&e.seen&&e.seen.np&&Object.keys(e.frag||{}).length>=3);};
+const ready=()=>{if(PREV)return true;const e=(S.c&&S.c.ch3_e3)||{};return !!(S.c&&S.c.ch3_done&&e.seen&&e.seen.np&&Object.keys(e.frag||{}).length>=3);};
 async function trip(to,msg){
   $('fade').classList.add('on');await sleep(RM?0:500);
   FA.setBusy(false);await go(to.scene,to.at);FA.setBusy(true);
@@ -46,7 +47,7 @@ async function depart(){
   const i=await say({p:'ch3_m_np',html:`<p>${first?'要不要跟我回去看看？':'要回雪嶺嗎？'}</p>`,buttons:[{label:'出發去雪嶺',primary:true},{label:'再準備一下'}]});
   if(i!==0)return false;
   await stashDepart();
-  st().arrived=true;
+  st().arrived=true;regWounds();
   await trip(VILLAGE,{icon:'🛶',who:'前往雪嶺',html:'<p>帕桑的朋友把船開進河口，你們換上小船，沿著河一路往上游划。傍晚，山腳村的炊煙出現在眼前。</p>'});
   if(first)await lines('ch4_guide',['歡迎來到雪嶺山腳村！這裡是上山前的最後一個村子。','上山的路我還在檢查，等路況確認好，我們就出發。你先逛逛村子，跟旅店老闆娘打個招呼吧。']);
   return true;}
@@ -70,13 +71,28 @@ async function room(){
   S.coins-=INN_COST;$('fade').classList.add('on');await sleep(RM?0:500);
   const html=nextDay();S.sta=FA.staMax();refresh();$('fade').classList.remove('on');checkpoint();
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>在暖暖的爐火旁睡了一覺，體力完全恢復了。</p>'+html});}
-async function ask(key,p){  /* 同第三章：答錯顯示說明、可再選；選到標了嚴重錯誤的選項只記錄 */
+let RSC=null;const rescueData=async()=>RSC||(RSC=(await (await fetch(new URL('../../content/rescue.json',import.meta.url))).json()).SCENARIOS);
+const cardAny=async k=>(await cardOf(k))||FA.CARDS[k];
+/* 救援失敗：選到標了嚴重錯誤的選項 → 說明情境（非醫療句子）→ 顯示現有知識卡 → 扣救援費（同核心 RESCUE_FEE）→ 送回山腳村；已完成的節與星數不受影響，未完成的這一節要重來 */
+async function rescueFail(z,key,opt){
+  const code=z.sev[opt],SC=(await rescueData())['ch4_'+code]||{},fee=FA.RESCUE_FEE;
+  await say({icon:'🚨',who:'救援失敗',html:`<p>${SC.intro||'情況變得很危險，帕桑立刻聯絡救援……'}</p><p class="small">你選了「${z.opts[opt]}」。</p>`});
+  const ck=z.failCard||z.card,c=ck?await cardAny(ck):null;
+  if(c){S.cards[ck]=true;await say({p:'hero',html:`<div class="card"><b>${c.title}</b><p>${c.text}</p></div><p class="good">正確的做法在知識卡裡，記起來。</p>`});}
+  if(window.FACloud&&FACloud.failure)FACloud.failure('ch4_'+code,z.opts[opt]);
+  S.coins-=fee;
+  $('fade').classList.add('on');await sleep(RM?0:500);
+  FA.setBusy(false);await go(VILLAGE.scene,VILLAGE.at);FA.setBusy(true);refresh();$('fade').classList.remove('on');
+  await say({icon:'🏘',who:'回到山腳村',html:`<p>救援隊把你送回了山腳村，旅店老闆娘幫你準備了熱茶。</p><p class="small">這段路的救援費 ${fee} 金幣（${S.coins<0?`金幣不夠，先欠著 ${-S.coins}`:`剩下 ${S.coins}`}）。想清楚了，再上山。</p>`});
+  FA.save&&FA.save();
+  throw FA.RESCUE_ABORT;}
+async function ask(key,p,opt){  /* 同第三章：答錯顯示說明、可再選；選到標了嚴重錯誤的選項只記錄 */
   const z=(await quizzes())[key];let wrong=0;
   for(;;){
     const pic=(z.img&&FA.A[z.img]?`<img src="${FA.A[z.img]}" alt="" style="display:block;margin:4px auto;max-height:150px;max-width:100%">`:'')+(z.imgs?`<div style="display:flex;gap:10px;justify-content:center;margin:4px 0">${z.imgs.filter(k=>FA.A[k]).map(k=>`<img src="${FA.A[k]}" alt="" style="height:64px">`).join('')}</div>`:'');
     const i=await say({p,hideCap:true,wound:z.wound,html:`${pic}<p class="q">${z.q}</p>`,buttons:z.opts.map(o=>({label:o}))});
     const ok=i===z.ans;
-    if(!ok){wrong++;if(z.sev&&z.sev[i])LOG().push({key,code:z.sev[i],opt:i});}
+    if(!ok){wrong++;if(z.sev&&z.sev[i]){LOG().push({key,code:z.sev[i],opt:i});if(!(opt&&opt.practice))await rescueFail(z,key,i);}}
     await say({p,html:`<p class="${ok?'good':'bad'}">${ok?'回答正確！':'這個做法不對。'}</p><p>${z.explain}</p>`,buttons:[{label:ok?'繼續':'再選一次',primary:true}]});
     if(ok){FA.luckyBonus();return {...z,wrong};}}}
 const DL=dailyInit(FA,{S,st,ask,PREV});

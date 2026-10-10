@@ -37,13 +37,13 @@ async function board(){
       buttons:[{label:'幫忙處理今天的求助',primary:true,disabled:storm||!!d.ev},{label:'離開'}]});
     if(i!==0)return;
     await event(ev);}}
-/* 嚮導訓練：選一個主題，抽 3 題；每天第一次完成加信譽 */
+/* 嚮導訓練：選一個主題，抽 3 題；每天第一次完成加信譽（練習：答到嚴重錯誤只記錄，不觸發救援失敗） */
 async function train(){
   const Dd=await data();
   const i=await say({p:'ch4_guide_up',who:'嚮導訓練',html:'<p>要練哪一種？每天第一次完成，可以累積嚮導信譽。</p>',buttons:Dd.TRAIN.map(t=>({label:t.name})).concat([{label:'先不要',primary:true}])});
   if(i>=Dd.TRAIN.length)return;
   const T=Dd.TRAIN[i],d=day();let wrong=0;
-  for(const k of pickSome(T.pool,3,S.day+i))wrong+=(await ask(k,'ch4_guide_up')).wrong;
+  for(const k of pickSome(T.pool,3,S.day+i))wrong+=(await ask(k,'ch4_guide_up',{practice:true})).wrong;
   if(!d.train){d.train=1;await addRep(1,`完成了「${T.name}」的嚮導訓練。`);}
   else await say({p:'ch4_guide_up',html:'<p>今天的訓練信譽已經領過了，不過多練幾次沒有壞處。</p>'});
   await say({p:'ch4_guide_up',html:`<p>${wrong===0?'每題都答對，很穩。':'有幾題答錯了，不要緊，多練幾次就熟了。'}</p>`});}

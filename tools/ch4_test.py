@@ -54,7 +54,7 @@ async def main(url):
         await goto(page, 'ch3_harbor', 820, 640)
         await page.evaluate("() => { window.__fa.S.day = 15; }"); await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 900, 540)
         await skip_to_menu(page)
-        check('沒有 ?open=ch4：帕桑選單沒有「跟帕桑去雪嶺」', not any('雪嶺' in t for t in await btns(page)), str(await btns(page)))
+        check('正式開放：沒有 ?open=ch4，條件都達成（完成第三章、見過帕桑、3 片碎片）就有「跟帕桑去雪嶺」', any('雪嶺' in t for t in await btns(page)), str(await btns(page)))
         await leave(page); await page.close()
         ctx2 = await b.new_context(viewport={'width': 1180, 'height': 820}); await ctx2.add_init_script("localStorage.setItem('fa-debug','1')")
         page = await ctx2.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
@@ -296,7 +296,7 @@ async def main(url):
         await play_until(page, lambda: False, 120); await page.wait_for_timeout(2500)
         fin = await page.evaluate("() => window.__ch4Finale || null")
         check('重打：第一題答錯 → 4 顆星，最高星數仍是 5，沒有重複領獎', fin and fin['total'] == 4 and await has("S.c.ch4.stars === 5") and await ev(page, "S.coins") == c1, f'{fin} {await ev(page, "S.coins") - c1}')
-        check('重打：嚴重錯誤記錄 C6', (await page.evaluate("() => window.__ch4Log || []"))[:1] == [{'key': 'ch4_f1', 'code': 'C6', 'opt': 0}], str(await page.evaluate("() => window.__ch4Log")))
+        check('重打：非嚴重的錯誤選項不記錄嚴重錯誤、不觸發救援失敗', (await page.evaluate("() => window.__ch4Log || []")) == [], str(await page.evaluate("() => window.__ch4Log")))
         await drain(page, 6); await page.evaluate("() => { window.__ch4Log = []; }")
         check('沒有新增頂層存檔欄位（章末也只用 S.c）', await ev(page, "!('ch4' in S)"))
         # --- F7：山屋的日常（章末完成後）
@@ -335,6 +335,35 @@ async def main(url):
         check('小店：買暖暖包，數量 +1', await has("(S.c.ch3_e3.cnt.warmer || 0) >= 1"))
         await click(page, '離開', 500); await click(page, '先離開', 500)
         check('日常沒有新增頂層存檔欄位', await ev(page, "!('ch4' in S)"))
+        # --- 救援失敗：章末演練選到嚴重錯誤 → 現有知識卡、扣救援費、送回山腳村；已完成的狀態與星數不變
+        await goto(page, 'ch4_lodge', 820, 700); await page.evaluate("() => { window.__ch4Log = []; window.__fa.S.coins = 1000; }")
+        await act_at(page, 1020, 580); await click(page, '章末演練', 1500)
+        for _ in range(12):
+            if '山屋門口發現小宇' in await text(page): break
+            await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+        zf = [z for z in QZ.values() if z['q'].startswith('你在山屋門口發現小宇')][0]
+        await click(page, zf['opts'][2], 500)
+        check('章末演練：選到嚴重錯誤 → 出現「救援失敗」與情境句', '救援失敗' in await page.inner_text('#dialog') or '救援' in await text(page), (await text(page))[:80])
+        for _ in range(8):
+            if await ev(page, "S.scene") == 'ch4_village' and await hidden(page): break
+            bt = await btns(page)
+            if bt: await page.locator('#dBtns button:not([disabled])').first.click()
+            await page.wait_for_timeout(500)
+        check('救援失敗：送回山腳村', await ev(page, "S.scene") == 'ch4_village', await ev(page, "S.scene"))
+        check('救援失敗：扣救援費 200 金幣', await ev(page, "S.coins") == 800, str(await ev(page, "S.coins")))
+        check('救援失敗：記錄嚴重錯誤 C6、顯示的現有知識卡已拿到（ch4_k2_1）', (await page.evaluate("() => window.__ch4Log || []"))[:1] == [{'key': 'ch4_f1', 'code': 'C6', 'opt': 2}] and await has("!!S.cards.ch4_k2_1"), str(await page.evaluate("() => window.__ch4Log")))
+        check('救援失敗：已完成的章末狀態與星數不變', await has("!!S.c.ch4.done && S.c.ch4.stars === 5 && !!S.c.ch4.s5"), await ev(page, "JSON.stringify(S.c.ch4)"))
+        # 嚮導訓練是練習：選到嚴重錯誤只記錄、不觸發救援失敗
+        await goto(page, 'ch4_lodge', 820, 700); await page.evaluate("() => { window.__ch4Log = []; const S = window.__fa.S; S.coins = 1000; S.c.ch4.d = null; }")
+        await act_at(page, 1020, 580); await click(page, '嚮導訓練', 500); await click(page, '失溫', 500)
+        for _ in range(10):
+            t = await text(page); z = next((z for q, z in byq.items() if q in t), None)
+            if z and z.get('sev'):
+                wrong = int(sorted(z['sev'])[0]); await click(page, z['opts'][wrong], 400); break
+            await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+        await page.wait_for_timeout(600)
+        check('嚮導訓練：選到嚴重錯誤只記錄、不扣錢、不送回山腳村', len(await page.evaluate("() => window.__ch4Log || []")) == 1 and await ev(page, "S.coins") == 1000 and await ev(page, "S.scene") == 'ch4_lodge', f'{await page.evaluate("() => window.__ch4Log")} {await ev(page, "S.coins")} {await ev(page, "S.scene")}')
+        await play_until(page, lambda: False, 40); await click(page, '先不要', 500)
         # 答錯選項會被記錄
         await goto(page, 'ch4_camp1', 420, 780); await page.evaluate("() => { window.__ch4Log = []; window.__fa.S.c.ch4.s2a = false; }")
         await act_at(page, 900, 450)
@@ -342,9 +371,13 @@ async def main(url):
             t = await text(page)
             if '第一步' in t: break
             await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
-        await click(page, '跑步', 400); await drain(page, 2)
-        check('選「跑步暖身」：記錄嚴重錯誤 C1', (await page.evaluate("() => window.__ch4Log"))[:1] == [{'key': 'ch4_q2_1', 'code': 'C1', 'opt': 0}], str(await page.evaluate("() => window.__ch4Log")))
-        await page.evaluate("() => { const d = document.getElementById('dialog'); }")
+        await page.evaluate("() => { window.__fa.S.coins = 1000; }")
+        await click(page, '跑步', 500)
+        for _ in range(10):
+            if await ev(page, "S.scene") == 'ch4_village' and await hidden(page): break
+            if await btns(page): await page.locator('#dBtns button:not([disabled])').first.click()
+            await page.wait_for_timeout(500)
+        check('第 2 節選「跑步暖身」：記錄嚴重錯誤 C1、救援失敗送回山腳村、扣 200 金幣、這一節要重來', (await page.evaluate("() => window.__ch4Log"))[:1] == [{'key': 'ch4_q2_1', 'code': 'C1', 'opt': 0}] and await ev(page, "S.scene") == 'ch4_village' and await ev(page, "S.coins") == 800 and await has("!S.c.ch4.s2a"), f'{await page.evaluate("() => window.__ch4Log")} {await ev(page, "S.scene")} {await ev(page, "S.coins")}')
         await ctx2.close()
         # --- 老師預覽：直接站在雪嶺、全部章節開放、不需要條件
         ctx3 = await b.new_context(viewport={'width': 1180, 'height': 820})
