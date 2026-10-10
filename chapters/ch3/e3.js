@@ -54,11 +54,11 @@ function sellRows(k,D){
   const payOf=it=>sp.kind==='kit'&&sp.pay!=null?sp.pay:Math.max(1,Math.floor(ITEMS[it].price*(sp.ratio||.5)));
   return items.map(it=>{const n=S.kit.filter(x=>base(x)===it&&!expired(x)).length,pay=payOf(it),full=left()<=0;return {id:it,icon:null,name:`${ITEMS[it].name} ×${n}`,desc:`今天還能收 ${left()} 件`,label:full?'今天收滿了':`賣 1（${pay}）`,disabled:!n||full,done:`賣了 1 個${ITEMS[it].name}，${pay} 金幣`,
     run(){const i=S.kit.findIndex(x=>base(x)===it&&!expired(x));if(i>=0&&left()>0){S.kit.splice(i,1);S.coins+=pay;S.earned=(S.earned||0)+pay;const o=sold();o.n[k]=(o.n[k]||0)+1;refresh();}}};});}
-async function merchant(kk){
+async function merchant(kk,opt){
   const k=kk||today();if(!k)return;const D=await data(),M=D.MERCHANTS[k],e=st();
   if(!e.seen[k]){e.seen[k]=true;await say({p:M.id,html:`${img(M.ship,110)}<p>${M.hello[0]}</p>`});await say({p:M.id,html:`<p>${M.hello[1]}</p>`});await fragment(k,M);}
   for(;;){
-    const alp=k==='np'&&!!FA.chCall('ch4','ready');  /* 第四章（雪嶺）開放條件都達成了：帕桑多一個「去雪嶺」 */
+    const alp=k==='np'&&!(opt&&opt.noAlp)&&!!FA.chCall('ch4','ready');  /* 第四章（雪嶺）開放條件都達成了：帕桑多一個「去雪嶺」 */
     const i=await say({p:M.id,html:`${img(M.ship,90)}<p>${M.name.split('（')[0]}：要買點什麼嗎？ What would you like?</p>`,buttons:[{label:'買東西 Buy',primary:true},{label:'賣東西 Sell'},{label:'聊聊（學英文）'}].concat(alp?[{label:'跟帕桑去雪嶺'}]:[],[{label:'離開 Bye'}])});
     if(i===0)await pickFrom(M,()=>buyRows(k,D),'買東西');
     else if(i===1){await say({p:M.id,html:`<p>${M.sellNote}</p>`});await pickFrom(M,()=>sellRows(k,D),'賣東西');}
@@ -82,5 +82,5 @@ const boardExtra=()=>{if(!on())return '';const k=today(),Dd=D;const nm=x=>Dd?Dd.
   const nx=nextArrival(S.day);return nx?`<p>今天沒有商船靠岸。下一艘：第 ${nx} 天（${nm(merchantOn(nx))}）</p>`:'';};
 /* 第四章山腳村的裝備攤：直接開尼泊爾商人的「買東西」（同一份商品與價格） */
 async function gearShop(){const D=await data(),M=D.MERCHANTS.np;await say({p:M.id,html:'<p>登山裝備都在這裡。What do you need? 需要什麼？</p>'});await pickFrom(M,()=>buyRows('np',D),'買東西');}
-return {things,build,acts:{ch3_merchant:()=>merchant(),ch3_pasang:()=>merchant('np')},wardrobe:W.wardrobe,wear:W.wardrobe,gearShop,boardExtra,load:data,st};
+return {things,build,merchant,acts:{ch3_merchant:()=>merchant(),ch3_pasang:()=>merchant('np')},wardrobe:W.wardrobe,wear:W.wardrobe,gearShop,boardExtra,load:data,st};
 }

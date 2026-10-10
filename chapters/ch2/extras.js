@@ -1,7 +1,10 @@
 /* 第二章鍛造鎮的鍛造委託與島上探索點（老師 2026-10-10 同意第二章加玩法）：完成第二章（S.c.done）後才有。
  * 鍛造委託：鐵匠老鐵每天一張委託單（交鐵礦石或鐵錠，換金幣與鍛造信譽、稱號）；收購價很低、礦石買不到，不會有買低賣高。
  * 島上探索點：礦坑口、廣場營地、碼頭各一個，每天各一次，題目與知識卡都是現有已審核的（迷路、營火、颱風，逐字沿用），答完得一點金幣。
+ * 港口商人：第三章「藍堡的日常」的三位商人（日本、澳洲、尼泊爾）輪流靠岸，現在也會到火山島碼頭，輪到的日子比藍堡晚一天（兩邊同一天通常不是同一位）；
+ * 買賣、價格、收購上限都和藍堡共用（呼叫第三章的 merchantAt），所以規則一致；第三章沒開放（例如班級後台關閉）時不會出現。
  * 狀態記在既有的 S.c.ch2_or（委託）、S.c.ch2_ex（探索）；數字是遊戲參數，不是醫學數字。 */
+export const MER={at:{x:690,y:640},offset:1,names:{jp:'日本商人',au:'澳洲商人',np:'尼泊爾商人'}};
 export const OR={titles:[[0,'見習鐵匠'],[3,'鐵匠助手'],[8,'熟練鐵匠'],[15,'鍛造大師']],at:{x:840,y:640},
   list:[{name:'鐵礦石 ×6',need:{ch2_iron:6},pay:60},{name:'鐵錠 ×2',need:{ch2_ingot:2},pay:90},{name:'鐵礦石 ×10',need:{ch2_iron:10},pay:110},{name:'鐵錠 ×4',need:{ch2_ingot:4},pay:200}]};
 export const orderOf=day=>OR.list[((day*3)%OR.list.length+OR.list.length)%OR.list.length];
@@ -21,6 +24,8 @@ const ORN={ch2_iron:'鐵礦石',ch2_ingot:'鐵錠'};
 const orst=()=>{S.c=S.c||{};return S.c.ch2_or||(S.c.ch2_or={rep:0,done:0,n:0});};
 const exst=()=>{S.c=S.c||{};const e=S.c.ch2_ex;if(!e||e.day!==S.day)S.c.ch2_ex={day:S.day,got:{}};return S.c.ch2_ex;};
 const have=k=>(S.mat[k]||0);
+/* 今天輪到火山島碼頭的商人：回傳 jp/au/np、null（今天沒有商船）、undefined（第三章沒開放，不提供） */
+const merchantToday=()=>FA.chCall('ch3','merchantKey',S.day+MER.offset);
 async function orders(){
   const h=orst(),o=orderOf(S.day),done=h.done===S.day;
   const need=Object.entries(o.need).map(([k,n])=>`${ORN[k]} ×${n}`).join('、'),ok=Object.entries(o.need).every(([k,n])=>have(k)>=n);
@@ -46,12 +51,16 @@ const things=id=>{
   const L=[];
   if(id==='ch2_smithy')L.push({kind:'ch2_orders',x:OR.at.x,y:OR.at.y,label:'鍛造委託'});
   Object.entries(EX.spots).forEach(([k,sp])=>{if(sp.scene===id)L.push({kind:'ch2_ex_'+k,x:sp.x,y:sp.y,label:sp.label});});
+  if(id==='ch2_vport'){const m=merchantToday();if(m)L.push({kind:'ch2_merchant',x:MER.at.x,y:MER.at.y,label:MER.names[m]});}
   return L;};
 const build=(id,H,{sprite})=>{
   if(!on())return;
   const mark=(x,y,t,c)=>{const m=sprite('shadow','',x,y-34,52,1);m.style.pointerEvents='none';m.innerHTML=`<span class="badge lg" style="--c:${c};--tc:#fff;--s:52px;opacity:.92">${t}</span>`;m.style.zIndex=Math.round(y)+5;};
   if(id==='ch2_smithy')mark(OR.at.x,OR.at.y,'委託','#8A4B1F');
-  Object.values(EX.spots).forEach(sp=>{if(sp.scene===id)mark(sp.x,sp.y,'探索','#2B6CB0');});};
-const acts={ch2_orders:orders};Object.keys(EX.spots).forEach(k=>{acts['ch2_ex_'+k]=explore(k);});
-return {things,build,acts};
+  Object.values(EX.spots).forEach(sp=>{if(sp.scene===id)mark(sp.x,sp.y,'探索','#2B6CB0');});
+  if(id==='ch2_vport'){const m=merchantToday(),key='ch3_m_'+m;if(m&&A[key]){const s=sprite('shadow','',MER.at.x,MER.at.y,Math.round(H*1.05),RATIO[key]);s.querySelector('img').src=A[key];}}};
+const acts={ch2_orders:orders,ch2_merchant:()=>{const m=merchantToday();return m?FA.chCall('ch3','merchantAt',m):undefined;}};Object.keys(EX.spots).forEach(k=>{acts['ch2_ex_'+k]=explore(k);});
+/* 公告板上說今天火山島碼頭有沒有商船 */
+const boardLine=()=>{if(!on())return '';const m=merchantToday();if(m===undefined)return '';return m?`<p>今天火山島碼頭靠岸的商船：<b>${MER.names[m]}</b></p>`:'<p class="small">今天火山島碼頭沒有商船靠岸。</p>';};
+return {things,build,acts,boardLine};
 }

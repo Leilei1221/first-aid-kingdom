@@ -7,7 +7,7 @@ export const HB2={reward:30,repPerEvent:1,
 const ORDER=['hot','chem','blister','elec','ext'];
 export const title2=rep=>HB2.titles.filter(t=>rep>=t[0]).pop()[1];
 export const evOf=day=>ORDER[((day*3)%ORDER.length+ORDER.length)%ORDER.length];  /* 每天輪一件，5 天輪完，不用亂數 */
-export default function(FA,{on}){
+export default function(FA,{on,boardExtra}){
 const {say,quiz,orderQuiz,refresh,CARDS,A,RATIO,takeKit,needCheck,ITEMS,dailyDone}=FA;
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
 let DATA=null;
@@ -18,7 +18,7 @@ const needTxt=n=>Object.entries(n).map(([k,v])=>`${ITEMS[k].name} ×${v}`).join(
 const expl=e=>e&&typeof e==='object'&&e.card?CARDS[e.card].text:e;
 async function board(){
   const h=st(),d=await data(),e=d[evOf(S.day)];
-  await say({icon:'📋',who:'鍛造鎮公告板',html:`<p>你的稱號：<b>${title2(h.rep)}</b>　鍛造鎮信譽 ${h.rep}　已幫忙 ${h.n} 件</p>`+
+  await say({icon:'📋',who:'鍛造鎮公告板',html:`<p>你的稱號：<b>${title2(h.rep)}</b>　鍛造鎮信譽 ${h.rep}　已幫忙 ${h.n} 件</p>`+(boardExtra?boardExtra():'')+
     (h.done===S.day?'<p class="good">今天的求助都處理好了，明天再來看看。</p>':`<p><b>今天的求助：</b>${e.name}</p><p class="small">廣場上有人在等你，走近按「求助」。需要的用品：${Object.keys(e.needs).length?needTxt(e.needs):'沒有（要靠判斷）'}。</p>`)});
 }
 async function help(){

@@ -7,7 +7,7 @@ import * as R from './rhythm.js';
 import * as AED from './aed.js';
 import harborInit from './harbor.js';
 import fishInit from './fish.js';
-import e3Init from './e3.js';
+import e3Init,{merchantOn as e3MerchantOn} from './e3.js';
 import {makeVoyage,SHIP_RATION,SHIP_WATER} from '../voyage.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},has:(_,k)=>k in FA.S,ownKeys:()=>Reflect.ownKeys(FA.S),getOwnPropertyDescriptor:(_,k)=>({value:FA.S[k],enumerable:true,configurable:true})});
@@ -388,6 +388,8 @@ const FSH=fishInit(FA,{on:DAILY_ON,debug:DEBUG,addRep:HBR.addRep,preview:PREV,lh
 E3=e3Init(FA,{on:DAILY_ON,preview:PREV,previewM:QS.get('m'),rep:HBR.rep,fishSt:FSH.st});
 HBR.load().catch(()=>{});E3.load().catch(()=>{});
 return {
+  /* 給第二章的鍛造鎮碼頭用（老師 2026-10-10 同意第二章加玩法）：商船輪流靠岸的商人也會到火山島碼頭，買賣規則、收購上限與藍堡共用 */
+  merchantKey:day=>e3MerchantOn(day),merchantAt:k=>E3.merchant(k,{noAlp:true}),  /* 第二章的碼頭不提供「去雪嶺」 */
   acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed,ch3_rest:restAct,ch3_supply:supplyAct,ch3_shop:shop3Act}),
   build(sceneId,H,{sprite,npcEls}){
     HBR.build(sceneId,H,{sprite});FSH.build(sceneId,H,{sprite});E3.build(sceneId,H,{sprite});

@@ -187,8 +187,9 @@ const {captTalk,sleepAtSea:voyageSleep}=makeVoyage(FA,S,{capt:'ch2_capt',onShip:
     await quiz('ch2_capt','上船前要穿救生衣，哪一種穿法正確？',['鬆鬆地披著就好，比較舒服','選合身的尺寸，所有扣帶扣好拉緊，往上拉也不會從頭部脫出','先放在旁邊，落水時再穿'],1,CARDS.ch2_lifejacket.text);S.cards.ch2_lifejacket=true;}},
   onArrive:async to=>{if(to==='ch2_vport'&&!S.c.intro){S.c.intro=true;await lines('ch2_smith',['喔！你就是老團長的孫子？我是鐵匠老鐵，特地來碼頭接你！','歡迎來到熔岩鍛造鎮！沿著碼頭往右上走就是鎮上，先來我的鐵匠鋪坐坐吧。']);}}});  /* 航行共用程式在 chapters/voyage.js */
 const STORE_AT={x:330,y:640};
-const D2=dailyInit(FA,{on:()=>!!(S.c&&S.c.done)});
-const X2=extrasInit(FA,{on:()=>!!(S.c&&S.c.done)});
+let X2=null;
+const D2=dailyInit(FA,{on:()=>!!(S.c&&S.c.done),boardExtra:()=>X2?X2.boardLine():''});
+X2=extrasInit(FA,{on:()=>!!(S.c&&S.c.done)});
 return {
   build(sceneId,H,{sprite,npcEls}){
     D2.build(sceneId,H,{sprite});X2.build(sceneId,H,{sprite});
