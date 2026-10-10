@@ -66,16 +66,16 @@ async function merchant(kk,opt){
     else if(alp&&i===3){if(await FA.chCall('ch4','depart'))return;}
     else return;}}
 /* 第四章（雪嶺）開放後，帕桑不管商船輪到誰都站在港口（另一個位置），可以買賣，也可以出發去雪嶺 */
-const PASANG_AT={x:1050,y:620};
+const MER_AT={x:1000,y:730},PASANG_AT={x:1140,y:700};  /* 港口公告板在 (1050,640)，原本商人站在板子後面看不到（老師 2026-10-10），改站到板子前面的空地 */
 const pasangStays=()=>on()&&today()!=='np'&&!!FA.chCall('ch4','ready');
 const things=id=>{if(id!=='ch3_harbor'||!on())return [];const L=[];
-  if(today()){const M=D&&D.MERCHANTS[today()];L.push({kind:'ch3_merchant',x:900,y:540,label:M?M.name.split('（')[0]:'商人'});}
+  if(today()){const M=D&&D.MERCHANTS[today()];L.push({kind:'ch3_merchant',x:MER_AT.x,y:MER_AT.y,label:M?M.name.split('（')[0]:'商人'});}
   if(pasangStays())L.push({kind:'ch3_pasang',x:PASANG_AT.x,y:PASANG_AT.y,label:'帕桑'});
   return L;};
 const build=(id,H,{sprite})=>{
   showBtn();W.update();
   if(id!=='ch3_harbor'||!on())return;
-  if(today()){const k=today(),key='ch3_m_'+k,s=sprite('shadow','',900,540,Math.round(H*1.05),RATIO[key]);s.querySelector('img').src=A[key];}
+  if(today()){const k=today(),key='ch3_m_'+k,s=sprite('shadow','',MER_AT.x,MER_AT.y,Math.round(H*1.05),RATIO[key]);s.querySelector('img').src=A[key];}
   if(pasangStays()){const s=sprite('shadow','',PASANG_AT.x,PASANG_AT.y,Math.round(H*1.05),RATIO.ch3_m_np);s.querySelector('img').src=A.ch3_m_np;}};
 const boardExtra=()=>{if(!on())return '';const k=today(),Dd=D;const nm=x=>Dd?Dd.MERCHANTS[x].from:x;
   if(k)return `<p>今天靠岸的商船：<b>${nm(k)}</b>（走到港口廣場找商人）</p>`;

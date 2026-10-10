@@ -52,7 +52,7 @@ async def main(url):
         page, errs = await boot(ctx, url, '', FRAG)
         check('ch4 章節載入了', await page.evaluate("() => !!window.__fa.CHAPTERS.ch4 && window.__fa.CHAPTERS.ch4.loaded"))
         await goto(page, 'ch3_harbor', 820, 640)
-        await page.evaluate("() => { window.__fa.S.day = 15; }"); await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 900, 540)
+        await page.evaluate("() => { window.__fa.S.day = 15; }"); await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1000, 740)
         await skip_to_menu(page)
         check('正式開放：沒有 ?open=ch4，條件都達成（完成第三章、見過帕桑、3 片碎片）就有「跟帕桑去雪嶺」', any('雪嶺' in t for t in await btns(page)), str(await btns(page)))
         await leave(page); await page.close()
@@ -63,11 +63,11 @@ async def main(url):
         await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
         await page.evaluate("() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.f.final = true; S.c.letter = true; S.c.done = true; S.started = true; S.coins = 5000; S.sta = 60; S.day = 15; S.kitCap = 14; S.c.ch3_done = true; S.c.ch3_e3 = { seen: { np: true }, frag: { jp: 1 }, own: {}, cnt: {}, wear: {} }; document.getElementById('btnStart').click(); }")
         await page.evaluate(CLOUD); await page.wait_for_timeout(500)
-        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 900, 540); await skip_to_menu(page)
+        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1000, 740); await skip_to_menu(page)
         check('只有 1 片碎片：沒有「去雪嶺」', not any('雪嶺' in t for t in await btns(page)), str(await btns(page))); await leave(page)
         check('還沒到過雪嶺：世界地圖的雪嶺是鎖住的', not await page.evaluate("() => { const r = window.__fa.REGIONS.ch4; return !!r && !!(window.__fa.S.c.ch4 && window.__fa.S.c.ch4.arrived); }"))
         await page.evaluate("() => { window.__fa.S.c.ch3_e3.frag = { jp: 1, au: 1, np: 1 }; }")
-        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 900, 540); await skip_to_menu(page)
+        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1000, 740); await skip_to_menu(page)
         check('三片碎片、見過帕桑、完成章末：帕桑選單有「跟帕桑去雪嶺」', any('跟帕桑去雪嶺' in t for t in await btns(page)), str(await btns(page)))
         await click(page, '跟帕桑去雪嶺'); check('第一次出發：帕桑說碎片拼起來是家鄉', '家鄉' in await text(page), await text(page))
         for _ in range(4):
@@ -76,7 +76,7 @@ async def main(url):
         check('出發前有「出發去雪嶺」與「再準備一下」', any('出發去雪嶺' in t for t in await btns(page)) and any('再準備' in t for t in await btns(page)))
         await click(page, '再準備一下'); await page.wait_for_timeout(300); await leave(page)
         check('選「再準備一下」：留在港口、沒到過雪嶺', await ev(page, "S.scene") == 'ch3_harbor' and not await ev(page, "!!(S.c.ch4 && S.c.ch4.arrived)"))
-        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 900, 540); await skip_to_menu(page); await click(page, '跟帕桑去雪嶺')
+        await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1000, 740); await skip_to_menu(page); await click(page, '跟帕桑去雪嶺')
         for _ in range(4):
             if any('出發去雪嶺' in t for t in await btns(page)): break
             await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(400)
@@ -137,7 +137,7 @@ async def main(url):
         check('回到藍堡港口', await ev(page, "S.scene") == 'ch3_harbor', await ev(page, "S.scene"))
         check('港口：帕桑（商船不是他的那天）站在港口另一個位置', await ev(page, "S.day") >= 16)
         await page.evaluate("() => { window.__fa.S.day = 12; }"); await goto(page, 'ch3_harbor', 820, 640)
-        await act_at(page, 1050, 620); check('第 12 天（澳洲商船）：還是找得到帕桑，選單有去雪嶺', any('跟帕桑去雪嶺' in t for t in await btns(page)), str(await btns(page))); await leave(page)
+        await act_at(page, 1140, 710); check('第 12 天（澳洲商船）：還是找得到帕桑，選單有去雪嶺', any('跟帕桑去雪嶺' in t for t in await btns(page)), str(await btns(page))); await leave(page)
         # --- F2：第 1 節（山腳村）與第 2 節（營地 1）
         QZ = json.load(open(ROOT / 'chapters/ch4/dialogues.json', encoding='utf-8'))['quizzes']
         byq = {z['q']: z for z in QZ.values()}

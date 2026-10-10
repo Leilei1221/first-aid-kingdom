@@ -34,7 +34,7 @@ async def skip_to(page, label, n=8):
         await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(300)
     return False
 async def meet(page, day):
-    await page.evaluate(f"() => {{ window.__fa.S.day = {day}; }}"); await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 900, 540)
+    await page.evaluate(f"() => {{ window.__fa.S.day = {day}; }}"); await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1000, 740)
 async def main(url):
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
@@ -134,7 +134,7 @@ async def main(url):
         await page.evaluate("() => { window.__fa.S.day = 11; }"); await goto(page, 'ch3_harbor', 820, 640); await act_at(page, 1050, 640)
         t = await text(page); check('公告板：沒有商船靠岸的日子，顯示下一艘', '今天沒有商船靠岸' in t and '下一艘' in t, t)
         await page.evaluate("() => document.getElementById('dBtns').querySelector('button').click()"); await page.wait_for_timeout(300)
-        await act_at(page, 900, 540); check('沒有商船的日子：港口沒有商人', await hidden(page))
+        await act_at(page, 1000, 740); check('沒有商船的日子：港口沒有商人', await hidden(page))
         check('沒有新增頂層存檔欄位', await st(page, "Object.keys(S).filter(k => /e3|pack|wear|frag/i.test(k)).length") == 0)
         check('E3 測試沒有頁面錯誤', not errs, str(errs))
         await page.close(); await b.close()

@@ -394,7 +394,6 @@ return {
   acts:Object.assign({},HBR.acts,FSH.acts,E3.acts,{ch3_board:captTalk,ch3_hatch:hatch,ch3_bed:bed,ch3_ladder:ladder,ch3_down:downAct,ch3_mani:lesson2,ch3_breath:lesson3Breath,ch3_aed:lesson3Aed,ch3_rest:restAct,ch3_supply:supplyAct,ch3_shop:shop3Act}),
   build(sceneId,H,{sprite,npcEls}){
     HBR.build(sceneId,H,{sprite});FSH.build(sceneId,H,{sprite});E3.build(sceneId,H,{sprite});
-    if(sceneId==='ch3_market'){const m=sprite('shadow','',SHOP3_AT.x,SHOP3_AT.y-40,60,1);m.style.pointerEvents='none';m.innerHTML='<span class="badge lg" style="--c:#2F7D4F;--tc:#fff;--s:60px;opacity:.92">小店</span>';m.style.zIndex=Math.round(SHOP3_AT.y)+5;}  /* 水果攤前的標記 */
     if(sceneId==='ch3_harbor'){  /* 去燈塔的路標：石階下方一個小的、棧橋起點（入口）一個大的（老師 2026-10-09 要求觸發方式更明確） */
       const mark=(x,y,big,t)=>{const m=sprite('shadow','',x,y,big?70:46,1);m.style.pointerEvents='none';m.innerHTML=`<span class="badge ${big?'lg':''}" style="--c:#2B6CB0;--tc:#fff;${big?'--s:64px':'--s:40px'};opacity:.92">${t}</span>`;m.style.zIndex=Math.round(y)+5;};
       mark(820,420,false,'↖');mark(695,236,true,'燈塔');}
