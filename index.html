@@ -49,6 +49,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #hero.spr.shadow::before{box-shadow:0 0 0 3px rgba(227,185,91,.85)}
 #hero img.flip,.npc img.flip{transform:scaleX(-1)}
 #hero.walking img{animation:bob .3s ease-in-out infinite alternate}
+.pet img.flip{transform:scaleX(-1)}.pet.walking img{animation:bob .3s ease-in-out infinite alternate}.pet.walking img.flip{animation-name:bobf}
 #hero.walking img.flip{animation-name:bobf}
 @keyframes bob{to{transform:translateY(-4%)}}@keyframes bobf{from{transform:scaleX(-1)}to{transform:scaleX(-1) translateY(-4%)}}
 .tag{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:6px;white-space:nowrap;font-weight:900;font-size:22px;padding:2px 12px;border-radius:8px;background:rgba(16,24,33,.82);color:#FFF3D6}

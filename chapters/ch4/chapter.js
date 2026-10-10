@@ -314,5 +314,6 @@ return {
     if(!e.c1||!e.s2)return '從山腳村左上的石階上山，到營地 1（第 2 節）。';
     return e.done?`第四章完成！（最高 ${e.stars||0} 顆星）`:e.s5?'第 5 節完成！到山屋找帕桑做章末演練。':e.s4?'第 4 節完成！從雪線右上的小徑上山屋（第 5 節）。':e.s3?'從營地 2 右上的小徑上雪線（第 4 節）。':'從營地 1 右上的小徑上營地 2（第 3 節）。';},
   news(id){const e=st();return (id==='ch4_guide'&&!e.s1)||(id==='ch4_hiker'&&!e.s2a)||(id==='ch4_elder'&&!e.s3a)||(id==='ch4_photog'&&!e.s4)||(id==='ch4_keeper'&&!e.s5);},
+  petNote(){return DL.on()?'山屋的公告板每天都有新的求助，有空去看看。':'';},
   ready,depart};
 }

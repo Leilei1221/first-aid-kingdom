@@ -412,6 +412,7 @@ return {
     return `第三章完成！心跳之匣已取得（最高 ${S.c.ch3_stars||0} 顆星）。想再挑戰，可以回市集的倒地者那裡。`+(HBR.goal()?'港口今天有人需要幫忙，看看公告板。':'');},
   wear:()=>E3.wardrobe(),
   gearShop:()=>E3.gearShop(),
+  petNote(){return DAILY_ON()?'藍堡港口的公告板每天都有新的求助，有空去看看。':'';},
   talk(id){if(id==='ch3_captain')return captTalk();
     if(id===LIFEG)return S.scene===HARBOR?lifegHarbor():lifegStation();
     if(id===SAILOR)return S.scene===FISHPORT?sailorPort():sailorHarbor();

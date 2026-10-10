@@ -413,6 +413,7 @@ function buildScene(){
   (SIGNS[S.scene]||[]).forEach(g=>{const e=document.createElement('div');e.className='ent signpost';e.style.transform=`translate(${g.x}px,${g.y}px) translate(-50%,-50%)`;e.textContent=g.t();plane.appendChild(e);});
   snapFree();
   heroEl=sprite('shadow','',S.pos.x,S.pos.y,H,RATIO.hero);heroEl.id='hero';heroImg=heroEl.querySelector('img');heroImg.src=outfitSrc();
+  petBuild();
   refresh();fit();
   if(window.FAMusic)FAMusic.scene(S.scene,S);
 }
@@ -502,6 +503,57 @@ async function accident(){
   }finally{busy=false;save();refresh();}
 }
 
+/* ================= 寵物（老師 2026-10-10 決定；完成第三章後開啟；設定在 content/balance.json 的 PETS） =================
+   雜貨店領養（小貓、貓頭鷹，取名只能從名單選）、背包「寵物」帶上或留在家（一次只帶一隻）、跟在主角後面（用主角走過的軌跡，所以不會穿牆）、
+   每天睡醒收一封信（天氣預報、章節的提醒、一則既有知識卡的複習；不新增任何醫療文字）。沒有養成。狀態記在 S.c.pet（own、cur、names、mail），不新增頂層欄位。 */
+const PETS=C.balance.PETS;
+const petOf=id=>PETS.list.find(p=>p.id===id);
+const petSt=()=>{S.c=S.c||{};return S.c.pet=S.c.pet||{own:[],cur:null,names:{},mail:null};};
+const petRead=()=>(S&&S.c&&S.c.pet)||{own:[],cur:null,names:{},mail:null};
+const petCur=()=>{const p=petRead();return p.cur&&p.own.includes(p.cur)?petOf(p.cur):null;};
+let petEl=null,petPos=null;
+const petHidden=()=>!petCur()||!friendOn()||new RegExp(PETS.hide).test(S.scene)||!!S.voyage;  /* 船上、章末演練等畫面不顯示 */
+function petBuild(){if(petEl){petEl.remove();petEl=null;}petPos=null;if(!S||petHidden()||!heroEl)return;const pt=petCur(),H=sc().heroH;
+  petPos={x:S.pos.x-50,y:S.pos.y+6};petEl=sprite('shadow pet','assets/pet_'+pt.id+'.webp',petPos.x,petPos.y,Math.round(H*pt.hk),pt.ratio);}
+function petTick(dt){
+  if(!petEl||!petPos||!heroEl||$('game').hidden)return;
+  if(petHidden()){petEl.remove();petEl=null;return;}
+  let tx,ty;
+  if(walking&&trail.length>20){[tx,ty]=trail[trail.length-20];}
+  else{tx=S.pos.x-55;ty=S.pos.y+8;if(!free(tx,ty)){tx=S.pos.x;ty=S.pos.y+6;}}
+  const dx=tx-petPos.x,dy=ty-petPos.y,d=Math.hypot(dx,dy);let mv=false;
+  if(d>500){petPos.x=tx;petPos.y=ty;}
+  else if(d>6){const k=Math.min(1,sc().heroH*2.4*dt/d);petPos.x+=dx*k;petPos.y+=dy*k;mv=true;if(Math.abs(dx)>2)petEl.querySelector('img').classList.toggle('flip',dx<0);}
+  petEl.classList.toggle('walking',mv);
+  petEl.style.setProperty('--x',Math.round(petPos.x));petEl.style.setProperty('--y',Math.round(petPos.y));petEl.style.zIndex=Math.round(petPos.y);}
+async function petTouch(){const p=petRead(),pt=petCur();if(!pt)return;const nm=p.names[pt.id]||pt.name;
+  await say({p:'hero',who:nm,html:`<div style="text-align:center"><img alt="" src="assets/pet_${pt.id}_face.webp" style="width:84px;height:84px;border-radius:50%;object-fit:cover;background:#F4E7CC"></div><p>${pt.touch[Math.floor(Math.random()*pt.touch.length)]}</p>`});}
+function petShopHtml(P){const p=petRead();
+  return `<h4>寵物</h4><p class="small">領養以後會跟著你，每天早上送來一封信。到背包的「寵物」帶上或留在家，一次只帶一隻。</p>`+PETS.list.map(pt=>{const has=p.own.includes(pt.id);
+    return `<div class="row"><img alt="" src="assets/pet_${pt.id}_face.webp" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none;background:#F4E7CC"><div class="info"><b>${pt.name}</b><span>${has?`已領養（${p.names[pt.id]}）`:P(pt.cost)+' 金幣'}　${pt.desc}</span></div><button type="button" data-a="pet:${pt.id}" ${has||S.coins<P(pt.cost)?'disabled':''}>${has?'已領養':'領養'}</button></div>`;}).join('');}
+async function petAdopt(id,P){const pt=petOf(id),p=petRead();if(!pt||p.own.includes(id)||S.coins<P(pt.cost))return '';
+  const used=Object.values(p.names),pool=PETS.names.filter(n=>!used.includes(n));
+  const i=await say({p:shopP(),who:`領養${pt.name}`,html:`<div style="text-align:center"><img alt="" src="assets/pet_${id}.webp" style="height:110px"></div><p>幫牠取個名字吧。</p>`,buttons:pool.map(n=>({label:n})).concat([{label:'先不領養'}])});
+  if(i>=pool.length)return '';
+  const st=petSt();S.coins-=P(pt.cost);st.own.push(id);st.names[id]=pool[i];if(!st.cur)st.cur=id;petBuild();
+  return `✓ 領養了${pt.name}「${pool[i]}」！到背包的「寵物」可以帶上或留在家`;}
+function bagPets(){const p=petRead();if(!p.own.length)return '';
+  return `<h4>寵物</h4>`+p.own.map(id=>{const pt=petOf(id),on=p.cur===id;
+    return `<div class="row"><img alt="" src="assets/pet_${id}_face.webp" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:#F4E7CC"><div class="info"><b>${p.names[id]}（${pt.name}）</b><span>${on?'跟著你':'在家休息'}</span></div><button type="button" data-pet="${id}">${on?'留在家':'帶上'}</button></div>`;}).join('')
+    +(p.mail&&p.mail.day===S.day?`<div class="row"><div class="info"><b>今天的信</b></div><button type="button" data-m="mail">再看一次</button></div>`:'');}
+function petSwitch(id){const st=petSt();st.cur=st.cur===id?null:id;petBuild();toast(st.cur?`帶上了${st.names[id]}`:`${st.names[id]}留在家`);}
+/* 每天睡醒的信：天氣預報（現有的預報）、章節的提醒（章節掛接點 petNote）、一則既有知識卡的複習。內容都來自現有資料，沒有新文字 */
+function petLetter(){
+  if(!S||!S.c||!friendOn())return '';const st=S.c.pet;if(!st||!st.own.length)return '';
+  const id=st.cur&&st.own.includes(st.cur)?st.cur:st.own[0],pt=petOf(id),nm=st.names[id],L=[];
+  if(S.wxNext&&S.wxNext.day===S.day+1&&WX[S.wxNext.type])L.push(`天氣預報：${WX[S.wxNext.type].fore}`);
+  L.push(PETS.letter.daily);
+  for(const [cid,h] of Object.entries(CHH)){if(chOpen(cid)&&h.petNote){const t=h.petNote();if(t)L.push(t);}}
+  const ks=Object.keys(S.cards).filter(k=>CARDS[k]);if(ks.length)L.push(PETS.letter.review.replace('{title}',CARDS[ks[(S.day*7)%ks.length]].title));
+  const html=`<div style="text-align:center"><img alt="" src="assets/pet_${id}_deliver.webp" style="max-height:120px;max-width:100%;border-radius:10px"></div><p><b>${nm}</b>${pt.arrive}</p><div class="card"><img alt="" src="assets/pet_i_letter.webp" style="height:28px;vertical-align:middle"> <b>${pt.letterHead}</b>${L.map(x=>`<p>${x}</p>`).join('')}</div>`;
+  st.mail={day:S.day,html};return html;}
+async function petMailShow(){const m=petRead().mail;if(m)await say({p:'hero',who:'今天的信',html:m.html,buttons:[{label:'收好',primary:true}]});}
+function nextDay(){const h=nextDay0();return h+petLetter();}
 /* ================= 互動 ================= */
 function interactables(){const s=sc(),L=[];
   sceneNpcs(s).forEach(n=>{if(npcEls[n.id])L.push({kind:'npc',x:n.x,y:n.y,label:n.id==='merchant'?'看看商品':n.id==='shopkeeper'?'購物':n.id==='chief'?'與村長說話':'對話',id:n.id});});
@@ -517,6 +569,7 @@ function interactables(){const s=sc(),L=[];
   if(S.scene==='river'&&wild())L.push({kind:'riverwater',x:560,y:505,label:'裝溪水'});
   {const h=hookOf(S.scene);if(h&&h.things)L.push(...h.things(S.scene));}
   (S.forage[S.scene]||[]).forEach((f,i)=>L.push({kind:'pick',x:f.x,y:f.y,label:'撿起來',i}));
+  if(petEl&&petPos&&!petHidden())L.push({kind:'pet',x:petPos.x,y:petPos.y,label:`摸摸${petRead().names[petCur().id]}`,pri:-.5,r:sc().heroH*.7});
   return L;}
 let near=null;
 function updateNear(){const H=sc().heroH;let best=null,bd=Infinity,bp=-1;
@@ -537,6 +590,7 @@ async function doAction(){
     else if(it.kind==='fchest')await forestChest();
     else if(it.kind==='bed')await bed();
     else if(it.kind==='stash')await stashMenu();
+    else if(it.kind==='pet')await petTouch();
     else if(it.kind==='shed')await shed();
     else if(it.kind==='toolbox')await toolbox();
     else if(it.kind==='plot')await farmPlot(it.i);
@@ -634,7 +688,7 @@ async function bed(){
   const html=nextDay();S.sta=staMax();refresh();$('fade').classList.remove('on');checkpoint();
   await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>早安！體力恢復了。</p>'+html});
 }
-function nextDay(){
+function nextDay0(){
   pullControl();  /* 每天早上順便更新老師端的設定（背景進行，不等結果） */
   S.day++;let grown=0,dry=0,wxMsg='';
   if(S.wxNext&&S.wxNext.day===S.day){S.wx=S.wxNext;S.wxNext=null;wxMsg+=`<p class="bad">今天${WX[S.wx.type].name}來襲！</p>`;S.wxHit={};if(S.wx.type==='flood')startRelief('flood');}
@@ -929,6 +983,7 @@ async function shopMenu(){
       const own=S.c.outfits||[];
       html+=`<h4>裝扮</h4><p class="small">買了以後到背包的「裝扮」換上，只改外觀，不影響任何數值。</p>`+OUTFITS.list.filter(o=>o.src==='shop').map(o=>{const has=own.includes(o.id);
         return `<div class="row"><img alt="" src="assets/outfit_${o.id}.webp" style="width:44px;height:70px;object-fit:contain;object-position:bottom"><div class="info"><b>${o.name}</b><span>${has?'已擁有':P(o.cost)+' 金幣'}　${o.desc}</span></div><button type="button" data-a="out:${o.id}" ${has||S.coins<P(o.cost)?'disabled':''}>${has?'已擁有':'購買'}</button></div>`;}).join('');}
+    if(friendOn())html+=petShopHtml(P);
     if(S.step>=5){html+=`<h4>急救用品</h4>`+SHOP_MED.concat(mapAvail()?SHOP_EXTRA:[]).map(k=>{const it=ITEMS[k];const full=S.kit.length>=S.kitCap;
       return `<div class="row">${badge(k)}<div class="info"><b>${it.name}　<span style="color:var(--gold)">背包裡有 ${kitCount(k)} 個</span></b><span>${P(it.price)} 金幣　重量 ${it.w}　${it.desc}</span></div><button type="button" data-a="buy:${k}" ${S.coins-P(it.price)>=-DEBT_LIMIT&&!full?'':'disabled'}>${full?'背包已滿':S.coins-P(it.price)<-DEBT_LIMIT?'超過賒帳上限':S.coins<P(it.price)?'賒帳買 1 個':'買 1 個'}</button></div>`;}).join('');}
     else html+=`<p class="small">急救用品目前缺貨中。</p>`;
@@ -942,6 +997,7 @@ async function shopMenu(){
     else if(pick==='seed'){S.coins-=P(MATS.seed.buy);S.mat.seed++;msg=`✓ 已購買：小麥種子 ×1（共 ${S.mat.seed} 包）`;}
     else if(pick==='mat'){S.coins-=P(matNext.cost);S.matCap=matNext.cap;S.matLv++;addHeart('shopkeeper',1);msg=`✓ 素材袋擴充為 ${S.matCap} 格`;}
     else if(pick==='kit'){S.coins-=P(kitNext.cost);S.kitCap=kitNext.cap;S.kitLv++;addHeart('shopkeeper',1);msg=`✓ 急救背包擴充為 ${S.kitCap} 格`;}
+    else if(pick.startsWith('pet:')){msg=await petAdopt(pick.slice(4),P);}
     else if(pick.startsWith('sta:')){const f=STAMINA_SHOP.food.find(x=>x.id===pick.slice(4));if(f&&S.coins>=P(f.cost)&&S.sta<staMax()){S.coins-=P(f.cost);const b4=S.sta;S.sta=Math.min(staMax(),S.sta+f.restore);msg=`✓ 吃了${f.name}，體力 +${S.sta-b4}`;}}
     else if(pick==='staup'){const up=S.c.staUp||0,c=STAMINA_SHOP.up.costs[up]!=null?P(STAMINA_SHOP.up.costs[up]):null;if(c!=null&&S.coins>=c){S.coins-=c;S.c.staUp=up+1;S.sta+=STAMINA_SHOP.up.step;addHeart('shopkeeper',1);msg=`✓ 體力上限提高為 ${staMax()}（體力 +${STAMINA_SHOP.up.step}）`;}}
     else if(pick.startsWith('out:')){const o=outfitOf(pick.slice(4)),own=S.c.outfits||[];if(o&&o.src==='shop'&&!own.includes(o.id)&&S.coins>=P(o.cost)){S.coins-=P(o.cost);S.c.outfits=own.concat(o.id);addHeart('shopkeeper',1);msg=`✓ 買下了${o.name}！到背包的「裝扮」換上`;}}
@@ -1118,12 +1174,14 @@ async function bag(){if(busy)return;busy=true;stopInput();
     const tools=[S.axe&&'斧頭',S.tools.hoe&&'鋤頭',S.tools.can&&'澆水壺',S.tools.pick&&'十字鎬'].filter(Boolean).join('、')||'沒有';
     const r=await say({p:'hero',who:'我的包包',html:`<h4>急救背包 ${S.kit.length}/${S.kitCap}</h4><div class="meter"><i class="${l>LL.heavy?'over':l>LL.ok?'heavy':''}" style="width:${pct}%"></i></div>
       <p class="small">負重 ${l}　${l>LL.heavy?'太重了，走得很慢':l>LL.ok?'有點重，走路變慢':'輕鬆好走'}</p>${slots}
-      ${friendOn()&&S.c.daily&&S.c.daily.title?`<p class="small">稱號：「${S.c.daily.title}」</p>`:''}${friendOn()?bagOutfits():''}${friendOn()?`<h4>道具 ${invTotal()}/${CHAT_LUCK.invCap}</h4>${Object.entries(CHAT_LUCK.items).filter(([k])=>(invOf()[k]||0)>0).map(([k,I])=>`<div class="row"><div class="info"><b>${I.name} ×${invOf()[k]}</b><span>${I.desc}</span></div><button type="button" data-u="${k}">使用</button></div>`).join('')||'<p class="small">還沒有道具。跟好朋友聊天，有機會得到神秘小道具。</p>'}`:''}
+      ${friendOn()&&S.c.daily&&S.c.daily.title?`<p class="small">稱號：「${S.c.daily.title}」</p>`:''}${friendOn()?bagOutfits():''}${friendOn()?bagPets():''}${friendOn()?`<h4>道具 ${invTotal()}/${CHAT_LUCK.invCap}</h4>${Object.entries(CHAT_LUCK.items).filter(([k])=>(invOf()[k]||0)>0).map(([k,I])=>`<div class="row"><div class="info"><b>${I.name} ×${invOf()[k]}</b><span>${I.desc}</span></div><button type="button" data-u="${k}">使用</button></div>`).join('')||'<p class="small">還沒有道具。跟好朋友聊天，有機會得到神秘小道具。</p>'}`:''}
       <h4>素材袋 ${matUsed()}/${S.matCap}</h4>${Object.entries(S.mat).filter(([k,n])=>n>0).map(([k,n])=>`<div class="row">${matIcon(k)}<div class="info"><b>${MATS[k].name} ×${n}</b></div>${k==='mushroom'?'<button type="button" data-m="eat">吃掉</button> <button type="button" data-m="toss">丟掉</button>':''}${k==='flint'&&wild()?'<button type="button" data-m="camp">露營</button>':''}</div>`).join('')||'<p class="small">空的</p>'}<h4>工具</h4><p>${tools}</p>`,buttons:[{label:'關閉',primary:true}],
-      onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-u]').forEach(b=>b.onclick=()=>{useKey=b.dataset.u;fin('use');});root.querySelectorAll('button[data-w]').forEach(b=>b.onclick=()=>{useKey=b.dataset.w;fin('wear');});root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('ration');});}});
+      onRender:(root,fin)=>{root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');});root.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>fin(b.dataset.m));root.querySelectorAll('button[data-u]').forEach(b=>b.onclick=()=>{useKey=b.dataset.u;fin('use');});root.querySelectorAll('button[data-w]').forEach(b=>b.onclick=()=>{useKey=b.dataset.w;fin('wear');});root.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>{pick=+b.dataset.d;fin('drink');});root.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{pick=+b.dataset.g;fin('sugar');});root.querySelectorAll('button[data-pet]').forEach(b=>b.onclick=()=>{useKey=b.dataset.pet;fin('pet');});root.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{pick=+b.dataset.r;fin('ration');});}});
     if(r==='drink'){if(S.drinkDay!==S.day){S.drinkDay=S.day;S.drinks=0;}S.kit.splice(pick,1);if(S.drinks<3){S.drinks++;S.sta=Math.min(staMax(),S.sta+10);toast('喝了開水，體力 +10');}else toast('喝了開水，已經不渴了');refresh();continue;}
     if(r==='use'){useItem(useKey);continue;}
     if(r==='wear'){wearOutfit(useKey);continue;}
+    if(r==='pet'){petSwitch(useKey);continue;}
+    if(r==='mail'){await petMailShow();continue;}
     if(r==='sugar'){await eatSugar(pick);continue;}
     if(r==='ration'){eatRation(pick);refresh();continue;}
     if(r==='camp'){busy=false;await camp();busy=true;break;}
@@ -1185,6 +1243,7 @@ function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;
       placeHero();camera();checkExit();saveT+=dt;if(saveT>2){saveT=0;save();}
     }else if(walking){walking=false;heroEl.classList.remove('walking');save();}
     updateNear();}
+  petTick(dt);
   requestAnimationFrame(loop);}
 async function checkExit(){if(exiting)return;
   for(const ex of (sc().exits||[])){if(ex.test(S.pos.x,S.pos.y)){
@@ -1373,5 +1432,5 @@ Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
 if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={petLetter,petBuild,PETS,get petEl(){return petEl;},get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
