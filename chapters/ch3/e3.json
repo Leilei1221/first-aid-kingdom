@@ -30,7 +30,7 @@
     "Are you OK? 你還好嗎？這是看到有人受傷時，最先要問的一句。",
     "還有一句很重要：Help! 救命！ Call for help! 快叫人來幫忙！"
    ],
-   "sellNote": "我收沒過期的乾糧，一包 40 金幣。"
+   "sellNote": "我收沒過期的乾糧，一包 40 金幣，一天最多收 6 包。"
   },
   "np": {
    "id": "ch3_m_np",
@@ -46,7 +46,7 @@
     "Stay warm. 保持溫暖。Stay together. 不要走散。",
     "有一天，我們一起去爬雪山吧。Let's climb together someday!"
    ],
-   "sellNote": "我收藥品和繃帶，山上很需要，一件 25 金幣。"
+   "sellNote": "我收藥品和繃帶，山上很需要。價錢是平常買價的一半，一天最多收 6 件。"
   }
  },
  "GOODS": {
@@ -181,7 +181,8 @@
   "au": {
    "kind": "kit",
    "item": "ration",
-   "pay": 40
+   "pay": 40,
+   "cap": 6
   },
   "np": {
    "kind": "kitlist",
@@ -190,7 +191,8 @@
     "elastic",
     "bandaid"
    ],
-   "pay": 25
+   "ratio": 0.5,
+   "cap": 6
   }
  },
  "ICONS": {

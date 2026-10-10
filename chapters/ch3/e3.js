@@ -46,9 +46,14 @@ function buyRows(k,D){
 function sellRows(k,D){
   const sp=D.SELL[k];
   if(sp.kind==='fish'){const f=fishSt();return Object.entries(f.bag||{}).filter(([,c])=>c>0).map(([id,c])=>{const s=SPECIES.find(x=>x.id===id),pay=Math.round(s.price*sp.mul);return {id,icon:'ch3_f_'+id,name:`${s.name} ×${c}`,desc:'比市集多三成',label:`賣 1（${pay}）`,done:`賣了 1 隻${s.name}，${pay} 金幣`,run(){f.bag[id]--;S.coins+=pay;S.earned=(S.earned||0)+pay;refresh();}};});}
-  const items=sp.kind==='kit'?[sp.item]:sp.items;
-  return items.map(it=>{const n=S.kit.filter(x=>base(x)===it&&!expired(x)).length;return {id:it,icon:null,name:`${ITEMS[it].name} ×${n}`,desc:'',label:`賣 1（${sp.pay}）`,disabled:!n,done:`賣了 1 個${ITEMS[it].name}，${sp.pay} 金幣`,
-    run(){const i=S.kit.findIndex(x=>base(x)===it&&!expired(x));if(i>=0){S.kit.splice(i,1);S.coins+=sp.pay;S.earned=(S.earned||0)+sp.pay;refresh();}}};});}
+  /* 收購價一律低於商店的買價（老師 2026-10-10 發現：救生站買 OK 繃 10、賣給尼泊爾商人 25，可以無限刷錢）：藥品類是「平常買價的 ratio 倍」（預設一半），
+   * 乾糧是固定價；另外每位商人一天最多收 cap 件，避免玩家花很多時間刷。紀錄在既有的 S.c.ch3_e3.sold。 */
+  const items=sp.kind==='kit'?[sp.item]:sp.items,cap=sp.cap||6;
+  const sold=()=>{const e=st();if(!e.sold||e.sold.day!==S.day)e.sold={day:S.day,n:{}};return e.sold;};
+  const left=()=>Math.max(0,cap-(sold().n[k]||0));
+  const payOf=it=>sp.kind==='kit'&&sp.pay!=null?sp.pay:Math.max(1,Math.floor(ITEMS[it].price*(sp.ratio||.5)));
+  return items.map(it=>{const n=S.kit.filter(x=>base(x)===it&&!expired(x)).length,pay=payOf(it),full=left()<=0;return {id:it,icon:null,name:`${ITEMS[it].name} ×${n}`,desc:`今天還能收 ${left()} 件`,label:full?'今天收滿了':`賣 1（${pay}）`,disabled:!n||full,done:`賣了 1 個${ITEMS[it].name}，${pay} 金幣`,
+    run(){const i=S.kit.findIndex(x=>base(x)===it&&!expired(x));if(i>=0&&left()>0){S.kit.splice(i,1);S.coins+=pay;S.earned=(S.earned||0)+pay;const o=sold();o.n[k]=(o.n[k]||0)+1;refresh();}}};});}
 async function merchant(kk){
   const k=kk||today();if(!k)return;const D=await data(),M=D.MERCHANTS[k],e=st();
   if(!e.seen[k]){e.seen[k]=true;await say({p:M.id,html:`${img(M.ship,110)}<p>${M.hello[0]}</p>`});await say({p:M.id,html:`<p>${M.hello[1]}</p>`});await fragment(k,M);}

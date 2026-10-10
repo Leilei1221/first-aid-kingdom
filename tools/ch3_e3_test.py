@@ -77,7 +77,18 @@ async def main(url):
         await click(page, '賣東西'); await click(page, '繼續')
         t = await text(page); c1 = await st(page, 'S.coins')
         await page.locator('button[data-a="gauze"]').click(); await page.wait_for_timeout(300)
-        check('賣紗布：+25、少 1 個', await st(page, 'S.coins') == c1 + 25 and await st(page, 'S.kit.length') == 2)
+        check('賣紗布：+7（平常買價 15 的一半，不再有賺價差）、少 1 個', await st(page, 'S.coins') == c1 + 7 and await st(page, 'S.kit.length') == 2)
+        # 一天最多收 6 件：賣滿之後按鈕顯示「今天收滿了」，硬按也賣不了
+        await page.evaluate("() => { window.__fa.S.kit = Array(10).fill('bandaid'); }"); c2 = await st(page, 'S.coins'); n = 0
+        await page.locator('#dBtns button', has_text='回上一頁').click(); await page.wait_for_timeout(300)
+        await click(page, '賣東西'); await click(page, '繼續'); await page.wait_for_selector('button[data-a="bandaid"]', timeout=5000)
+        for _ in range(9):
+            btn = page.locator('button[data-a="bandaid"]')
+            if await btn.count() == 0 or await btn.is_disabled(): break
+            await btn.click(); await page.wait_for_timeout(250); n += 1
+        check('一天最多再收到上限（6 件含剛賣的紗布 1 件，所以 OK 繃只能再賣 5 件）', n == 5 and await st(page, 'S.kit.length') == 5, f'{n} {await st(page, "S.kit.length")}')
+        check('收滿後按鈕顯示「今天收滿了」', '今天收滿了' in await page.inner_text('#dText'))
+        check('OK 繃一個只付 5（買價 10 的一半）：5 件共 25 金幣', await st(page, 'S.coins') == c2 + 25, str(await st(page, 'S.coins') - c2))
         await page.locator('#dBtns button', has_text='回上一頁').click(); await page.wait_for_timeout(300)
         await click(page, '聊聊'); t = await text(page); check('聊聊：英文小教室（Warm clothes）', 'Warm clothes' in t or '保暖' in t, t)
         await skip_to(page, '離開 Bye'); await click(page, '離開 Bye', 500)
