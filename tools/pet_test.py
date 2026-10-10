@@ -107,6 +107,15 @@ async def main(url):
         check('帶上貓頭鷹：改成貓頭鷹（一次只帶一隻）', await ev(page, "S.c.pet.cur === 'owl'") and await page.locator('.pet').count() == 1 and 'pet_owl' in await page.evaluate("() => document.querySelector('.pet img').src"), await ev(page, "S.c.pet.cur")); await close_all(page)
         mail = await page.evaluate("() => { window.__fa.S.day++; return window.__fa.nextDay(); }")
         check('貓頭鷹的信：咕、翅膀', '咕' in mail and '飛' in mail, mail[:120])
+        # --- 藍堡港口小店也能領養（完成第三章後）
+        await ev(page, "(S.c.pet = { own: [], cur: null, names: {}, mail: null }, 1)")
+        await goto(page, 'ch3_market', 650, 460)
+        await page.evaluate("() => { window.__fa.S.pos = { x: 650, y: 420 }; }"); await page.wait_for_timeout(500)
+        await page.evaluate("() => document.getElementById('act').click()"); await page.wait_for_timeout(900)
+        check('港口小店也有「寵物」區（小貓、貓頭鷹）', '寵物' in await text(page) and '小貓' in await text(page), (await text(page))[:80])
+        c0 = await ev(page, "S.coins"); await page.locator('button[data-a="pet:cat"]').click(); await page.wait_for_timeout(600); await click(page, '小橘', 800)
+        check('在港口小店領養小貓：金幣 −500（不打折）', await ev(page, "S.coins") == c0 - 500 and await ev(page, "S.c.pet.own.includes('cat')"), await ev(page, "S.coins"))
+        await close_all(page)
         # --- 船上不顯示
         await goto(page, 'ch3_ship_day', 700, 400); await page.wait_for_timeout(500)
         check('船上（ch3_ship_day）：不顯示寵物', not await page.evaluate("() => !!document.querySelector('.pet')"))

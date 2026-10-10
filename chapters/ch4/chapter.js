@@ -56,11 +56,19 @@ async function boat(){
   if(i!==0)return;
   await stashDepart();
   await trip(HARBOR);}
+/* 每爬一層耗體力（老師 2026-10-10：爬山體力要降，玩家才知道要休息與過夜扎營）。只在往上爬扣；下山不扣。
+   夜間在營地睡一晚會回滿；體力不夠（耗掉後要剩至少 CLIMB_KEEP）就不能出發，請先休息。遊戲平衡參數，不是醫學數字。 */
+const CLIMB={c1:20,c2:25,c3:25,c4:20},CLIMB_KEEP=10;
+async function tired(k){
+  const need=CLIMB[k]+CLIMB_KEEP;
+  if(S.sta<need){await say({p:'ch4_guide_up',who:'先休息',html:`<p>你的臉色不太好，體力只剩 ${S.sta}。這一段要消耗約 ${CLIMB[k]} 體力，現在上去太勉強了。</p><p>先休息：在山腳村旅店或營地的帳篷睡一晚，或吃點乾糧、喝點水再出發。</p>`});return true;}
+  S.sta-=CLIMB[k];refresh();return false;}
 async function trail(){
   if(!st().s1){await say({p:'ch4_guide',html:'<p>先跟我做上山前的準備（第 1 節）：到我這裡來。</p>'});return;}
   const i=await say({p:'ch4_guide',who:'上山',html:'<p>要上山去營地 1 嗎？</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
   if(i!==0)return;
   await stashDepart();
+  if(await tired('c1'))return;
   const first=!st().c1;st().c1=true;
   await trip(CAMP1,{icon:'🥾',who:'上山',html:'<p>沿著石階一路往上，走了大半天，山腰的營地 1 出現在眼前。</p>'});
   if(first)await say({p:'ch4_guide_up',html:'<p>營地 1 到了！先喘口氣……咦，那邊好像有個年輕人不太對勁。</p>'});}
@@ -177,6 +185,7 @@ async function up(){
   const i=await say({p:'ch4_guide_up',who:'上山',html:'<p>要上營地 2 嗎？越往上，空氣越稀薄，要走慢一點。</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
   if(i!==0)return;
   await stashDepart();
+  if(await tired('c2'))return;
   const first=!e.c2;e.c2=true;
   await trip(CAMP2,{icon:'🥾',who:'上山',html:'<p>沿著小徑一路往上，空氣越來越稀薄，大家走得比之前慢，中途歇了好幾次，才到營地 2。</p>'});
   if(first)await say({p:'ch4_guide_up',html:'<p>營地 2 到了。這裡比營地 1 高很多，大家都慢慢來。……那邊那位老先生，臉色好像不太好。</p>'});}
@@ -202,6 +211,7 @@ async function up2(){
   const i=await say({p:'ch4_guide_up',who:'上山',html:'<p>要上雪線嗎？那裡沒有樹遮擋，陽光很強、風也大。護目鏡和手套要戴好。</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
   if(i!==0)return;
   await stashDepart();
+  if(await tired('c3'))return;
   const first=!e.c3;e.c3=true;
   await trip(SNOW,{icon:'🥾',who:'上山',html:'<p>沿著雪坡一路往上，樹越來越少，最後只剩下白茫茫的雪和岩石。陽光照在雪上，亮得讓人睜不開眼。</p>'});
   if(first)await say({p:'ch4_guide_up',html:'<p>雪線到了。這裡的雪會把陽光整個反射回來，特別刺眼，也特別冷。……那邊有人蹲在地上，過去看看。</p>'});}
@@ -211,6 +221,7 @@ async function up3(){
   const i=await say({p:'ch4_guide_up',who:'上山',html:'<p>要上山屋嗎？再走一小段就到了。</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
   if(i!==0)return;
   await stashDepart();
+  if(await tired('c4'))return;
   const first=!e.c4;e.c4=true;
   await trip(LODGE,{icon:'🥾',who:'上山',html:'<p>沿著繩索標示的路線，再爬一段緩坡，煙囪冒著煙的山屋終於出現在眼前。</p>'});
   if(first)await lines('ch4_guide_up',['山屋到了！這裡是雪嶺最高的一個落腳處，也是我們整趟路的終點。','管理員達瓦在這裡守了很多年，什麼天氣、什麼狀況都見過。']);}

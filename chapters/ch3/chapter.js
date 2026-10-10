@@ -318,10 +318,11 @@ async function shop3Act(){
       .concat(FA.SHOP_EXTRA.map(k=>({id:k,name:FA.ITEMS[k].name,price:FA.ITEMS[k].price,desc:FA.ITEMS[k].desc,kit:true})));
     const html=(msg?`<p class="good">${msg}</p>`:'')+`<p>這裡是港口的小店，賣一些出門在外用得上的東西。</p><p class="small">金幣 ${S.coins}　急救背包 ${S.kit.length}/${S.kitCap}</p>`+rows.map(r=>{
       const dis=S.coins<r.price||(r.kit&&full)||(r.eat&&S.sta>=FA.staMax());
-      return `<div class="row"><div class="info"><b>${r.name}</b><span>${r.price} 金幣　${r.desc}</span></div><button type="button" data-a="${r.id}" ${dis?'disabled':''}>${r.kit&&full?'背包已滿':r.eat&&S.sta>=FA.staMax()?'體力已滿':'買 1 個'}</button></div>`;}).join('');
+      return `<div class="row"><div class="info"><b>${r.name}</b><span>${r.price} 金幣　${r.desc}</span></div><button type="button" data-a="${r.id}" ${dis?'disabled':''}>${r.kit&&full?'背包已滿':r.eat&&S.sta>=FA.staMax()?'體力已滿':'買 1 個'}</button></div>`;}).join('')+(FA.friendOn()?FA.petShopHtml(x=>x):'');
     const r=await say({p:'hero',who:'港口小店',html,buttons:[{label:'離開',primary:true}],
       onRender:(root,fin)=>root.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{pick=b.dataset.a;fin('pick');})});
     if(r!=='pick')return;
+    if(pick.startsWith('pet:')){msg=await FA.petAdopt(pick.slice(4),x=>x);refresh();continue;}  /* 寵物：和雜貨店同一套（完成第三章後；港口小店不打折） */
     const it=rows.find(x=>x.id===pick);if(!it||S.coins<it.price)continue;
     if(it.kit){if(S.kit.length>=S.kitCap)continue;S.coins-=it.price;S.kit.push(it.id==='ration'?'ration@'+(S.day+FA.RATION_LIFE):it.id);msg=`已買下：${it.name} ×1（急救背包 ${S.kit.length}/${S.kitCap}）`;}
     else{if(S.sta>=FA.staMax())continue;S.coins-=it.price;const b4=S.sta;S.sta=Math.min(FA.staMax(),S.sta+it.eat.restore);msg=`吃了${it.name}，體力 +${S.sta-b4}`;}
