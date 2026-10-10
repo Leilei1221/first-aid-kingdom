@@ -47,6 +47,18 @@
    "img": "ch4_hiker_sev",
    "face": "ch4_hiker_face",
    "hk": 0.6
+  },
+  "ch4_walker1": {
+   "name": "過路登山客 阿青",
+   "img": "ch4_walker1",
+   "face": "ch4_walker1_face",
+   "hk": 1
+  },
+  "ch4_walker2": {
+   "name": "挑夫 次仁",
+   "img": "ch4_walker2",
+   "face": "ch4_walker2_face",
+   "hk": 1
   }
  }
 }

@@ -1,29 +1,180 @@
 {
  "_說明": "雪嶺山屋的日常（F7，2026-10-09 暫擬，全部是遊戲參數與擬稿，可調）。題目沿用第 2～5 節的 ch4_q* 題目（不新增醫療內容）；這裡只有開場白、輪替規則、信譽與小店數字。",
- "WX": {"stormEvery": 4, "offset": 3},
- "REP": {"guide": 5, "captain": 15, "titles": ["見習嚮導", "正式嚮導", "嚮導隊長"]},
- "REWARD": {"coins": 20, "careBonus": 1},
+ "WX": {
+  "stormEvery": 4,
+  "offset": 3
+ },
+ "REP": {
+  "guide": 5,
+  "captain": 15,
+  "titles": [
+   "見習嚮導",
+   "正式嚮導",
+   "嚮導隊長"
+  ]
+ },
+ "REWARD": {
+  "coins": 20,
+  "careBonus": 1
+ },
  "SHOP": [
-  {"k": "tea", "name": "熱奶茶", "price": 30, "sta": 30, "desc": "熱熱的甜奶茶，體力 +30。"},
-  {"k": "dryfood", "name": "乾糧", "price": 40, "sta": 40, "desc": "耐放的乾酪與麵餅，體力 +40。"},
-  {"k": "warmer", "name": "暖暖包", "price": 40, "cnt": "warmer", "desc": "放進背包的暖暖包，山上用得到。"}
+  {
+   "k": "tea",
+   "name": "熱奶茶",
+   "price": 30,
+   "sta": 30,
+   "desc": "熱熱的甜奶茶，體力 +30。",
+   "icon": "ch4_g_tea"
+  },
+  {
+   "k": "dryfood",
+   "name": "乾糧",
+   "price": 40,
+   "sta": 40,
+   "desc": "耐放的乾酪與麵餅，體力 +40。",
+   "icon": "ch4_g_dryfood"
+  },
+  {
+   "k": "flask",
+   "name": "保暖水壺",
+   "price": 50,
+   "sta": 50,
+   "icon": "ch4_g_flask",
+   "desc": "裝滿熱水的保暖水壺，體力 +50。"
+  },
+  {
+   "k": "warmer",
+   "name": "暖暖包",
+   "price": 40,
+   "cnt": "warmer",
+   "desc": "放進背包的暖暖包，山上用得到。",
+   "icon": "ch3_i_warmer"
+  }
  ],
  "EVENTS": [
-  {"id": "cold", "title": "失溫", "who": "ch4_hiker", "pick": 2, "pool": ["ch4_q2_1", "ch4_q2_2", "ch4_q2_3", "ch4_q2_4"],
-   "intro": ["小宇今天又在過溪時弄濕了袖子和褲管，一進山屋就一直發抖、手腳冰冷。"]},
-  {"id": "altitude", "title": "高山症", "who": "ch4_elder", "pick": 2, "pool": ["ch4_q3_2", "ch4_q3_3"],
-   "intro": ["老周又一口氣爬上山屋，扶著門框喘氣：「頭痛……老毛病啦，沒事沒事。」"]},
-  {"id": "frostbite", "title": "凍傷", "who": "ch4_photog", "pick": 2, "pool": ["ch4_q4_3", "ch4_q4_4", "ch4_q4_5"],
-   "intro": ["阿岩拿著相機衝進山屋：「我只是想拍一張雲海……」手套不知道丟到哪去了，手指凍得發白。"]},
-  {"id": "snowblind", "title": "雪盲", "who": "ch4_photog", "pick": 2, "pool": ["ch4_q4_1", "ch4_q4_2"],
-   "intro": ["阿岩坐在山屋門口，眼睛紅紅的一直流淚：「今天陽光太亮了……我又忘了戴護目鏡。」"]},
-  {"id": "lost", "title": "迷路", "who": "ch4_keeper", "pick": 2, "pool": ["ch4_q5_1", "ch4_q5_2", "ch4_q5_3"],
-   "intro": ["達瓦拿著對講機走過來：「有一位過路的登山客跟隊伍走散了，困在風雪邊緣。你來說說，該怎麼辦？」"]}
+  {
+   "id": "cold",
+   "title": "失溫",
+   "who": "ch4_hiker",
+   "pick": 2,
+   "pool": [
+    "ch4_q2_1",
+    "ch4_q2_2",
+    "ch4_q2_3",
+    "ch4_q2_4"
+   ],
+   "intro": [
+    "小宇今天又在過溪時弄濕了袖子和褲管，一進山屋就一直發抖、手腳冰冷。"
+   ]
+  },
+  {
+   "id": "altitude",
+   "title": "高山症",
+   "who": "ch4_elder",
+   "pick": 2,
+   "pool": [
+    "ch4_q3_2",
+    "ch4_q3_3"
+   ],
+   "intro": [
+    "老周又一口氣爬上山屋，扶著門框喘氣：「頭痛……老毛病啦，沒事沒事。」"
+   ]
+  },
+  {
+   "id": "frostbite",
+   "title": "凍傷",
+   "who": "ch4_photog",
+   "pick": 2,
+   "pool": [
+    "ch4_q4_3",
+    "ch4_q4_4",
+    "ch4_q4_5"
+   ],
+   "intro": [
+    "阿岩拿著相機衝進山屋：「我只是想拍一張雲海……」手套不知道丟到哪去了，手指凍得發白。"
+   ]
+  },
+  {
+   "id": "snowblind",
+   "title": "雪盲",
+   "who": "ch4_photog",
+   "pick": 2,
+   "pool": [
+    "ch4_q4_1",
+    "ch4_q4_2"
+   ],
+   "intro": [
+    "阿岩坐在山屋門口，眼睛紅紅的一直流淚：「今天陽光太亮了……我又忘了戴護目鏡。」"
+   ]
+  },
+  {
+   "id": "lost",
+   "title": "迷路",
+   "who": "ch4_walker1",
+   "pick": 2,
+   "pool": [
+    "ch4_q5_1",
+    "ch4_q5_2",
+    "ch4_q5_3"
+   ],
+   "intro": [
+    "我……我在暴風雪裡跟隊伍走散了，四周白茫茫的，好不容易才摸到山屋。",
+    "（達瓦看向你。）你來說說，這種時候，走散的人該怎麼辦？"
+   ]
+  }
  ],
  "TRAIN": [
-  {"id": "cold", "name": "失溫", "pool": ["ch4_q2_1", "ch4_q2_2", "ch4_q2_3", "ch4_q2_4", "ch4_q2_5"]},
-  {"id": "altitude", "name": "高山症", "pool": ["ch4_q3_1", "ch4_q3_2", "ch4_q3_3", "ch4_q3_4"]},
-  {"id": "frost", "name": "凍傷與雪盲", "pool": ["ch4_q4_1", "ch4_q4_2", "ch4_q4_3", "ch4_q4_4", "ch4_q4_5"]},
-  {"id": "lost", "name": "迷路、求救與分工", "pool": ["ch4_q5_1", "ch4_q5_2", "ch4_q5_3", "ch4_q5_4"]}
- ]
+  {
+   "id": "cold",
+   "name": "失溫",
+   "pool": [
+    "ch4_q2_1",
+    "ch4_q2_2",
+    "ch4_q2_3",
+    "ch4_q2_4",
+    "ch4_q2_5"
+   ]
+  },
+  {
+   "id": "altitude",
+   "name": "高山症",
+   "pool": [
+    "ch4_q3_1",
+    "ch4_q3_2",
+    "ch4_q3_3",
+    "ch4_q3_4"
+   ]
+  },
+  {
+   "id": "frost",
+   "name": "凍傷與雪盲",
+   "pool": [
+    "ch4_q4_1",
+    "ch4_q4_2",
+    "ch4_q4_3",
+    "ch4_q4_4",
+    "ch4_q4_5"
+   ]
+  },
+  {
+   "id": "lost",
+   "name": "迷路、求救與分工",
+   "pool": [
+    "ch4_q5_1",
+    "ch4_q5_2",
+    "ch4_q5_3",
+    "ch4_q5_4"
+   ]
+  }
+ ],
+ "IMG": {
+  "titles": [
+   "ch4_b_trainee",
+   "ch4_b_guide",
+   "ch4_b_captain"
+  ],
+  "clear": "ch4_w_clear",
+  "storm": "ch4_w_storm",
+  "board": "ch4_board_big"
+ }
 }

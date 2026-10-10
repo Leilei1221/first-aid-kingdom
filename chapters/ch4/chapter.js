@@ -11,6 +11,7 @@ const DRAFT_OK=PREV||(DEBUG&&(QS.get('open')||'').split(',').includes('ch4'));
 const INN_COST=20;  /* 住一晚的價錢（遊戲參數，和鍛造鎮旅館一樣） */
 const HARBOR={scene:'ch3_harbor',at:[820,640]},VILLAGE={scene:'ch4_village',at:[880,620]};
 const CAMP1={scene:'ch4_camp1',at:[420,780]},CAMP2={scene:'ch4_camp2',at:[420,800]},SNOW={scene:'ch4_snowline',at:[320,700]},LODGE={scene:'ch4_lodge',at:[330,800]};
+const DUMMY={x:1100,y:740};  /* 訓練假人的位置（山屋室外） */
 const WHISTLE={gap:1000,groups:2};  /* 求救哨聲小遊戲（遊戲參數）：三短聲為一組，兩組之間停一下（超過 gap 毫秒算一組結束），做對 groups 組就過關 */
 let QZ=null;const quizzes=async()=>QZ||(QZ=(await (await fetch(new URL('dialogues.json',import.meta.url))).json()).quizzes);
 /* 嚴重錯誤（C1～C6）只記錄、不觸發救援失敗（說明文字等老師提供）；只有 #debug 看得到 */
@@ -266,8 +267,12 @@ async function innkTalk(){
   if(!e.innk){e.innk=true;await lines('ch4_innk',['歡迎！你是帕桑帶來的客人吧？','旅店有熱茶，也有乾淨的床。累了就在床上好好睡一覺。']);return;}
   await lines('ch4_innk',['山上的天氣說變就變，趕路的人最需要一個暖暖的地方休息。','想睡覺就走到床邊，住一晚 '+INN_COST+' 金幣。']);}
 return {
-  acts:{ch4_boat:boat,ch4_trail:trail,ch4_room:room,ch4_stall:stall,ch4_tent:tent,ch4_up:up,ch4_up2:up2,ch4_up3:up3,ch4_up4:up4,ch4_board:()=>DL.board(),ch4_shelter:shelter},
-  talk(id){if(id==='ch4_hiker'){const e=st();if(e.s2a)return lines('ch4_hiker',['多虧你們，我暖和多了。']);return lesson2();}
+  acts:{ch4_boat:boat,ch4_trail:trail,ch4_room:room,ch4_stall:stall,ch4_tent:tent,ch4_up:up,ch4_up2:up2,ch4_up3:up3,ch4_up4:up4,ch4_board:()=>DL.board(),ch4_dummy:()=>DL.train(),ch4_shelter:shelter},
+  things(id){return id==='ch4_lodge'&&DL.on()?[{kind:'ch4_dummy',x:DUMMY.x,y:DUMMY.y,label:'訓練假人（嚮導訓練）'}]:[];},
+  build(id,H,{sprite}){if(id==='ch4_lodge'&&DL.on()){const s=sprite('shadow','',DUMMY.x,DUMMY.y,Math.round(H*.7),FA.RATIO.ch4_dummy);s.querySelector('img').src=FA.A.ch4_dummy;}},
+  talk(id){
+    if(id==='ch4_walker1')return lines('ch4_walker1',[st().s5?'聽說公告板上每天都有新的求助，達瓦說這裡的人都要互相照應。':'山屋的熱茶真的很暖。這裡的風景很美，不過風也真大。']);
+    if(id==='ch4_walker2')return lines('ch4_walker2',['山屋的補給都是我和犛牛一箱一箱扛上來的。','走慢一點，才走得遠。']);if(id==='ch4_hiker'){const e=st();if(e.s2a)return lines('ch4_hiker',['多虧你們，我暖和多了。']);return lesson2();}
     if(id==='ch4_keeper'){if(!st().s5)return lesson5();
       if(!DL.on())return lines('ch4_keeper',['外面風大，進來暖暖身子吧。']);
       return (async()=>{for(;;){const i=await say({p:'ch4_keeper',html:'<p>外面風大，進來暖暖身子吧。要買點什麼嗎？</p>',buttons:[{label:'山屋小店'},{label:'先離開',primary:true}]});if(i!==0)return;await DL.shop();}})();}

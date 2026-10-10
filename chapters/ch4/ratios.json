@@ -22,6 +22,19 @@
   "ch4_i_mirror": 1.0281,
   "ch4_i_torch": 1.3333,
   "ch4_hiker_sev": 1.4404,
-  "ch4_i_case": 1.1852
+  "ch4_i_case": 1.1852,
+  "ch4_b_trainee": 1.005,
+  "ch4_b_guide": 1.0,
+  "ch4_b_captain": 1.005,
+  "ch4_w_clear": 1.0,
+  "ch4_w_storm": 1.0,
+  "ch4_g_tea": 0.975,
+  "ch4_g_dryfood": 0.9812,
+  "ch4_g_flask": 0.725,
+  "ch4_walker1": 0.4635,
+  "ch4_walker1_face": 1.0,
+  "ch4_walker2": 0.4827,
+  "ch4_walker2_face": 1.0,
+  "ch4_dummy": 1.4947
  }
 }

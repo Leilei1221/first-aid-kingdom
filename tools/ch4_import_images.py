@@ -29,7 +29,14 @@ MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  ('ch4_i_whistle.png', 'ch4_i_whistle', 'obj', 256), ('ch4_i_mirro.png', 'ch4_i_mirror', 'obj', 256), ('ch4_i_torch.png', 'ch4_i_torch', 'obj', 256),
  # F6：章末演練（暴風雪山屋、嚴重失溫的小宇、救援隊、紀念物）；『見習嚮導徽章』沒有生，之後再接
  ('喜馬拉雅高山山莊_暴風雪.png', 'ch4_lodge_storm', 'scene', None), ('喜馬拉雅風雪救援隊.png', 'ch4_rescue', 'scene', None),
- ('ch4_hiker_severely_cold.png', 'ch4_hiker_sev', 'body', 520), ('ch4_i_firstaid_case.png', 'ch4_i_case', 'obj', 320)]
+ ('ch4_hiker_severely_cold.png', 'ch4_hiker_sev', 'body', 520), ('ch4_i_firstaid_case.png', 'ch4_i_case', 'obj', 320),
+ # F7：嚮導徽章、天氣窗口、小店商品、過路登山客、訓練假人、公告板放大圖（ch4_i_guide_* 三張是徽章的備用版，沒有用到）
+ ('ch4_b_trainee.png', 'ch4_b_trainee', 'obj', 200), ('ch4_b_guide.png', 'ch4_b_guide', 'obj', 200), ('ch4_b_captain.png', 'ch4_b_captain', 'obj', 200),
+ ('ch4_w_clear.png', 'ch4_w_clear', 'obj', 160), ('ch4_w_storm.png', 'ch4_w_storm', 'obj', 160),
+ ('ch4_g_tea.png', 'ch4_g_tea', 'obj', 160), ('ch4_g_dryfood.png', 'ch4_g_dryfood', 'obj', 160), ('ch4_g_flask.png', 'ch4_g_flask', 'obj', 160),
+ ('walker1.png', 'ch4_walker1', 'body', 520), ('walker1_face.png', 'ch4_walker1_face', 'face', 160),
+ ('walker2.png', 'ch4_walker2', 'body', 520), ('walker2_face.png', 'ch4_walker2_face', 'face', 160),
+ ('ch4_training_dummy.png', 'ch4_dummy', 'obj', 420), ('ch4_notice_board.png', 'ch4_board_big', 'pic', 640)]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]
@@ -40,6 +47,7 @@ sizes = {}
 for n, name, kind, size in MAP:
     im = Image.open(find(n))
     if kind == 'wound': out = im.convert('RGB').resize((size, size), Image.LANCZOS); dst = ROOT / 'assets' / f'{name}.webp'; out.save(dst, 'WEBP', quality=88)
+    elif kind == 'pic': out = im.convert('RGB'); out.thumbnail((size, size), Image.LANCZOS); dst = OUT / f'{name}.webp'; out.save(dst, 'WEBP', quality=85)
     elif kind == 'scene': out = im.convert('RGB').resize((1672, 941), Image.LANCZOS); dst = OUT / f'{name}.webp'; out.save(dst, 'WEBP', quality=82)
     else:
         cut = e12.cutout(im, enclosed=kind != 'face')
@@ -47,7 +55,7 @@ for n, name, kind, size in MAP:
             s = min(cut.size); x0 = (cut.width - s) // 2; out = cut.crop((x0, 0, x0 + s, s)).resize((size, size), Image.LANCZOS)
         else: out = cut.copy(); out.thumbnail((size, size), Image.LANCZOS)
         dst = OUT / f'{name}.webp'; out.save(dst, 'WEBP', quality=90)
-    if kind not in ('scene', 'wound'): sizes[name] = round(out.width / out.height, 4)
+    if kind not in ('scene', 'wound', 'pic'): sizes[name] = round(out.width / out.height, 4)
     print(name, out.size, dst.stat().st_size // 1024, 'KB')
 rp = ROOT / 'chapters/ch4/ratios.json'; r = json.load(open(rp, encoding='utf-8')) if rp.exists() else {'RATIO': {}}
 r['RATIO'].update(sizes); json.dump(r, open(rp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)

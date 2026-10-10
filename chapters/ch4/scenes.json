@@ -321,6 +321,17 @@
     "x": 1020,
     "y": 580,
     "flip": true
+   },
+   {
+    "id": "ch4_walker1",
+    "x": 1180,
+    "y": 660
+   },
+   {
+    "id": "ch4_walker2",
+    "x": 1380,
+    "y": 520,
+    "flip": true
    }
   ],
   "things": [

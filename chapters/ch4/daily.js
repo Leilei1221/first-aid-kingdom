@@ -3,6 +3,7 @@
  * 題目全部沿用第 2～5 節的 ch4_q*（不新增醫療內容）；數字與開場白在 daily.json（遊戲參數與擬稿）。狀態記在 S.c.ch4.d 與 S.c.ch4.rep，不新增頂層欄位。 */
 export default function(FA,{S,st,ask,PREV}){
 const {say,lines,toast,refresh}=FA;
+const pic=(k,h)=>k&&FA.A[k]?`<img src="${FA.A[k]}" alt="" style="height:${h}px;vertical-align:middle">`:'';
 let D=null;const data=async()=>D||(D=await (await fetch(new URL('daily.json',import.meta.url))).json());
 const on=()=>!!(st().done||(PREV&&st().s5));
 const day=()=>{const e=st();if(!e.d||e.d.day!==S.day)e.d={day:S.day,ev:0,train:0};return e.d;};
@@ -13,7 +14,7 @@ async function addRep(n,why){
   const R=(await data()).REP,before=titleOf(R,rep());
   st().rep=rep()+n;const after=titleOf(R,rep());
   toast(`嚮導信譽 +${n}（${rep()} 點）`);
-  if(after!==before)await say({icon:'🏅',who:'稱號',html:`<p class="good">你的稱號升級了：${after}！</p><p class="small">${why||''}</p>`});}
+  if(after!==before){const Dd=await data();await say({icon:'🏅',who:'稱號',html:`<div style="text-align:center">${pic(Dd.IMG.titles[R.titles.indexOf(after)],90)}</div><p class="good">你的稱號升級了：${after}！</p><p class="small">${why||''}</p>`});}}
 function pickSome(pool,n,seed){const a=pool.slice();for(let i=a.length-1;i>0;i--){const j=(seed*7+i*13)%(i+1);[a[i],a[j]]=[a[j],a[i]];}return a.slice(0,Math.min(n,a.length));}
 async function event(ev){
   const d=day(),Dd=await data();
@@ -32,7 +33,7 @@ async function board(){
   for(;;){
     const d=day(),storm=stormDay(Dd.WX,S.day),ev=Dd.EVENTS[S.day%Dd.EVENTS.length];
     const R=Dd.REP,t=titleOf(R,rep()),next=rep()>=R.captain?null:rep()>=R.guide?R.captain:R.guide;
-    const i=await say({p:'hero',who:'山屋公告板',html:`<p><b>今日天氣：</b>${storm?'🌨 風雪大，不宜出門':'☀ 適合上山'}</p><p><b>今日求助：</b>${storm?'風雪太大，今天沒有戶外求助。':d.ev?`「${ev.title}」已經處理好了。`:`「${ev.title}」，有人需要幫忙。`}</p><p><b>嚮導信譽：</b>${rep()} 點　<b>稱號：</b>${t}${next?`（再 ${next-rep()} 點升級）`:'（最高）'}</p>`,
+    const i=await say({p:'hero',who:'山屋公告板',html:`<div style="text-align:center">${FA.A[Dd.IMG.board]?`<img src="${FA.A[Dd.IMG.board]}" alt="" style="max-height:110px;max-width:100%;border-radius:8px">`:''}</div><p>${pic(Dd.IMG[storm?'storm':'clear'],40)} <b>今日天氣：</b>${storm?'風雪大，不宜出門':'適合上山'}</p><p><b>今日求助：</b>${storm?'風雪太大，今天沒有戶外求助。':d.ev?`「${ev.title}」已經處理好了。`:`「${ev.title}」，有人需要幫忙。`}</p><p>${pic(Dd.IMG.titles[R.titles.indexOf(t)],40)} <b>嚮導信譽：</b>${rep()} 點　<b>稱號：</b>${t}${next?`（再 ${next-rep()} 點升級）`:'（最高）'}</p>`,
       buttons:[{label:'幫忙處理今天的求助',primary:true,disabled:storm||!!d.ev},{label:'離開'}]});
     if(i!==0)return;
     await event(ev);}}
@@ -51,7 +52,7 @@ async function shop(){
   const Dd=await data();
   for(;;){
     const e3=(S.c.ch3_e3=S.c.ch3_e3||{});e3.cnt=e3.cnt||{};
-    const i=await say({p:'ch4_keeper',who:'山屋小店',html:`<p class="small">金幣 ${S.coins}　體力 ${S.sta}／${FA.staMax()}</p>${Dd.SHOP.map(g=>`<p><b>${g.name}</b>　${g.price} 金幣<br><span class="small">${g.desc}${g.cnt?`（現有 ${e3.cnt[g.cnt]||0}）`:''}</span></p>`).join('')}`,
+    const i=await say({p:'ch4_keeper',who:'山屋小店',html:`<p class="small">金幣 ${S.coins}　體力 ${S.sta}／${FA.staMax()}</p>${Dd.SHOP.map(g=>`<p>${pic(g.icon,36)} <b>${g.name}</b>　${g.price} 金幣<br><span class="small">${g.desc}${g.cnt?`（現有 ${e3.cnt[g.cnt]||0}）`:''}</span></p>`).join('')}`,
       buttons:Dd.SHOP.map(g=>({label:`買${g.name}（${g.price}）`,disabled:S.coins<g.price||(g.sta&&S.sta>=FA.staMax())})).concat([{label:'離開',primary:true}])});
     if(i>=Dd.SHOP.length)return;
     const g=Dd.SHOP[i];S.coins-=g.price;
