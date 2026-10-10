@@ -35,6 +35,9 @@ function ch4Of(s){const c=(s.c||{}).ch4||{};
   if(c.done)return {label:'已完成',stars:c.stars||0,done:true};
   if(c.arrived||Object.keys(s.cards||{}).some(k=>k.startsWith('ch4_')))return {label:'進行中',stars:0,done:false};
   return {label:'',stars:0,done:false};}
+/* 金幣偏高的標準（老師 2026-10-10 發現買賣漏洞後加）：至少 COIN_MIN 金幣；人數 5 人以上時還要超過全班（已開始者）中位數的 3 倍。只是提醒，不代表一定有問題。 */
+const COIN_MIN=2000;
+function coinLimit(list){const v=list.filter(n=>n>0).sort((a,b)=>a-b);if(v.length<5)return COIN_MIN;const m=v[Math.floor(v.length/2)];return Math.max(COIN_MIN,m*3);}
 function summarize(state,cardTotal){
   const s=state||{},m=milestones(s),done=m.filter(Boolean).length;
   return {day:s.day||1,stage:stageLabel(s),pct:Math.round(done/m.length*100),stars:s.castleBest||0,castleDone:!!s.castleDone,
@@ -135,6 +138,7 @@ function render(){
   const started=rows.filter(r=>r.sum);
   const fs=failSummary(fails);
   $('fails').innerHTML=fs.length?`<h3>全班最常犯的錯（救援失敗）</h3>`+fs.map(f=>`<div class="fl"><b>${esc(scenarioNames[f.scenario]||f.scenario)}</b><span>${f.students} 人、${f.times} 次</span><small>最常選：${esc(f.top)}</small></div>`).join(''):'';
+  const limit=coinLimit(started.map(r=>r.sum.coins)),high=started.filter(r=>r.sum.coins>limit);
   $('sum').innerHTML=[
     [`${started.length} / ${rows.length}`,'已開始遊戲的人數'],
     [started.length?Math.round(started.reduce((a,r)=>a+r.sum.pct,0)/started.length)+'%':'—','已開始者的平均進度'],
@@ -142,20 +146,22 @@ function render(){
     ...(started.some(r=>r.sum.ch2.label)?[[started.filter(r=>r.sum.ch2.done).length,'完成第二章']]:[]),
     ...(started.some(r=>r.sum.ch4.label)?[[started.filter(r=>r.sum.ch4.done).length,'完成第四章'],...(started.some(r=>r.sum.ch4.done)?[[started.filter(r=>r.sum.ch4.stars>=5).length,'第四章章末拿到 5 顆星']]:[])]:[]),
     ...(started.some(r=>r.sum.ch3.label)?[[started.filter(r=>r.sum.ch3.done).length,'完成第三章'],...(started.some(r=>r.sum.ch3.done)?[[started.filter(r=>r.sum.ch3.stars>=5).length,'第三章章末拿到 5 顆星']]:[])]:[]),
+    ...(high.length?[[high.length,`金幣偏高（超過 ${limit}，可能刷錢）`]]:[]),
     [started.filter(r=>r.sum.coins<0).length,'目前有欠款']].map(([b,t])=>`<div><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join('');
   $('list').innerHTML=rows.map(r=>{
     if(!r.sum)return `<details class="st none"><summary><span class="seat">${esc(r.seat)}</span><span class="nm">${esc(r.name)}<small>${esc(r.no)}</small></span><span class="chips">尚未開始</span></summary></details>`;
     const x=r.sum,hearts=Object.entries(x.hearts).map(([k,n])=>`<span>${esc(names[k]||k)} ${'♥'.repeat(Math.min(5,n))}${'♡'.repeat(5-Math.min(5,n))}</span>`).join('');
     return `<details class="st"><summary><span class="seat">${esc(r.seat)}</span><span class="nm">${esc(r.name)}<small>${esc(r.no)}</small></span>
       <span class="prog"><i><em style="width:${x.pct}%"></em></i>${x.pct}%　${esc(x.stage)}</span>
-      <span class="chips"><span>第 <b>${x.day}</b> 天</span><span>城堡 <b>${x.stars}</b>★</span>${x.ch2.label?`<span>第二章 <b>${esc(x.ch2.label)}</b>${x.ch2.done?` ${x.ch2.stars}★`:''}</span>`:''}${x.ch3.label?`<span>第三章 <b>${esc(x.ch3.label)}</b>${x.ch3.done?` ${x.ch3.stars}★`:''}</span>`:''}${x.ch4.label?`<span>第四章 <b>${esc(x.ch4.label)}</b>${x.ch4.done?` ${x.ch4.stars}★`:''}</span>`:''}<span>知識卡 <b>${x.cards}</b>/${x.cardTotal}</span><span class="${x.coins<0?'debt':''}">金幣 <b>${x.coins}</b>${x.coins<0?'（欠款）':''}</span></span></summary>
+      <span class="chips"><span>第 <b>${x.day}</b> 天</span><span>城堡 <b>${x.stars}</b>★</span>${x.ch2.label?`<span>第二章 <b>${esc(x.ch2.label)}</b>${x.ch2.done?` ${x.ch2.stars}★`:''}</span>`:''}${x.ch3.label?`<span>第三章 <b>${esc(x.ch3.label)}</b>${x.ch3.done?` ${x.ch3.stars}★`:''}</span>`:''}${x.ch4.label?`<span>第四章 <b>${esc(x.ch4.label)}</b>${x.ch4.done?` ${x.ch4.stars}★`:''}</span>`:''}<span>知識卡 <b>${x.cards}</b>/${x.cardTotal}</span><span class="${x.coins<0||x.coins>limit?'debt':''}">金幣 <b>${x.coins}</b>${x.coins<0?'（欠款）':''}${x.coins>limit?'（偏高）':''}</span></span></summary>
       <div class="body">最後遊玩：<b>${esc(fmtTime(r.updated))}</b>（${esc(ago(r.updated))}）　<span class="small">${esc(r.email)}</span><div class="hearts">${hearts}</div></div></details>`;}).join('')||'<p class="small">這個班級沒有學生名單。</p>';
 }
 
 function exportCsv(){
   const cls=classes.find(c=>c.id===$('cls').value)||{};
-  const head=['班級','座號','學號','姓名','email','最後遊玩','天數','主線進度%','主線階段','城堡最佳星數','知識卡','知識卡總數','金幣','第二章','第二章星數','第三章','第三章星數','第四章','第四章星數'];
-  const body=rows.map(r=>{const x=r.sum;return [cls.name,r.seat,r.no,r.name,r.email,x?fmtTime(r.updated):'尚未開始',x?x.day:'',x?x.pct:'',x?x.stage:'',x?x.stars:'',x?x.cards:'',x?x.cardTotal:'',x?x.coins:'',x?x.ch2.label:'',x&&x.ch2.done?x.ch2.stars:'',x?x.ch3.label:'',x&&x.ch3.done?x.ch3.stars:'',x?x.ch4.label:'',x&&x.ch4.done?x.ch4.stars:''];});
+  const head=['班級','座號','學號','姓名','email','最後遊玩','天數','主線進度%','主線階段','城堡最佳星數','知識卡','知識卡總數','金幣','第二章','第二章星數','第三章','第三章星數','第四章','第四章星數','金幣偏高'];
+  const limit=coinLimit(rows.filter(r=>r.sum).map(r=>r.sum.coins));
+  const body=rows.map(r=>{const x=r.sum;return [cls.name,r.seat,r.no,r.name,r.email,x?fmtTime(r.updated):'尚未開始',x?x.day:'',x?x.pct:'',x?x.stage:'',x?x.stars:'',x?x.cards:'',x?x.cardTotal:'',x?x.coins:'',x?x.ch2.label:'',x&&x.ch2.done?x.ch2.stars:'',x?x.ch3.label:'',x&&x.ch3.done?x.ch3.stars:'',x?x.ch4.label:'',x&&x.ch4.done?x.ch4.stars:'',x&&x.coins>limit?'是':''];});
   const blob=new Blob([csv([head,...body])],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`急救王國進度_${cls.name||'班級'}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
 }
@@ -180,6 +186,6 @@ async function main(){
   $('cls').onchange=go;$('btnRefresh').onclick=go;$('btnCsv').onclick=exportCsv;
   await go();
 }
-window.FATeacher={failSummary,summarize,stageLabel,milestones,csv};
+window.FATeacher={coinLimit,failSummary,summarize,stageLabel,milestones,csv};
 main();
 })();

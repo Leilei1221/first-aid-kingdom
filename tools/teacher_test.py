@@ -35,7 +35,7 @@ SAVES = [
    'state': {'day': 5, 'step': 10, 'coins': 120, 'cards': {'a': 1, 'b': 1, 'c': 1}, 'hearts': {'grandpa': 3, 'kid': 1}, 'f': {'p3': True, 'tablet': True}, 'castleBest': 0}},
   {'email': 's110002@hlhs.hlc.edu.tw', 'updated_at': '2026-09-30T01:00:00+00:00',
    'state': {'day': 9, 'step': 10, 'coins': -100, 'cards': {}, 'hearts': {}, 'f': {'p3': True, 'tablet': True, 'hunter': True, 'guard': True, 'final': True}, 'castleDone': True, 'castleBest': 5, 'c': {'ch3_done': True, 'ch3_stars': 5}}},
-  {'email': 's110003@hlhs.hlc.edu.tw', 'updated_at': '2026-10-01T02:00:00+00:00', 'state': {'day': 1, 'step': 1, 'coins': 0, 'cards': {'legend': True}, 'hearts': {}, 'f': {}}},
+  {'email': 's110003@hlhs.hlc.edu.tw', 'updated_at': '2026-10-01T02:00:00+00:00', 'state': {'day': 1, 'step': 1, 'coins': 5000, 'cards': {'legend': True}, 'hearts': {}, 'f': {}}},
   {'email': 's120001@hlhs.hlc.edu.tw', 'updated_at': '2026-10-01T02:00:00+00:00', 'state': {'day': 3, 'step': 5, 'coins': 5, 'cards': {}, 'hearts': {}, 'f': {}}},
 ]
 
@@ -90,6 +90,10 @@ async def main(url):
         check('第三章：完成者顯示「第三章 已完成 5★」，沒進第三章的不顯示', '第三章 已完成 5★' in lt and lt.count('第三章') == 1, lt)
         check('統計有「完成第三章」與「章末拿到 5 顆星」各 1 人', '完成第三章' in st_ and '第三章章末拿到 5 顆星' in st_, st_)
         check('CSV 第三章欄位：完成者「已完成,5」', data.count(',已完成,5') == 1, data)
+        lt2 = await pg.inner_text('#list'); st2 = await pg.inner_text('#sum')
+        check('金幣偏高：名單上標「金幣 5000（偏高）」，只標超過標準的那位', '金幣 5000（偏高）' in lt2 and lt2.count('（偏高）') == 1, lt2)
+        check('統計列出現「金幣偏高（超過 2000，可能刷錢）」1 人', '金幣偏高' in st2 and '超過 2000' in st2, st2)
+        check('CSV 最後一欄「金幣偏高」：只有那位是「是」', data.count(',是\r\n') + data.count(',是\n') >= 1 and lines[0].endswith('金幣偏高'), data)
         check('CSV 的姓名逸出正確（含 < > 的名字）', '李<b>大華</b>' in data)
         ftxt = await pg.inner_text('#fails')
         check('全班最常犯的錯：山洪 2 人 3 次排第一、颱風 1 人 1 次（別班不算）', '山洪徵兆時走上橋或沿溪谷跑' in ftxt and '2 人、3 次' in ftxt and '1 人、1 次' in ftxt and ftxt.index('山洪') < ftxt.index('颱風'), ftxt)
@@ -97,7 +101,9 @@ async def main(url):
         check('頁面沒有 JS 錯誤', not errs, str(errs))
         r = await pg.evaluate("() => ['{}', '{\"c\":{\"letter\":true}}', '{\"c\":{\"letter\":true,\"intro\":true}}', '{\"c\":{\"done\":true,\"stars\":4}}'].map(j => window.FATeacher.summarize(JSON.parse(j), 20).ch2)")
         check('第二章狀態：未開始／已收到信／進行中／已完成（4★）', [x['label'] for x in r] == ['', '已收到信', '進行中', '已完成'] and r[3]['stars'] == 4, str(r))
-        check('CSV 標題含第二、三、四章欄位', lines[0].endswith('第二章,第二章星數,第三章,第三章星數,第四章,第四章星數'), lines[0])
+        cl = await pg.evaluate("() => [window.FATeacher.coinLimit([100, 200, 300]), window.FATeacher.coinLimit([100, 120, 150, 200, 250, 300, 4000]), window.FATeacher.coinLimit([1000, 1200, 1500, 1800, 2200])]")
+        check('金幣偏高標準：不到 5 人用 2000；5 人以上取「2000 與中位數 3 倍」較大者', cl[0] == 2000 and cl[1] == 2000 and cl[2] == 4500, str(cl))
+        check('CSV 標題含第二、三、四章欄位', lines[0].endswith('第二章,第二章星數,第三章,第三章星數,第四章,第四章星數,金幣偏高'), lines[0])
         r4 = await pg.evaluate("() => ['{}', '{\"c\":{\"ch4\":{\"arrived\":true}}}', '{\"cards\":{\"ch4_k1_1\":true}}', '{\"c\":{\"ch4\":{\"done\":true,\"stars\":4}}}', '{\"c\":{\"ch3_done\":true,\"ch3_stars\":5}}'].map(j => window.FATeacher.summarize(JSON.parse(j), 20).ch4)")
         check('第四章狀態：未開始／到過雪嶺／有第四章知識卡／已完成（4★）；第三章的星數不會算進第四章', [x['label'] for x in r4] == ['', '進行中', '進行中', '已完成', ''] and r4[3]['stars'] == 4 and r4[4]['stars'] == 0, str(r4))
         r3 = await pg.evaluate("() => ['{}', '{\"c\":{\"ch3_intro\":true}}', '{\"cards\":{\"ch3_k1_1\":true}}', '{\"c\":{\"ch3_done\":true,\"ch3_stars\":5}}', '{\"c\":{\"done\":true,\"stars\":4}}'].map(j => window.FATeacher.summarize(JSON.parse(j), 20).ch3)")
