@@ -59,10 +59,28 @@ async function boat(){
 /* 每爬一層耗體力（老師 2026-10-10：爬山體力要降，玩家才知道要休息與過夜扎營）。只在往上爬扣；下山不扣。
    夜間在營地睡一晚會回滿；體力不夠（耗掉後要剩至少 CLIMB_KEEP）就不能出發，請先休息。遊戲平衡參數，不是醫學數字。 */
 const CLIMB={c1:20,c2:25,c3:25,c4:20},CLIMB_KEEP=10;
+/* 裝備的作用（老師 2026-10-10 決定「全部都要有用」；只動體力，不擋關、不觸發救援失敗；遊戲平衡參數）：
+ * 登山包每級爬山少耗 5；雪線與山屋沒護目鏡多耗 15、沒保暖襪多耗 10；營地過夜依保暖等級（齊全 100%／缺一些 80%／不足 50%）恢復體力，保暖毯＋20%（用掉 1 條）、沒頭燈 −10%。 */
+const GEAR={pack:5,goggles:15,socks:10,sleep:{full:1,part:.8,low:.5},blanket:.2,nolamp:.1,floor:5};
+const climbCost=k=>Math.max(5,CLIMB[k]-GEAR.pack*Math.min(2,+(S.c&&S.c.ch3_pack)||0));
+async function coldCheck(){
+  const miss=[];let lose=0;
+  if(!have('goggles')){lose+=GEAR.goggles;miss.push('沒戴護目鏡，雪地的反光刺得眼睛很痛，你瞇著眼睛走了一路');}
+  if(!have('socks')){lose+=GEAR.socks;miss.push('沒有保暖襪，腳一直冷冰冰的');}
+  if(!miss.length){await say({p:'hero',html:'<p>護目鏡擋掉了雪地的反光，保暖襪讓腳暖暖的，這一段走得很順。</p>'});return;}
+  S.sta=Math.max(GEAR.floor,S.sta-lose);refresh();
+  await say({p:'hero',html:`<p>${miss.join('；')}。多耗了 ${lose} 體力（剩 ${S.sta}）。</p><p class="small">下次記得到藍堡攤位補上護目鏡和保暖襪。</p>`});}
+function sleepRecover(){
+  const lv=warmLevel(),max=FA.staMax(),notes=[];let f=GEAR.sleep[lv];
+  if(have('blanket')>0){const k=e3();if(k.cnt.blanket>0)k.cnt.blanket--;else if(k.own.blanket)k.own.blanket=0;f=Math.min(1,f+GEAR.blanket);notes.push('蓋上保暖毯，睡得更暖（用掉 1 條）');}
+  if(!have('headlamp')){f=Math.max(.2,f-GEAR.nolamp);notes.push('沒有頭燈，夜裡摸黑整理很不方便');}
+  if(lv!=='full')notes.push(lv==='part'?'保暖衣物缺了幾件':'保暖衣物不太夠');
+  return {sta:Math.round(max*f),notes};}
+if(location.hash==='#debug')window.__ch4Gear={sleepRecover,climbCost,coldCheck,GEAR};  /* #debug 測試用 */
 async function tired(k){
-  const need=CLIMB[k]+CLIMB_KEEP;
-  if(S.sta<need){await say({p:'ch4_guide_up',who:'先休息',html:`<p>你的臉色不太好，體力只剩 ${S.sta}。這一段要消耗約 ${CLIMB[k]} 體力，現在上去太勉強了。</p><p>先休息：在山腳村旅店或營地的帳篷睡一晚，或吃點乾糧、喝點水再出發。</p>`});return true;}
-  S.sta-=CLIMB[k];refresh();return false;}
+  const need=climbCost(k)+CLIMB_KEEP;
+  if(S.sta<need){await say({p:'ch4_guide_up',who:'先休息',html:`<p>你的臉色不太好，體力只剩 ${S.sta}。這一段要消耗約 ${climbCost(k)} 體力，現在上去太勉強了。</p><p>先休息：在山腳村旅店或營地的帳篷睡一晚，或吃點乾糧、喝點水再出發。</p>`});return true;}
+  S.sta-=climbCost(k);refresh();return false;}
 async function trail(){
   if(!st().s1){await say({p:'ch4_guide',html:'<p>先跟我做上山前的準備（第 1 節）：到我這裡來。</p>'});return;}
   const i=await say({p:'ch4_guide',who:'上山',html:'<p>要上山去營地 1 嗎？</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
@@ -110,7 +128,7 @@ let CD=null;const cardOf=async k=>{CD=CD||(await (await fetch(new URL('cards.jso
 async function gearCheck(){
   const row=([k,n])=>`<div class="row"><div class="info"><b>${n}</b></div><span class="${have(k)?'good':'bad'}">${have(k)?'有':'沒有'}${k==='socks'||k==='warmer'||k==='blanket'||k==='headlamp'?(have(k)?` ×${have(k)}`:''):''}</span></div>`;
   const lv=warmLevel();
-  await say({p:'ch4_guide',who:'裝備檢查',html:`<p>${WEAR.map(row).join('')}</p><p class="small">其他：</p>${EXTRA.map(row).join('')}`,buttons:[{label:'檢查完了',primary:true}]});
+  await say({p:'ch4_guide',who:'裝備檢查',html:`<p>${WEAR.map(row).join('')}</p><p class="small">其他：</p>${EXTRA.map(row).join('')}<p class="small">護目鏡、保暖襪：到雪線不用多耗體力。保暖毯、頭燈：營地過夜體力恢復更多。登山包：每段爬山少耗體力。</p>`,buttons:[{label:'檢查完了',primary:true}]});
   await lines('ch4_guide',[lv==='full'?'一層一層都穿戴齊了，很好！山上就看你的了。':lv==='part'?'還缺幾樣。攤位那邊有賣，缺的最好先補上，不然上山會很辛苦。':'這樣上山會很冷。攤位在那邊，先去看看吧，缺的東西補上再出發比較安全。']);
   st().warm=lv;}
 async function lesson1(){
@@ -161,9 +179,9 @@ async function tent(){
   if(C.card)await giveCard(C.card);
   e[C.done]=true;
   $('fade').classList.add('on');await sleep(RM?0:500);
-  const html=nextDay();S.sta=FA.staMax();refresh();
+  const html=nextDay();const rec=sleepRecover();S.sta=rec.sta;refresh();
   FA.setBusy(false);await go(C.day.scene,C.day.at);FA.setBusy(true);$('fade').classList.remove('on');checkpoint();
-  await say({icon:'☀',who:`第 ${S.day} 天`,html:'<p>早安！體力恢復了。</p>'+html});
+  await say({icon:'☀',who:`第 ${S.day} 天`,html:`<p>早安！體力恢復到 ${rec.sta}。</p>${rec.notes.length?`<p class="small">${rec.notes.join('；')}。</p>`:''}`+html});
   await say({icon:'🏔',who:`第 ${C.done.slice(1)} 節完成！`,html:`<p>${C.finish}</p>`});}
 async function lesson3(){
   const e=st();
@@ -214,6 +232,7 @@ async function up2(){
   if(await tired('c3'))return;
   const first=!e.c3;e.c3=true;
   await trip(SNOW,{icon:'🥾',who:'上山',html:'<p>沿著雪坡一路往上，樹越來越少，最後只剩下白茫茫的雪和岩石。陽光照在雪上，亮得讓人睜不開眼。</p>'});
+  await coldCheck();
   if(first)await say({p:'ch4_guide_up',html:'<p>雪線到了。這裡的雪會把陽光整個反射回來，特別刺眼，也特別冷。……那邊有人蹲在地上，過去看看。</p>'});}
 async function up3(){
   const e=st();
@@ -224,6 +243,7 @@ async function up3(){
   if(await tired('c4'))return;
   const first=!e.c4;e.c4=true;
   await trip(LODGE,{icon:'🥾',who:'上山',html:'<p>沿著繩索標示的路線，再爬一段緩坡，煙囪冒著煙的山屋終於出現在眼前。</p>'});
+  await coldCheck();
   if(first)await lines('ch4_guide_up',['山屋到了！這裡是雪嶺最高的一個落腳處，也是我們整趟路的終點。','管理員達瓦在這裡守了很多年，什麼天氣、什麼狀況都見過。']);}
 /* 求救哨聲小遊戲：按「吹」三下為一組，停一下再來一組；做對 WHISTLE.groups 組過關 */
 async function whistleGame(){

@@ -125,7 +125,7 @@
     "name": "護目鏡 goggles",
     "price": 200,
     "type": "gear",
-    "desc": "雪山章會用到"
+    "desc": "雪山章：到雪線戴著，眼睛不會被反光刺痛（沒戴會多耗體力）"
    },
    {
     "k": "pack1",
@@ -133,7 +133,7 @@
     "price": 600,
     "type": "pack",
     "lv": 1,
-    "desc": "背包變大，負重門檻也提高"
+    "desc": "背包變大，負重門檻也提高；雪山章每段爬山少耗 5 體力"
    },
    {
     "k": "pack2",
@@ -141,35 +141,35 @@
     "price": 1200,
     "type": "pack",
     "lv": 2,
-    "desc": "要先買登山包"
+    "desc": "要先買登山包；雪山章每段爬山少耗 10 體力"
    },
    {
     "k": "warmer",
     "name": "暖暖包 hand warmer",
     "price": 30,
     "type": "count",
-    "desc": "雪山章會用到"
+    "desc": "雪山章：可以拿給發抖的人（用掉 1 個）"
    },
    {
     "k": "blanket",
     "name": "保暖毯 thermal blanket",
     "price": 60,
     "type": "count",
-    "desc": "雪山章會用到"
+    "desc": "雪山章：營地過夜蓋上，隔天體力恢復更多（用掉 1 條）"
    },
    {
     "k": "headlamp",
     "name": "頭燈 headlamp",
     "price": 90,
     "type": "count",
-    "desc": "雪山章會用到"
+    "desc": "雪山章：營地的夜裡行動方便，隔天體力恢復更多"
    },
    {
     "k": "socks",
     "name": "毛襪 wool socks",
     "price": 50,
     "type": "count",
-    "desc": "雪山章會用到"
+    "desc": "雪山章：到雪線腳不會冷（沒有會多耗體力）"
    }
   ]
  },
