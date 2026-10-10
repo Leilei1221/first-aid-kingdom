@@ -75,6 +75,7 @@ async def main(url):
         await act_at(720, 630); await click_act(); t = '\n'.join(await finish())
         check('碼頭同樣 roll=0.1：不是保育類（碼頭是 8%，沒有改）', '綠蠵龜' not in t and '鬼蝠魟' not in t, t[:200])
         await page.evaluate("() => { window.__ch3FishForce = {hit: true, roll: 0.5, sp: 'grouper', size: 70}; window.__fa.S.sta = 100; }")
+        await page.evaluate("() => { window.__fa.S.c.ch3_fish.bag = {}; }")   # 前面碼頭那次是隨機魚種，先清空魚簍再算
         await enter(); await act_at(820, 830); sta = await st('S.sta'); await click_act(); await finish()
         check('燈塔岩邊釣到石斑魚：進魚簍、耗體力', await st('S.c.ch3_fish.bag.grouper') == 1 and await st('S.sta') < sta, str(await st('S.c.ch3_fish')))
         check('沒有 JS 錯誤', not errs, str(errs))
