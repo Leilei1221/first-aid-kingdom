@@ -27,7 +27,7 @@ const have=k=>{const e=e3();return e.own[k]?1:(e.cnt[k]||0);};
 const warmLevel=()=>{const n=WEAR.filter(([k])=>e3().own[k]).length;return n>=WARM.full?'full':n>=WARM.part?'part':'low';};
 let wRegd=false;const regWounds=()=>{if(!wRegd){wRegd=true;Object.assign(FA.WOUNDS,{frostbite:'手指凍傷',frostface:'臉部凍傷',snowblind:'雪盲'});}};  /* 傷口名稱到過雪嶺才註冊，傷口圖鑑平常不會多出格子 */
 const st=()=>{const c=S.c;c.ch4=c.ch4||{};return c.ch4;};
-if(st().arrived||(PREV&&String(QS.get('preview')).startsWith('ch4_')))regWounds();
+if((S.c&&S.c.ch4&&S.c.ch4.arrived)||(PREV&&String(QS.get('preview')).startsWith('ch4_')))regWounds();  /* 沒到過雪嶺的存檔不碰（不會多出 S.c.ch4） */
 if(PREV&&String(QS.get('preview')).startsWith('ch4_'))st().arrived=true;  /* 預覽直接站在雪嶺：當作已經到過 */
 if(PREV&&(QS.get('lessons')==='1'||QS.get('daily')==='1')){const e=st();['s1','s2a','s2','s3a','s3','s4','s5','c1','c2','c3','c4'].forEach(k=>e[k]=true);}  /* 預覽：?lessons=1 當作第 1～5 節都做完（章末演練用）；?daily=1 再加上章末已完成（山屋日常用） */
 if(PREV&&QS.get('daily')==='1'){const e=st();e.done=true;e.stars=e.stars||3;e.box=true;}
