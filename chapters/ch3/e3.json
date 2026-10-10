@@ -90,14 +90,14 @@
     "name": "防寒外套 parka",
     "price": 400,
     "type": "gear",
-    "desc": "可以疊在身上換顏色"
+    "desc": "外套和毛帽都買了，就能穿成冬季裝備、換顏色"
    },
    {
     "k": "hat",
     "name": "保暖毛帽 wool hat",
     "price": 120,
     "type": "gear",
-    "desc": "可以疊在身上換顏色"
+    "desc": "外套和毛帽都買了，就能穿成冬季裝備、換顏色"
    },
    {
     "k": "pants",

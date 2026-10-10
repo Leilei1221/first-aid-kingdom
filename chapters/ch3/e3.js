@@ -17,7 +17,7 @@ const st=()=>{const e=W.st();e.seen=e.seen||{};e.frag=e.frag||{};e.own=e.own||{}
   return e;};
 const today=()=>preview&&previewM?previewM:merchantOn(S.day);
 const img=(k,h)=>k&&A[k]?`<img src="${A[k]}" alt="" style="display:block;margin:6px auto;max-height:${h}px;max-width:100%">`:'';
-const showBtn=()=>{const b=$('btnWear');if(!b)return;const e=on()?st():null;b.hidden=!(e&&(preview||e.own.jacket||e.own.hat));};
+const showBtn=()=>{const b=$('btnWear');if(!b)return;const e=on()?st():null;b.hidden=!(e&&(preview||(e.own.jacket&&e.own.hat)));};
 async function fragment(k,M){
   const e=st();if(e.frag[k])return;e.frag[k]=1;const n=Object.keys(e.frag).length;
   await say({icon:'🧭',who:'獲得：海圖碎片',html:`${img('ch3_map_frag',120)}<p>${M.name.split(' ')[0]}給了你一片舊海圖的碎片。（${n}/3）</p>`+(n>=3?'<p class="good">三片碎片拼在一起了，上面畫著遠方的海岸和山。以後也許會用到。</p>':'')});}

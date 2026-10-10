@@ -1,67 +1,32 @@
-/* 第三章「藍堡的日常」E3：換裝的疊件（外套、毛帽，可換 10 種顏色），疊在目前穿的整套裝扮上。整套裝扮由核心的「背包 → 裝扮」換（老師另一個決定的功能），這裡只管疊件。
- * 草稿：只有老師預覽或 #debug ?e1=1 看得到。狀態記在 S.c.ch3_e3（wear）。
- * 換色用逐像素的色相旋轉（不用 canvas filter，因為 iPad Safari 不支援）。疊件的位置是遊戲參數，可調。 */
-export const COLORS=[['紅',0],['橙',28],['黃',52],['綠',120],['青',170],['藍',215],['紫',275],['粉',325],['灰',-1],['黑',-2]];
-export const LAYERS={  /* 疊件的圖與預設位置（x、y、寬，在 330×520 主角畫布上），高度依圖片比例。crop＝只取圖的這一塊（毛帽去掉頭頂的毛球，因為主角的頭頂就貼著畫布上緣，毛球會被切掉） */
-  jacket:{name:'外套',img:'ch3_g_jacket',x:62,y:96,w:190},
-  hat:{name:'毛帽',img:'ch3_g_hat',x:92,y:-58,w:92,crop:[0,75,331,285]}};
-/* 每套裝扮各自的疊件位置（老師 2026-10-10 說外套像貼紙、帽子飄在頭上：外套縮小、對準身體，帽子戴到頭上）。數字是 [x, y, 寬]，頭與身體的位置依各套裝扮圖量的；沒有列到的裝扮用 LAYERS 的預設 */
-export const FIT={
-  default:{jacket:[62,92,142],hat:[96,-18,72]},
-  sailor:{jacket:[56,92,146],hat:[88,-18,72]},
-  mountain:{jacket:[50,92,146],hat:[76,-18,72]},
-  lifeguard:{jacket:[52,92,146],hat:[78,-18,72]},
-  guardian:{jacket:[40,92,146],hat:[62,-18,72]}};
-export const fitOf=(base,k)=>{const m=/outfit_(\w+)\.webp/.exec(String(base||''));const f=FIT[m?m[1]:'default'];return f&&f[k]?{x:f[k][0],y:f[k][1],w:f[k][2]}:null;};
-function recolor(ctx,x,y,w,h,mode){
-  if(mode===0)return;
-  const d=ctx.getImageData(x,y,w,h),a=d.data;
-  for(let i=0;i<a.length;i+=4){if(!a[i+3])continue;
-    let r=a[i]/255,g=a[i+1]/255,b=a[i+2]/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,dl=mx-mn;
-    let hh=0,s=0;if(dl>0){s=dl/(1-Math.abs(2*l-1));hh=mx===r?((g-b)/dl)%6:mx===g?(b-r)/dl+2:(r-g)/dl+4;hh*=60;if(hh<0)hh+=360;}
-    let nl=l;
-    if(mode===-1){s*=.08;}else if(mode===-2){s*=.08;nl=l*.5;}else{hh=(hh+mode)%360;s*=.62;nl=Math.min(.58,l*.96);}  /* 柔和的自然色：降低飽和度、壓低亮度，不要螢光色（老師 2026-10-10） */
-    const c=(1-Math.abs(2*nl-1))*s,x2=c*(1-Math.abs((hh/60)%2-1)),m=nl-c/2;
-    let R,G,B;const k=Math.floor(hh/60);[R,G,B]=[[c,x2,0],[x2,c,0],[0,c,x2],[0,x2,c],[x2,0,c],[c,0,x2]][k%6];
-    a[i]=Math.round((R+m)*255);a[i+1]=Math.round((G+m)*255);a[i+2]=Math.round((B+m)*255);}
-  ctx.putImageData(d,x,y);}
-const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
+/* 第三章「藍堡的日常」E3：冬季裝備（防寒外套＋保暖毛帽，5 種顏色）。老師 2026-10-10 改成「整張全身圖」：每套裝扮（預設、水手、登山、救生員、守護者）各有穿上外套與毛帽的圖，
+ * 檔名 assets/outfit_<套>_<色>.webp（tools/outfit_winter_import.py 匯入），不再用疊圖與逐像素換色。
+ * 要同時買了外套與毛帽才能穿；整套裝扮由核心的「背包 → 裝扮」換，這裡只管「穿不穿冬季裝備」與顏色。
+ * 狀態記在 S.c.ch3_e3.wear＝{on,c}（舊存檔的 wear.jacket／wear.hat 會自動轉過來）。 */
+export const COLORS=[['紅','red'],['藍','blue'],['綠','green'],['黃','yellow'],['灰','gray']];
+const baseId=base=>{const m=/outfit_(\w+?)\.webp/.exec(String(base||''));return m?m[1]:'default';};
+export const winterSrc=(base,c)=>`assets/outfit_${baseId(base)}_${(COLORS[c]||COLORS[0])[1]}.webp`;
+export const norm=e=>{const w=e.wear=e.wear||{};
+  if(w.on===undefined&&(w.jacket||w.hat)){w.on=!!((w.jacket&&w.jacket.on)||(w.hat&&w.hat.on));w.c=0;}
+  delete w.jacket;delete w.hat;if(!(w.c>=0&&w.c<COLORS.length))w.c=0;return w;};
 export default function(FA,{on}){
-const {say,A,RATIO}=FA;
-const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
-const st=()=>{S.c=S.c||{};return S.c.ch3_e3||(S.c.ch3_e3={frag:{},own:{},cnt:{},seen:{},wear:{}});};
-let url=null,key='';
-const wornKey=()=>{const e=st();return JSON.stringify([FA.outfitBase(),e.wear]);};
-async function compose(e){
-  const cv=document.createElement('canvas');cv.width=330;cv.height=520;const ctx=cv.getContext('2d');
-  ctx.drawImage(await loadImg(FA.outfitBase()),0,0,330,520);
-  const base=FA.outfitBase();
-  for(const [k,L0] of Object.entries(LAYERS)){const w=e.wear[k];if(!w||!w.on||!e.own[k])continue;
-    const L=Object.assign({},L0,fitOf(base,k)||{});
-    const im=await loadImg(A[L.img]),cr=L.crop||[0,0,im.width,im.height],h=Math.round(L.w*cr[3]/cr[2]);
-    const t=document.createElement('canvas');t.width=L.w;t.height=h;const tc=t.getContext('2d');tc.drawImage(im,cr[0],cr[1],cr[2],cr[3],0,0,L.w,h);recolor(tc,0,0,L.w,h,COLORS[w.c||0][1]);
-    ctx.drawImage(t,L.x,L.y);}
-  return cv;}
-async function update(){
-  const e=st();key=wornKey();
-  if(!on()||!Object.values(e.wear).some(w=>w&&w.on)){url=null;FA.refreshHero();return;}
-  try{url=(await compose(e)).toDataURL('image/png');}catch(_){url=null;}FA.refreshHero();}
-const look=()=>on()&&url&&key===wornKey()?url:null;
-FA.setHeroLook(look,()=>{update();});  /* 換整套裝扮時，核心會通知這裡重新合成 */
+const {say}=FA;
+const st=()=>{FA.S.c=FA.S.c||{};const e=FA.S.c.ch3_e3||(FA.S.c.ch3_e3={frag:{},own:{},cnt:{},seen:{},wear:{}});norm(e);return e;};
+const has=e=>!!(e.own&&e.own.jacket&&e.own.hat);
+const look=()=>{if(!on())return null;const e=st();return e.wear.on&&has(e)?winterSrc(FA.outfitBase(),e.wear.c):null;};
+const update=()=>{FA.refreshHero();};
+FA.setHeroLook(look,()=>{});
 async function wardrobe(){
   const e=st();
   for(;;){
-    const ownL=Object.entries(LAYERS).filter(([k])=>e.own[k]);
-    let cv=null;try{cv=await compose(e);}catch(_){}
-    const r=await say({p:'hero',who:'換裝',html:`<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:0 0 150px;text-align:center"><canvas id="wv" width="330" height="520" style="width:150px;border-radius:10px;background:rgba(255,255,255,.06)"></canvas></div><div style="flex:1;min-width:0">
-      <p class="small">疊件：穿在目前的裝扮外面（整套裝扮到背包的「裝扮」換）</p>
-      ${ownL.length?ownL.map(([k,L])=>{const w=e.wear[k]||{};return `<div style="margin-bottom:6px"><button type="button" class="btn${w.on?' primary':''}" data-t="${k}">${L.name}：${w.on?'穿著':'沒穿'}</button><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${COLORS.map(([n],ci)=>`<button type="button" class="btn${(w.c||0)===ci?' primary':''}" data-c="${k}:${ci}" style="padding:2px 8px;min-width:0">${n}</button>`).join('')}</div></div>`;}).join(''):'<p class="small" style="margin-top:10px">買了外套或毛帽，這裡就可以疊在身上、換顏色。</p>'}
+    const w=e.wear,src=winterSrc(FA.outfitBase(),w.c);
+    const r=await say({p:'hero',who:'換裝',html:`<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:0 0 150px;text-align:center"><img id="wv" alt="" src="${w.on&&has(e)?src:FA.outfitBase()}" style="width:150px;border-radius:10px;background:rgba(255,255,255,.06)"></div><div style="flex:1;min-width:0">
+      <p class="small">冬季裝備：防寒外套＋保暖毛帽，穿在目前的裝扮上（整套裝扮到背包的「裝扮」換）</p>
+      ${has(e)?`<div style="margin-bottom:6px"><button type="button" class="btn${w.on?' primary':''}" data-t="1">冬季裝備：${w.on?'穿著':'沒穿'}</button><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${COLORS.map(([n],ci)=>`<button type="button" class="btn${w.c===ci?' primary':''}" data-c="${ci}" style="padding:2px 8px;min-width:0">${n}</button>`).join('')}</div></div>`:'<p class="small" style="margin-top:10px">防寒外套和保暖毛帽都買了，就可以穿上冬季裝備、換顏色。</p>'}
       </div></div>`,buttons:[{label:'完成',primary:true}],
       onRender:(root,fin)=>{
-        const paint=c=>{const v=root.querySelector('#wv');if(v&&c)v.getContext('2d').drawImage(c,0,0);};paint(cv);
-        root.querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>{const k=b.dataset.t;e.wear[k]=Object.assign({c:0},e.wear[k],{on:!(e.wear[k]&&e.wear[k].on)});fin('again');});
-        root.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const [k,c]=b.dataset.c.split(':');e.wear[k]=Object.assign({},e.wear[k],{on:true,c:+c});fin('again');});}});
+        root.querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>{w.on=!w.on;fin('again');});
+        root.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{w.on=true;w.c=+b.dataset.c;fin('again');});}});
     if(r!=='again')break;}
-  await update();}
-return {update,wardrobe,look,st};
+  update();}
+return {update,wardrobe,look,st,has};
 }
