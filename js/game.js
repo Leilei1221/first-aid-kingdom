@@ -458,12 +458,14 @@ function camera(){const v=$('view'),w=v.clientWidth,h=v.clientHeight;
 window.addEventListener('resize',fit);
 
 /* ================= 劇情 ================= */
+const ACC_EARN=60;   /* 賣完第一份木材後，累積賺到這麼多金幣，回森林會遇到阿木的事件 */
 function goalText(){const rg=curRegion();if(rg!==BASE&&rg.goal)return mk(rg.goal)();
   {const h=hookOf(S.scene);if(h&&h.goal&&rg!==BASE)return h.goal();}
   if(rg===BASE){const g=chBase('goalBase');if(g)return g;}
   switch(S.step){
   case 5:return T('goal.5',{a:S.flagWoodDone?'✓':'□',b:S.flagKidDone?'✓':'□'});
-  case 0:case 1:case 2:case 3:case 4:case 6:case 7:case 8:case 9:return T('goal.'+S.step);
+  case 3:return T('goal.3',{ACC:ACC_EARN});
+  case 0:case 1:case 2:case 4:case 6:case 7:case 8:case 9:return T('goal.'+S.step);
   default:{if(S.coins<0)return T('goal.debt',{debt:-S.coins});
     if(S.f.p3&&!S.f.final){if(S.castleDone)return T('goal.castleDone');if(!S.f.tablet)return T('goal.tablet');if(!S.f.hunter)return T('goal.hunter');if(!S.f.guard)return T('goal.guard');return T('goal.prepare');}
     if(S.step>=10&&!S.f.p3)return T('goal.p3');
@@ -616,7 +618,7 @@ async function go(to,at){
   $('fade').classList.add('on');await sleep(RM?0:280);
   S.scene=to;S.pos={x:at[0],y:at[1]};buildScene();save();
   await sleep(RM?0:60);$('fade').classList.remove('on');
-  if(to==='forest'&&S.step===3&&(S.earned>=60||S.matLv+S.kitLv>0))S.step=4;
+  if(to==='forest'&&S.step===3&&(S.earned>=ACC_EARN||S.matLv+S.kitLv>0))S.step=4;
   if(to==='forest'&&S.step===4){await sleep(RM?0:300);await accident();}
   await wxEnter();
   if(S.pendingFaint&&!go._f){const r=S.pendingFaint;S.pendingFaint=null;go._f=true;try{await faint(r);}finally{go._f=false;}}
@@ -942,7 +944,7 @@ async function board(){
     let pick=-1;
     const rows=S.req.map((ri,i)=>{const r=REQUESTS[ri];const ok=S.mat[r.item]>=r.n;
       return `<div class="row"><div class="info"><b>${r.who}：${r.text}</b><span>交付${MATS[r.item].name} ×${r.n}　報酬 ${r.pay} 金幣＋好感度</span></div><button type="button" data-i="${i}" ${ok?'':'disabled'}>${ok?'交付':'數量不足'}</button></div>`;}).join('');
-    const r=await say({icon:'板',who:'委託板',html:`${rows}<p class="small">素材袋：${matList()}</p>`,buttons:[{label:'離開',primary:true}],
+    const r=await say({icon:'板',who:'委託板',html:`${rows}${S.step===3?`<p class="small">提示：累積賺到 ${ACC_EARN} 金幣後，南方森林的阿木會需要你幫忙。</p>`:''}<p class="small">素材袋：${matList()}</p>`,buttons:[{label:'離開',primary:true}],
       onRender:(root,fin)=>root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');})});
     if(r!=='pick')break;
     const q=REQUESTS[S.req[pick]];S.mat[q.item]-=q.n;S.coins+=q.pay;S.earned+=q.pay;addHeart(q.from,1);
@@ -1005,6 +1007,8 @@ async function shopMenu(){
     else if(pick.startsWith('buy:')){const k=pick.slice(4);S.coins-=P(ITEMS[k].price);S.kit.push(k);msg=`✓ 已購買：${ITEMS[k].name} ×1（急救背包 ${S.kit.length}/${S.kitCap}）`;}
     refresh();
   }
+  if(S.step===3&&!S.warned.afterSell){S.warned.afterSell=true;
+    await say({p:'hero',html:`<p>賣掉第一批木材了，金幣賺到手。</p><p>接下來可以去村口的委託板接工作，賺更多錢、擴充包包。累積賺到 ${ACC_EARN} 金幣（或擴充了包包）後，回南方森林看看阿木。</p><p class="small">不確定下一步時，看畫面上方的「目標」。</p>`});}
 }
 async function merchantMenu(){
   if(S.step<5){await play('merchant.early');return;}
