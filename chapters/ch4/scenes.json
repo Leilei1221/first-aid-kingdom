@@ -438,5 +438,29 @@
   "things": [],
   "exits": [],
   "outdoor": true
+ },
+ "ch4_lodge_in_storm": {
+  "name": "山屋（暴風雪夜）",
+  "spawn": [
+   820,
+   650
+  ],
+  "bg": "ch4_lodge_in_storm",
+  "heroH": 190,
+  "npcs": [
+   {
+    "id": "ch4_keeper",
+    "x": 930,
+    "y": 560
+   },
+   {
+    "id": "ch4_guide_up",
+    "x": 720,
+    "y": 600,
+    "flip": true
+   }
+  ],
+  "things": [],
+  "exits": []
  }
 }

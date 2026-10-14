@@ -182,6 +182,7 @@ async def main(url):
             if any('先離開' in t for t in await btns(page)): await click(page, '先離開', 500); break
             if await hidden(page): break
             await page.locator('#dBtns button:not([disabled])').first.click(); await page.wait_for_timeout(350)
+        await page.evaluate("() => { window.__fa.S.c.ch4.fc = { d0: 15, rock: false, white: false, len: 1 }; }")  # 這支測試不走氣象與事件（survival_test.py 另外測）
         await act_at(page, 400, 400); check('第 1 節完成後，上山路問要不要出發', '營地 1' in await text(page), await text(page))
         # 爬山耗體力：體力不夠就不能出發（留在原地，叫玩家先休息）；夠的話扣 20
         await page.evaluate("() => { window.__fa.S.sta = 25; }")

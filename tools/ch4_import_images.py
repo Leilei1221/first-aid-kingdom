@@ -36,7 +36,13 @@ MAP = [  # (來源檔名（含 * 的用結尾比對）, 輸出, 種類, 尺寸)
  ('ch4_g_tea.png', 'ch4_g_tea', 'obj', 160), ('ch4_g_dryfood.png', 'ch4_g_dryfood', 'obj', 160), ('ch4_g_flask.png', 'ch4_g_flask', 'obj', 160),
  ('walker1.png', 'ch4_walker1', 'body', 520), ('walker1_face.png', 'ch4_walker1_face', 'face', 160),
  ('walker2.png', 'ch4_walker2', 'body', 520), ('walker2_face.png', 'ch4_walker2_face', 'face', 160),
- ('ch4_training_dummy.png', 'ch4_dummy', 'obj', 420), ('ch4_notice_board.png', 'ch4_board_big', 'pic', 640)]
+ ('ch4_training_dummy.png', 'ch4_dummy', 'obj', 420), ('ch4_notice_board.png', 'ch4_board_big', 'pic', 640),
+ # G（抉擇與求生，2026-10-14）：氣象預報圖、破窗暴風雪山屋室內（場景）、地形圖與風向、白茫茫迷路、落石前兆、暴風雪後的營地、指南針
+ ('ch4_weather_forecast.png', 'ch4_forecast', 'pic', 900), ('喜馬拉雅山屋室內_破窗風雪.png', 'ch4_lodge_in_storm', 'scene', None),
+ ('ch4_mountain_map.png', 'ch4_map', 'pic', 640), ('ch4_whiteout_slope.png', 'ch4_whiteout2', 'pic', 640), ('ch4_rockfall_trail.png', 'ch4_rockfall', 'pic', 640),
+ ('ch4_camp_after_blizzard.png', 'ch4_camp_blizzard', 'pic', 640), ('ch4_i_compass.png', 'ch4_i_compass', 'obj', 256)]
+import os
+if os.environ.get('ONLY'): MAP = [m for m in MAP if m[1] in os.environ['ONLY'].split(',')]
 def find(n):
     if n.startswith('*'):
         r = [p for p in SRC.glob('Codex 圖像 2026年10月9日*') if p.stem.endswith(n[1:])]

@@ -3,6 +3,7 @@
  * 嚴重錯誤（C1～C7）會觸發「救援失敗」：顯示現有知識卡、扣救援費、送回山腳村（見 rescueFail）；嚮導訓練是練習，只記錄、不觸發。
  * 對白全部是擬稿（沒有醫療內容），見 chapters/ch4/REVIEW.md。狀態記在 S.c.ch4，不新增頂層欄位。 */
 import dailyInit from './daily.js';
+import survivalInit from './survival.js';
 export default function(FA){
 const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;}});
 const {$,say,lines,go,toast,refresh,nextDay,sleep,checkpoint,stashDepart,RM}=FA;
@@ -85,6 +86,7 @@ async function trail(){
   if(!st().s1){await say({p:'ch4_guide',html:'<p>先跟我做上山前的準備（第 1 節）：到我這裡來。</p>'});return;}
   const i=await say({p:'ch4_guide',who:'上山',html:'<p>要上山去營地 1 嗎？</p>',buttons:[{label:'出發',primary:true},{label:'再等一下'}]});
   if(i!==0)return;
+  if(!(await SV.forecast()))return;
   await stashDepart();
   if(await tired('c1'))return;
   const first=!st().c1;st().c1=true;
@@ -102,7 +104,7 @@ const cardAny=async k=>(await cardOf(k))||FA.CARDS[k];
 /* 救援失敗：選到標了嚴重錯誤的選項 → 說明情境（非醫療句子）→ 顯示現有知識卡 → 扣救援費（同核心 RESCUE_FEE）→ 送回山腳村；已完成的節與星數不受影響，未完成的這一節要重來 */
 async function rescueFail(z,key,opt){
   const code=z.sev[opt],SC=(await rescueData())['ch4_'+code]||{},fee=FA.RESCUE_FEE;
-  await say({icon:'🚨',who:'救援失敗',html:`<p>${SC.intro||'情況變得很危險，帕桑立刻聯絡救援……'}</p><p class="small">你選了「${z.opts[opt]}」。</p>`});
+  await say({icon:'🚨',who:'救援失敗',html:`<p>${SC.intro||'情況變得很危險，帕桑立刻聯絡救援……'}</p><p class="small">${z.why||`你選了「${z.opts[opt]}」`}。</p>`});
   const ck=z.failCard||z.card,c=ck?await cardAny(ck):null;
   if(c){S.cards[ck]=true;await say({p:'hero',html:`<div class="card"><b>${c.title}</b><p>${c.text}</p></div><p class="good">正確的做法在知識卡裡，記起來。</p>`});}
   if(window.FACloud&&FACloud.failure)FACloud.failure('ch4_'+code,z.opts[opt]);
@@ -124,6 +126,9 @@ async function ask(key,p,opt){  /* 同第三章：答錯顯示說明、可再選
 const DL=dailyInit(FA,{S,st,ask,PREV});
 const giveCard=async k=>{const c=await cardOf(k);S.cards[k]=true;await say({p:'hero',html:`<div class="card"><b>${c.title}</b><p>${c.text}</p></div><p class="good">獲得知識卡</p>`});};
 let CD=null;const cardOf=async k=>{CD=CD||(await (await fetch(new URL('cards.json',import.meta.url))).json()).CARDS;return CD[k];};
+const failBy=(code,card,why)=>rescueFail({sev:{0:code},opts:[why],failCard:card,why},'sv',0);  /* 求生撐不下去：同樣的救援失敗（扣救援費、送回山腳村） */
+const SV=survivalInit(FA,{S,st,ask,PREV,have,warmLevel,fail:failBy,DL,innCost:INN_COST,cardOf});
+if(location.hash==='#debug')window.__ch4Sv=SV;  /* #debug 測試用 */
 /* 裝備檢查：列出有／沒有，帕桑依保暖等級說一句話；不擋人，缺的可以去攤位補買 */
 async function gearCheck(){
   const row=([k,n])=>`<div class="row"><div class="info"><b>${n}</b></div><span class="${have(k)?'good':'bad'}">${have(k)?'有':'沒有'}${k==='socks'||k==='warmer'||k==='blanket'||k==='headlamp'?(have(k)?` ×${have(k)}`:''):''}</span></div>`;
@@ -205,6 +210,7 @@ async function up(){
   await stashDepart();
   if(await tired('c2'))return;
   const first=!e.c2;e.c2=true;
+  await SV.rockfall();
   await trip(CAMP2,{icon:'🥾',who:'上山',html:'<p>沿著小徑一路往上，空氣越來越稀薄，大家走得比之前慢，中途歇了好幾次，才到營地 2。</p>'});
   if(first)await say({p:'ch4_guide_up',html:'<p>營地 2 到了。這裡比營地 1 高很多，大家都慢慢來。……那邊那位老先生，臉色好像不太好。</p>'});}
 async function lesson4(){
@@ -242,9 +248,11 @@ async function up3(){
   await stashDepart();
   if(await tired('c4'))return;
   const first=!e.c4;e.c4=true;
+  await SV.whiteout();
   await trip(LODGE,{icon:'🥾',who:'上山',html:'<p>沿著繩索標示的路線，再爬一段緩坡，煙囪冒著煙的山屋終於出現在眼前。</p>'});
   await coldCheck();
-  if(first)await lines('ch4_guide_up',['山屋到了！這裡是雪嶺最高的一個落腳處，也是我們整趟路的終點。','管理員達瓦在這裡守了很多年，什麼天氣、什麼狀況都見過。']);}
+  if(first)await lines('ch4_guide_up',['山屋到了！這裡是雪嶺最高的一個落腳處，也是我們整趟路的終點。','管理員達瓦在這裡守了很多年，什麼天氣、什麼狀況都見過。']);
+  await SV.arrive();}  /* 預報有暴風雪、到山屋那天剛好碰上：被困山屋求生（survival.js） */
 /* 求救哨聲小遊戲：按「吹」三下為一組，停一下再來一組；做對 WHISTLE.groups 組過關 */
 async function whistleGame(){
   await say({p:'hero',who:'吹哨求救',html:`<img src="${FA.A.ch4_i_whistle}" alt="" style="display:block;margin:4px auto;height:70px"><p>三短聲為一組：按「吹」三下，停一下，再吹三下。</p><div class="meter" style="height:18px"><i id="whBar" style="width:0%"></i></div><p id="whTxt" class="small">已完成 0 組</p>`,
@@ -302,12 +310,13 @@ const FLINT_PRICE=100;
 async function stall(){
   let msg='';
   for(;;){
-    const free=S.matCap-Object.values(S.mat).reduce((a,n)=>a+(n||0),0),n=S.mat.flint||0,dis=S.coins<FLINT_PRICE||free<=0;
-    const i=await say({p:'hero',who:'裝備攤',html:`${msg?`<p class="good">${msg}</p>`:''}<p>登山裝備之外，攤子上也有求生用的打火石。</p><p class="small">金幣 ${S.coins}　素材袋剩 ${Math.max(0,free)} 格　打火石：${n} 個</p><p><b>打火石</b>　${FLINT_PRICE} 金幣　生火用，在山上遇到暴風雪時能救命。</p>`,
-      buttons:[{label:'看登山裝備',primary:true},{label:free<=0?'素材袋已滿':`買打火石（${FLINT_PRICE}）`,disabled:dis},{label:'離開'}]});
+    const free=S.matCap-Object.values(S.mat).reduce((a,n)=>a+(n||0),0),n=S.mat.flint||0,dis=S.coins<FLINT_PRICE||free<=0,cp=SV.compassRow(),e=st();
+    const i=await say({p:'hero',who:'裝備攤',html:`${msg?`<p class="good">${msg}</p>`:''}<p>登山裝備之外，攤子上也有求生用的東西。</p><p class="small">金幣 ${S.coins}　素材袋剩 ${Math.max(0,free)} 格　打火石：${n} 個</p><p><b>打火石</b>　${FLINT_PRICE} 金幣　生火用，在山上遇到暴風雪時能救命。</p><p><b>指南針</b>　${cp.price} 金幣　${cp.has?'你已經有了。':'白茫茫看不到路時，靠它確認方向。'}</p>`,
+      buttons:[{label:'看登山裝備',primary:true},{label:free<=0?'素材袋已滿':`買打火石（${FLINT_PRICE}）`,disabled:dis},{label:cp.has?'指南針（已有）':`買指南針（${cp.price}）`,disabled:cp.has||S.coins<cp.price},{label:'離開'}]});
     if(i===0){const r=await FA.chCall('ch3','gearShop');if(r===undefined)await say({p:'hero',html:'<p>攤位上沒有人。</p>'});return;}
-    if(i!==1)return;
-    S.coins-=FLINT_PRICE;S.mat.flint=n+1;refresh();msg=`已買下：打火石 ×1（目前 ${S.mat.flint} 個）`;}}
+    if(i===1){S.coins-=FLINT_PRICE;S.mat.flint=n+1;refresh();msg=`已買下：打火石 ×1（目前 ${S.mat.flint} 個）`;continue;}
+    if(i===2){S.coins-=cp.price;e.compass=true;refresh();msg='已買下：指南針';continue;}
+    return;}}
 async function guideTalk(){
   const e=st();
   for(;;){
@@ -335,10 +344,11 @@ return {
     if(id==='ch4_elder'){if(st().s3a)return lines('ch4_elder',['頭痛好多了。山不會跑，慢慢來才是真本事。']);return lesson3();}
     if(id==='ch4_guide_up'){const e=st();if(S.scene.startsWith('ch4_lodge')){
         if(!e.s5)return lines('ch4_guide_up',['去跟管理員達瓦聊聊吧。']);
-        return (async()=>{for(;;){const bs=[{label:'章末演練',primary:!e.done}];if(DL.on())bs.push({label:'嚮導訓練',primary:true});bs.push({label:'先不要'});
+        return (async()=>{for(;;){const bs=[{label:'章末演練',primary:!e.done}];if(DL.on())bs.push({label:'嚮導訓練',primary:true});bs.push({label:'求生練習（不扣錢）'});bs.push({label:'先不要'});
           const i=await say({p:'ch4_guide_up',html:`<p>${e.done?'想練習嗎？嚮導訓練每天第一次完成可以累積信譽。':'整趟路的課你都學完了。要不要來一次真正的考驗？沒有提示，就看你學到多少。'}</p>`,buttons:bs});
           if(i===0){await finale();return;}
           if(DL.on()&&i===1){await DL.train();continue;}
+          if(bs[i].label.startsWith('求生練習')){await SV.survive({practice:true,len:2});continue;}
           return;}})();}
       if(S.scene.startsWith('ch4_snow'))return lines('ch4_guide_up',[e.s4?'雪線的事都處理好了。再往上是山屋，路還在整理。':'先去看看那個蹲在地上的人吧。']);
       if(S.scene.startsWith('ch4_camp2'))return lines('ch4_guide_up',[e.s3a?'今晚就在營地 2 過夜，讓身體適應高度。':'先去看看老周吧，他好像很不舒服。']);
