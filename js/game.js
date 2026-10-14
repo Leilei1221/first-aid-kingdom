@@ -427,7 +427,7 @@ function plotKey(p){ /* 對應圖片 */
   if(p.st==='tilled')return p.wet?'soil_wet':'soil_dry';
   if(p.g>=GROW_DAYS)return 'ripe';if(p.g>=2)return 'tall';if(p.g>=1)return 'sprout';return p.wet?'soil_wet':'soil_dry';}
 function refresh(){
-  outfitSync();
+  outfitSync();certSync();
   const s=sc(),H=s.heroH;
   (s.trees||[]).forEach(t=>{const st=treeState(t),e=treeEls[t.id];const alive=st.hp>0;setSprite(e,alive?'tree':'stump',alive?Math.round(H*1.9):Math.round(H*.62));});
   plotEls.forEach((e,i)=>{const p=plotState(i),k=plotKey(p);e.hidden=!k;if(!k)return;
@@ -1198,14 +1198,62 @@ function woundGallery(){const ws=Object.keys(WOUNDS),seen=S.wounds||{},n=ws.filt
 async function cards(){if(busy)return;busy=true;stopInput();
   try{const ks=Object.keys(S.cards);await say({p:'hero',who:'知識卡',html:woundGallery()+(ks.length?ks.map(k=>`<div class="card"><b>${CARDS[k].title}</b><p>${CARDS[k].text}</p></div>`).join(''):'<p class="small">還沒有知識卡。</p>'),buttons:[{label:'關閉',primary:true}]});await dailyDone('review');}
   finally{busy=false;}}
+/* ================= 獎狀（老師 2026-10-14 決定）=================
+   四關最高星數合計（js/stars.js）18～19 顆＝結業獎狀、20 顆＝優等獎狀；只是學習紀錄，不等同 BLS 證照。
+   記在既有的 S.c.cert：{name, grad:達成日期, honor:達成日期}；不新增頂層欄位。 */
+const certDate=d=>{const m=/^(\d+)-(\d+)-(\d+)$/.exec(d||'');return m?`${m[1]} 年 ${+m[2]} 月 ${+m[3]} 日`:'';};
+function certSync(){
+  if(!S||!S.c||!window.FAStars)return;
+  const t=FAStars.tier(FAStars.total(S));if(!t)return;
+  const c=S.c.cert=S.c.cert||{name:null,grad:null,honor:null};let fresh=null;
+  if(!c.grad){c.grad=todayStr();fresh='grad';}
+  if(t==='honor'&&!c.honor){c.honor=todayStr();fresh='honor';}
+  if(fresh&&!PREVIEW)toast(fresh==='honor'?'集滿 20 顆星！設定選單可以領優等獎狀':'集滿 18 顆星！設定選單可以領結業獎狀');}
+const certTier=()=>{const c=S.c&&S.c.cert;return c&&c.honor?'honor':c&&c.grad?'grad':null;};
+function certHtml(name,tier,total,date,forPrint){
+  const honor=tier==='honor',title=honor?'優等獎狀':'結業獎狀',col=honor?'#B8860B':'#2F7D4F';
+  return `<div style="border:6px double ${col};border-radius:14px;padding:${forPrint?'48px 56px':'16px 14px'};text-align:center;background:#FFFBEF;color:#3B2E1A;font-family:'Noto Serif TC','PMingLiU',serif">
+<div style="font-size:${forPrint?'20px':'13px'};letter-spacing:.3em;color:${col}">急救王國</div>
+<div style="font-size:${forPrint?'54px':'30px'};font-weight:700;letter-spacing:.2em;color:${col};margin:6px 0 10px">${title}</div>
+<div style="font-size:${forPrint?'36px':'24px'};font-weight:700;border-bottom:2px solid ${col};display:inline-block;padding:0 18px;margin:6px 0 12px">${esc(name)}</div>
+<div style="font-size:${forPrint?'20px':'14px'};line-height:1.9">完成急救王國序章與第二、三、四章的學習，<br>四關共集滿 <b style="color:${col}">${total}</b> 顆星${honor?'（全部滿星）':''}，特頒此狀以資鼓勵。</div>
+<div style="color:${col};font-size:${forPrint?'28px':'20px'};letter-spacing:.2em;margin:8px 0">${'★'.repeat(Math.min(total,20))}</div>
+<div style="font-size:${forPrint?'16px':'12px'};margin-top:8px">${certDate(date)}</div>
+<div style="font-size:${forPrint?'15px':'11px'};margin-top:6px">遊戲設計：Lei｜國立花蓮高中 健康與護理科</div>
+<div style="font-size:${forPrint?'13px':'10px'};margin-top:10px;opacity:.75">本獎狀為遊戲學習紀錄，不等同 BLS 急救證照。</div></div>`;}
+const esc=x=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function certName(){
+  const c=S.c.cert=S.c.cert||{name:null,grad:null,honor:null};let v=c.name||(window.FACloud&&FACloud.name&&FACloud.name())||'';
+  const i=await say({p:'hero',who:'獎狀姓名',html:`<p>請確認獎狀上的姓名（請用真實姓名，換實體證書時老師會核對）。</p><p><input id="certNm" maxlength="12" value="${esc(v)}" style="width:100%;font-size:18px;padding:6px"></p>`,
+    buttons:[{label:'確認',primary:true},{label:'取消'}],onRender:root=>{const e=root.querySelector('#certNm');if(e)e.oninput=()=>{v=e.value;};}});
+  const nm=String(v).trim().slice(0,12);if(i!==0||!nm)return false;c.name=nm;save();return true;}
+async function certShow(){
+  const c=S.c.cert;if(!c||!c.name){if(!await certName())return;}
+  while(true){const t=certTier(),n=FAStars.total(S),c2=S.c.cert,date=t==='honor'?c2.honor:c2.grad;
+    const i=await say({p:'hero',who:t==='honor'?'優等獎狀':'結業獎狀',html:certHtml(c2.name,t,n,date,false)+'<p class="small">可以截圖，或按「列印」。</p>',buttons:[{label:'列印',primary:true},{label:'修改姓名'},{label:'關閉'}]});
+    if(i===0){certPrint(c2.name,t,n,date);}
+    else if(i===1){await certName();}
+    else return;}}
+function certPrint(name,tier,total,date){
+  const w=window.open('','_blank');if(!w){toast('無法開啟列印視窗，請改用截圖');return;}
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>急救王國獎狀</title><style>@page{size:A4 landscape;margin:12mm}body{margin:0;padding:12px}</style></head><body>${certHtml(name,tier,total,date,true)}</body></html>`);
+  w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(e){}},400);}
+async function certCenter(){
+  const P=FAStars.parts(S),n=FAStars.total(S),t=certTier();
+  const rows=Object.keys(FAStars.NAMES).map(k=>`<div class="row"><div class="info"><b>${FAStars.NAMES[k]}</b><span>${'★'.repeat(P[k])}${'☆'.repeat(FAStars.MAX-P[k])}（${P[k]}/${FAStars.MAX}）</span></div></div>`).join('');
+  const msg=t==='honor'?'<p class="good">20 顆星全部集滿，優等獎狀已經可以領取！</p>':t==='grad'?`<p class="good">已經達到 ${FAStars.GRAD} 顆星，結業獎狀可以領取！再集滿 ${FAStars.HONOR} 顆星可以換優等獎狀。</p>`:`<p>集滿 ${FAStars.GRAD} 顆星可以領結業獎狀（還差 ${FAStars.GRAD-n} 顆），集滿 ${FAStars.HONOR} 顆星可以領優等獎狀。星數以每一關的章末演練最高紀錄計算，回去重打、補知識卡就能再拿星。</p>`;
+  const i=await say({p:'hero',who:'獎狀與筆試',html:`<div style="font-size:24px;color:var(--gold)">總星數 ${n} / ${FAStars.MAX*4}</div>${rows}${msg}`,buttons:[...(t?[{label:t==='honor'?'領優等獎狀':'領結業獎狀',primary:true}]:[]),{label:'關閉',primary:!t}]});
+  if(t&&i===0)await certShow();}
+
 async function settings(){if(busy)return;busy=true;stopInput();let reset=false;const hasOut=!!(window.FACloud&&FACloud.email());
-  try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>${window.FAMusic?`<p>背景音樂：<b>${FAMusic.isOn()?'開':'關'}</b>　音量 <input type="range" id="musVol" min="0" max="100" value="${Math.round(FAMusic.vol()*100)}" style="vertical-align:middle"></p><p class="small">配樂：AI 輔助原創作曲與合成音色製作</p>`:''}<p class="small">關於這款遊戲：遊戲設計 Lei（國立花蓮高中 健康與護理科）；程式由 Claude、Codex 協助撰寫，圖像由 ChatGPT 協助生成，音樂為 AI 輔助作曲；急救內容依公開的急救指引，並由設計者審核。</p>`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(hasOut?[{label:'登出'}]:[]),...(window.FAMusic?[{label:FAMusic.isOn()?'關閉背景音樂':'開啟背景音樂'}]:[]),{label:'關閉'}],
+  try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>${window.FAMusic?`<p>背景音樂：<b>${FAMusic.isOn()?'開':'關'}</b>　音量 <input type="range" id="musVol" min="0" max="100" value="${Math.round(FAMusic.vol()*100)}" style="vertical-align:middle"></p><p class="small">配樂：AI 輔助原創作曲與合成音色製作</p>`:''}<p class="small">關於這款遊戲：遊戲設計 Lei（國立花蓮高中 健康與護理科）；程式由 Claude、Codex 協助撰寫，圖像由 ChatGPT 協助生成，音樂為 AI 輔助作曲；急救內容依公開的急救指引，並由設計者審核。</p>`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(hasOut?[{label:'登出'}]:[]),...(window.FAMusic?[{label:FAMusic.isOn()?'關閉背景音樂':'開啟背景音樂'}]:[]),{label:'獎狀與筆試'},{label:'關閉'}],
       onRender:root=>{const v=root.querySelector('#musVol');if(v)v.oninput=()=>FAMusic.setVol(v.value/100);}});
     if(i===0)S.ctrl=S.ctrl==='joy'?'pad':'joy';
     else if(i===1){const sp=sc().spawn;S.pos={x:sp[0],y:sp[1]};placeHero();camera();toast('已回到入口');}
     else if(i===2){const j=await say({p:'hero',who:'重新開始',html:'<p>所有進度都會清除。</p>',buttons:[{label:'重新開始',danger:true},{label:'取消',primary:true}]});if(j===0){const c=S.ctrl;S=newState();S.ctrl=c;S.started=true;reset=true;if(window.FACloud)FACloud.clearCheckpoints();}}
     else if(i===3&&hasOut){await doSignOut();return;}
-    else if(window.FAMusic&&i===(hasOut?4:3))FAMusic.setOn(!FAMusic.isOn());}
+    else if(window.FAMusic&&i===(hasOut?4:3))FAMusic.setOn(!FAMusic.isOn());
+    else if(i===(hasOut?4:3)+(window.FAMusic?1:0))await certCenter();}
   finally{busy=false;save();if(reset){buildScene();startScene();}else refresh();}}
 
 /* ================= 移動 ================= */
@@ -1436,5 +1484,5 @@ Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
 if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={petLetter,petBuild,PETS,get petEl(){return petEl;},get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={certCenter,certShow,certSync,certTier,petLetter,petBuild,PETS,get petEl(){return petEl;},get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();

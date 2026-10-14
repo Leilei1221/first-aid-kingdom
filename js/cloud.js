@@ -8,7 +8,7 @@ const META='fa-kingdom-p1-v1-meta',CPKEY='fa-kingdom-cp-v1',CTRL='fa-kingdom-ctr
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 const clone=o=>JSON.parse(JSON.stringify(o));
-let remote=null,email=null,status='off',pending=null,pushing=false,conflict=false,timer=null,retry=null;
+let remote=null,email=null,uname=null,status='off',pending=null,pushing=false,conflict=false,timer=null,retry=null;
 const listeners=[];
 const setStatus=s=>{if(status===s)return;status=s;listeners.forEach(f=>{try{f(s);}catch(e){}});};
 
@@ -45,6 +45,7 @@ async function init(){
   }
   let u=null;try{u=await remote.user();}catch(e){}
   email=u&&u.email?u.email.toLowerCase():null;
+  uname=u&&u.user_metadata?(u.user_metadata.full_name||u.user_metadata.name||null):null;
   setStatus(email?'ok':'off');
   return email;
 }
@@ -142,5 +143,5 @@ async function signIn(){if(remote)await remote.signIn();}
 async function signOut(){await flush();try{await remote.signOut();}catch(e){}LS.del(META);LS.del(CPKEY);LS.del(CTRL);email=null;pending=null;conflict=false;setStatus('off');}
 
 window.FACloud={init,sync,decide,queueSave,flush,checkpoint,restore,clearCheckpoints,failure,signIn,signOut,cachedControl,refreshControl,
-  email:()=>email,status:()=>status,onStatus:f=>listeners.push(f)};
+  email:()=>email,name:()=>uname,status:()=>status,onStatus:f=>listeners.push(f)};
 })();
