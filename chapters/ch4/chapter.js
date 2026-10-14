@@ -297,9 +297,17 @@ async function finale(){
   if(FA.dailyDone)await FA.dailyDone('care');}
 async function up4(){await say({p:'hero',html:'<p>往更高處的小徑拉著繩子，現在還不能上去。</p>'});}
 async function shelter(){await say({p:'hero',html:'<p>石頭砌成的小屋擋住了風，坐在裡面，身體慢慢暖了起來。</p>'});}
+/* 求生用品：打火石 100 金幣（老師 2026-10-13：求生用的，自己先在前面準備，或花錢換安全）。進素材袋，不能賣高於買價（素材收購價 5） */
+const FLINT_PRICE=100;
 async function stall(){
-  const r=await FA.chCall('ch3','gearShop');
-  if(r===undefined)await say({p:'hero',html:'<p>攤位上沒有人。</p>'});}
+  let msg='';
+  for(;;){
+    const free=S.matCap-Object.values(S.mat).reduce((a,n)=>a+(n||0),0),n=S.mat.flint||0,dis=S.coins<FLINT_PRICE||free<=0;
+    const i=await say({p:'hero',who:'裝備攤',html:`${msg?`<p class="good">${msg}</p>`:''}<p>登山裝備之外，攤子上也有求生用的打火石。</p><p class="small">金幣 ${S.coins}　素材袋剩 ${Math.max(0,free)} 格　打火石：${n} 個</p><p><b>打火石</b>　${FLINT_PRICE} 金幣　生火用，在山上遇到暴風雪時能救命。</p>`,
+      buttons:[{label:'看登山裝備',primary:true},{label:free<=0?'素材袋已滿':`買打火石（${FLINT_PRICE}）`,disabled:dis},{label:'離開'}]});
+    if(i===0){const r=await FA.chCall('ch3','gearShop');if(r===undefined)await say({p:'hero',html:'<p>攤位上沒有人。</p>'});return;}
+    if(i!==1)return;
+    S.coins-=FLINT_PRICE;S.mat.flint=n+1;refresh();msg=`已買下：打火石 ×1（目前 ${S.mat.flint} 個）`;}}
 async function guideTalk(){
   const e=st();
   for(;;){
