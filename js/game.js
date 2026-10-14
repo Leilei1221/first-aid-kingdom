@@ -1210,8 +1210,25 @@ function certSync(){
   if(t==='honor'&&!c.honor){c.honor=todayStr();fresh='honor';}
   if(fresh&&!PREVIEW)toast(fresh==='honor'?'集滿 20 顆星！設定選單可以領優等獎狀':'集滿 18 顆星！設定選單可以領結業獎狀');}
 const certTier=()=>{const c=S.c&&S.c.cert;return c&&c.honor?'honor':c&&c.grad?'grad':null;};
+/* 獎狀底圖（老師 2026-10-14 生圖）：assets/cert_grad.webp（綠）、cert_honor.webp（金），圖上沒有字；姓名、日期、星星、標題都疊在上面。圖載入失敗時退回 CSS 金框 */
+const CERT_IMG={grad:'assets/cert_grad.webp',honor:'assets/cert_honor.webp'},certImgOk={};
+const certImgCheck=t=>t in certImgOk?Promise.resolve(certImgOk[t]):new Promise(r=>{const i=new Image();i.onload=()=>r(certImgOk[t]=true);i.onerror=()=>r(certImgOk[t]=false);i.src=CERT_IMG[t];});
 function certHtml(name,tier,total,date,forPrint){
   const honor=tier==='honor',title=honor?'優等獎狀':'結業獎狀',col=honor?'#B8860B':'#2F7D4F';
+  const lines=`<div style="color:#3B2E1A">`;
+  if(certImgOk[tier]){
+    /* 版面（佔圖片的百分比）：標題在上緣緞帶（綠色緞帶中心約 6.5%、金色約 12%），本文放在中間留白，下緣是盾牌徽章 */
+    const ribY=honor?12.3:6.6,top=honor?24:19.5,ht=honor?50:60;
+    return `<div class="cert" style="position:relative;width:${forPrint?'273mm':'100%'};aspect-ratio:1492/1054;container-type:inline-size;background:url(${CERT_IMG[tier]}) center/100% 100% no-repeat;font-family:'Noto Serif TC','PMingLiU',serif;color:#3B2E1A">
+<div style="position:absolute;left:30%;width:40%;top:${ribY-3}%;height:6%;display:flex;align-items:center;justify-content:center;font-size:3.3cqw;font-weight:700;letter-spacing:.25em;color:${honor?'#1F4D2E':'#F8E9B0'};text-shadow:${honor?'0 1px 0 rgba(255,255,255,.5)':'0 1px 2px rgba(0,0,0,.5)'}">${title}</div>
+<div style="position:absolute;left:12%;width:76%;top:${top}%;height:${ht}%;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;text-align:center">
+<div style="font-size:1.9cqw;letter-spacing:.35em;color:${col}">急救王國</div>
+<div style="font-size:4.6cqw;font-weight:700;border-bottom:.25cqw solid ${col};padding:0 2cqw">${esc(name)}</div>
+<div style="font-size:2.1cqw;line-height:1.85">完成急救王國序章與第二、三、四章的學習，<br>四關共集滿 <b style="color:${col}">${total}</b> 顆星${honor?'（全部滿星）':''}，特頒此狀以資鼓勵。</div>
+<div style="color:${col};font-size:2.2cqw;letter-spacing:.15em">${'★'.repeat(Math.min(total,20))}</div>
+<div style="font-size:1.7cqw">${certDate(date)}</div>
+<div style="font-size:1.4cqw">遊戲設計：Lei｜國立花蓮高中 健康與護理科</div>
+<div style="font-size:1.2cqw;opacity:.8">本獎狀為遊戲學習紀錄，不等同 BLS 急救證照。</div></div></div>`;}
   return `<div style="border:6px double ${col};border-radius:14px;padding:${forPrint?'48px 56px':'16px 14px'};text-align:center;background:#FFFBEF;color:#3B2E1A;font-family:'Noto Serif TC','PMingLiU',serif">
 <div style="font-size:${forPrint?'20px':'13px'};letter-spacing:.3em;color:${col}">急救王國</div>
 <div style="font-size:${forPrint?'54px':'30px'};font-weight:700;letter-spacing:.2em;color:${col};margin:6px 0 10px">${title}</div>
@@ -1229,14 +1246,14 @@ async function certName(){
   const nm=String(v).trim().slice(0,12);if(i!==0||!nm)return false;c.name=nm;save();return true;}
 async function certShow(){
   const c=S.c.cert;if(!c||!c.name){if(!await certName())return;}
-  while(true){const t=certTier(),n=FAStars.total(S),c2=S.c.cert,date=t==='honor'?c2.honor:c2.grad;
+  while(true){const t=certTier(),n=FAStars.total(S),c2=S.c.cert,date=t==='honor'?c2.honor:c2.grad;await certImgCheck(t);
     const i=await say({p:'hero',who:t==='honor'?'優等獎狀':'結業獎狀',html:certHtml(c2.name,t,n,date,false)+'<p class="small">可以截圖，或按「列印」。</p>',buttons:[{label:'列印',primary:true},{label:'修改姓名'},{label:'關閉'}]});
     if(i===0){certPrint(c2.name,t,n,date);}
     else if(i===1){await certName();}
     else return;}}
 function certPrint(name,tier,total,date){
   const w=window.open('','_blank');if(!w){toast('無法開啟列印視窗，請改用截圖');return;}
-  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>急救王國獎狀</title><style>@page{size:A4 landscape;margin:12mm}body{margin:0;padding:12px}</style></head><body>${certHtml(name,tier,total,date,true)}</body></html>`);
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>急救王國獎狀</title><style>@page{size:A4 landscape;margin:12mm}body{margin:0}</style></head><body>${certHtml(name,tier,total,date,true)}</body></html>`);
   w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(e){}},400);}
 /* ================= 第五章筆試（老師 2026-10-14 決定）=================
    協會題 15＋遊戲題 10（引用第三章已審核題目），一題 4 分，80 分及格；只給老師參考，不算正式成績。
