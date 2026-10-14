@@ -1238,12 +1238,54 @@ function certPrint(name,tier,total,date){
   const w=window.open('','_blank');if(!w){toast('無法開啟列印視窗，請改用截圖');return;}
   w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>急救王國獎狀</title><style>@page{size:A4 landscape;margin:12mm}body{margin:0;padding:12px}</style></head><body>${certHtml(name,tier,total,date,true)}</body></html>`);
   w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(e){}},400);}
+/* ================= 第五章筆試（老師 2026-10-14 決定）=================
+   協會題 15＋遊戲題 10（引用第三章已審核題目），一題 4 分，80 分及格；只給老師參考，不算正式成績。
+   條件：登入、四關總星數 ≥ 18、班級開關 ch5（不屬於任何班的人預設開）。題目與選項每次隨機；作答中不顯示對錯，交卷後才顯示。
+   成績記在既有的 S.c.ch5：{best, tries, last, date}；不新增頂層欄位。資料 chapters/ch5/exam.json。 */
+let EXAMQ=null;
+async function examBank(){
+  if(EXAMQ)return EXAMQ;
+  const [e,d]=await Promise.all([getJSON('chapters/ch5/exam.json'),getJSON('chapters/ch3/dialogues.json')]);
+  const Z=d.quizzes,list=e.assoc.map(a=>({id:a.id,q:a.q,opts:a.opts,ans:a.ans}));
+  e.game.forEach(k=>{const x=Z[k];list.push(x.order?{id:k,order:true,q:x.title,steps:x.steps,explain:x.explain}:{id:k,q:x.q,opts:x.opts,ans:x.ans,explain:x.explain});});
+  return EXAMQ={list,pass:e.pass,per:e.per};}
+const examShuffle=a=>{const r=a.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;};
+const examOn=()=>!!PREVIEW||flagOn('ch5',false);
+const examWhy=()=>{if(PREVIEW)return null;if(!(window.FACloud&&FACloud.email()))return '第五章筆試要先登入才能參加。請回到標題畫面，用 Google 帳號登入。';
+  const n=FAStars.total(S);return n<FAStars.GRAD?`四關總星數要達到 ${FAStars.GRAD} 顆才能參加筆試，你現在有 ${n} 顆（還差 ${FAStars.GRAD-n} 顆）。回去補知識卡、重打章末演練拿更高的星數吧。`:null;};
+async function examAsk(item){  /* 回傳 {ok, shown:你的答案文字, right:正確答案文字} */
+  if(item.order){
+    const order=examShuffle(item.steps.map((x,i)=>i));let got=[];
+    await say({p:'hero',who:`筆試 ${item.no}/${item.total}`,html:`<p class="q">${item.q}</p><p class="small">請依照正確順序點選（由先到後）。選錯了可以按「清除重選」。</p><div id="eoq">${order.map(i=>`<button type="button" class="btn" data-o="${i}" style="margin:4px 0;width:100%">${item.steps[i]}</button>`).join('')}</div>`,
+      buttons:[{label:'清除重選'},{label:'確定',primary:true,disabled:true}],
+      onRender:(root,fin)=>{const ok=document.querySelectorAll('#dBtns button')[1],paint=()=>{root.querySelectorAll('button[data-o]').forEach(b=>{const i=+b.dataset.o,k=got.indexOf(i);b.disabled=k>=0;b.textContent=(k>=0?`${k+1}. `:'')+item.steps[i];});ok.disabled=got.length!==item.steps.length;};
+        root.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{got.push(+b.dataset.o);paint();});
+        const clr=document.querySelectorAll('#dBtns button')[0];clr.onclick=()=>{got=[];paint();};ok.onclick=()=>fin('ok');}});
+    return {ok:got.every((v,i)=>v===i),shown:got.map(i=>item.steps[i]).join(' → '),right:item.steps.join(' → ')};}
+  const idx=examShuffle(item.opts.map((x,i)=>i));
+  const i=await say({p:'hero',who:`筆試 ${item.no}/${item.total}`,html:`<p class="q">${item.q}</p>`,buttons:idx.map(k=>({label:item.opts[k]}))});
+  const pick=idx[i];return {ok:pick===item.ans,shown:item.opts[pick],right:item.opts[item.ans]};}
+async function examRun(){
+  const bank=await examBank(),qs=examShuffle(bank.list).map((x,i,a)=>Object.assign({},x,{no:i+1,total:a.length})),miss=[];
+  for(const q of qs){const r=await examAsk(q);if(!r.ok)miss.push({q,r});}
+  const right=qs.length-miss.length,score=right*bank.per,e=S.c.ch5=S.c.ch5||{best:0,tries:0};
+  e.tries=(e.tries||0)+1;e.last=score;e.date=todayStr();const fresh=score>(e.best||0);if(fresh)e.best=score;save();
+  const pass=score>=bank.pass;
+  const wrong=miss.length?miss.map(({q,r})=>`<div class="card"><b>${q.q}</b><p class="small">你的答案：${r.shown}</p><p class="good">正確答案：${r.right}</p>${q.explain?`<p class="small">${q.explain}</p>`:''}</div>`).join(''):'<p class="good">全部答對！</p>';
+  return say({p:'hero',who:'筆試結果',html:`<div style="font-size:28px;color:var(--gold)">${score} / ${qs.length*bank.per} 分</div><p class="${pass?'good':'bad'}">${pass?`達到 ${bank.pass} 分的標準了！`:`還差一點，標準是 ${bank.pass} 分。`}　答對 ${right} / ${qs.length} 題。</p><p class="small">最高分：${e.best} 分　已考 ${e.tries} 次。這個成績只供老師參考，不算正式成績。</p>${miss.length?`<h4>答錯的題目</h4>`:''}${wrong}`,buttons:[{label:'再考一次',primary:true},{label:'關閉'}]});}
+async function examCenter(){
+  const why=examWhy();if(why){await say({p:'hero',who:'第五章筆試',html:`<p>${why}</p>`});return;}
+  const e=S.c.ch5;
+  const i=await say({p:'hero',who:'第五章筆試',html:`<p>共 25 題（一題 4 分，滿分 100 分，80 分及格），題目和選項的順序每次都不一樣。不計時，作答中不會顯示對錯，交卷後才會顯示分數和答錯的題目。</p><p class="small">這個成績只供老師參考，不算正式成績，可以重考，記最高分。</p>${e&&e.tries?`<p>目前最高分：<b>${e.best}</b> 分（已考 ${e.tries} 次）</p>`:''}`,buttons:[{label:'開始作答',primary:true},{label:'取消'}]});
+  if(i!==0)return;
+  for(;;){const r=await examRun();if(r!==0)return;}}
 async function certCenter(){
   const P=FAStars.parts(S),n=FAStars.total(S),t=certTier();
   const rows=Object.keys(FAStars.NAMES).map(k=>`<div class="row"><div class="info"><b>${FAStars.NAMES[k]}</b><span>${'★'.repeat(P[k])}${'☆'.repeat(FAStars.MAX-P[k])}（${P[k]}/${FAStars.MAX}）</span></div></div>`).join('');
   const msg=t==='honor'?'<p class="good">20 顆星全部集滿，優等獎狀已經可以領取！</p>':t==='grad'?`<p class="good">已經達到 ${FAStars.GRAD} 顆星，結業獎狀可以領取！再集滿 ${FAStars.HONOR} 顆星可以換優等獎狀。</p>`:`<p>集滿 ${FAStars.GRAD} 顆星可以領結業獎狀（還差 ${FAStars.GRAD-n} 顆），集滿 ${FAStars.HONOR} 顆星可以領優等獎狀。星數以每一關的章末演練最高紀錄計算，回去重打、補知識卡就能再拿星。</p>`;
-  const i=await say({p:'hero',who:'獎狀與筆試',html:`<div style="font-size:24px;color:var(--gold)">總星數 ${n} / ${FAStars.MAX*4}</div>${rows}${msg}`,buttons:[...(t?[{label:t==='honor'?'領優等獎狀':'領結業獎狀',primary:true}]:[]),{label:'關閉',primary:!t}]});
-  if(t&&i===0)await certShow();}
+  const i=await say({p:'hero',who:'獎狀與筆試',html:`<div style="font-size:24px;color:var(--gold)">總星數 ${n} / ${FAStars.MAX*4}</div>${rows}${msg}`,buttons:[...(t?[{label:t==='honor'?'領優等獎狀':'領結業獎狀',primary:true}]:[]),...(examOn()?[{label:'第五章筆試'}]:[]),{label:'關閉',primary:!t&&!examOn()}]});
+  if(t&&i===0)await certShow();
+  else if(examOn()&&i===(t?1:0))await examCenter();}
 
 async function settings(){if(busy)return;busy=true;stopInput();let reset=false;const hasOut=!!(window.FACloud&&FACloud.email());
   try{const i=await say({p:'hero',who:'設定',html:`<p>移動方式：<b>${S.ctrl==='joy'?'虛擬搖桿':'方向鍵'}</b></p><p class="small">用電腦玩時，可以用鍵盤方向鍵走路、空白鍵互動。</p><p class="small">${cloudLine()}</p>${window.FAMusic?`<p>背景音樂：<b>${FAMusic.isOn()?'開':'關'}</b>　音量 <input type="range" id="musVol" min="0" max="100" value="${Math.round(FAMusic.vol()*100)}" style="vertical-align:middle"></p><p class="small">配樂：AI 輔助原創作曲與合成音色製作</p>`:''}<p class="small">關於這款遊戲：遊戲設計 Lei（國立花蓮高中 健康與護理科）；程式由 Claude、Codex 協助撰寫，圖像由 ChatGPT 協助生成，音樂為 AI 輔助作曲；急救內容依公開的急救指引，並由設計者審核。</p>`,buttons:[{label:S.ctrl==='joy'?'改用方向鍵':'改用虛擬搖桿',primary:true},{label:'卡住了？回到這個場景的入口'},{label:'全部重新開始',danger:true},...(hasOut?[{label:'登出'}]:[]),...(window.FAMusic?[{label:FAMusic.isOn()?'關閉背景音樂':'開啟背景音樂'}]:[]),{label:'獎狀與筆試'},{label:'關閉'}],
@@ -1484,5 +1526,5 @@ Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */
 if(PREVIEW){const b=document.createElement('div');b.textContent='老師預覽：不存進度、不影響學生';b.style.cssText='position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:99999;background:#E3B95B;color:#2A1D08;font:700 12px sans-serif;padding:3px 12px;border-radius:12px;pointer-events:none;opacity:.92';document.body.appendChild(b);$('btnStart').click();}
 }catch(err){console.error('章節介面初始化失敗，章節停用：',err);}
-if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={certCenter,certShow,certSync,certTier,petLetter,petBuild,PETS,get petEl(){return petEl;},get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
+if(location.hash==='#debug'&&localStorage.getItem('fa-debug')==='1')window.__fa={examCenter,examBank,examOn,examWhy,certCenter,certShow,certSync,certTier,petLetter,petBuild,PETS,get petEl(){return petEl;},get CONTROL(){return CONTROL;},outfitSync,wearOutfit,outfitSrc,OUTFITS,airPick,airOwned,fly,VEHICLES,flagOn,starReward,staMax,dailyDone,dailyCheck,dailyState,dailyWindow,chatLuck,useItem,luckyBonus,buffTick,luckWeights,vipRate,vipPrice,chatDone,chatMenu,merchantMenu,speedMul,pullControl,startRelief,chiefTalk,camp,wxEnter,riverWater,retreatIndoor,quiz,rescueFail,scheduleWx,wxToday,stormy,nextDay,refresh,say,cards,SCENES,CHAPTERS,REGIONS,regionOf,curRegion,mapAvail,stashDepart,worldMap,woundGallery,T,rationPhase,stashMenu,eatSugar,rescueFail,checkpoint,save,moveSpr,well,boil,bag,needCheck,takeKit,faint,hypoWarn,doEvent,EVENTS,victim,gateDoor,tablet,hunter,guardTalk,gift,bench,takeBin,pickUp,eatMushroom,get S(){return S},go,talk,doAction,bed,machine,farmPlot,mine,shopMenu,refresh,buildScene};
 })();
