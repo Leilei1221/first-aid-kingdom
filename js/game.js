@@ -242,7 +242,7 @@ async function dailyWindow(){
     await say({p:'hero',who:'每日任務',html:`<h4>今天的任務（${dailyCount()}/${DAILY.tasks.length}）</h4>${DAILY.tasks.map(t=>`<div class="row"><div class="info"><b>${d.done[t.id]?'✓':'□'} ${t.name}</b></div></div>`).join('')}<p class="small">三項都完成，可以領 ${DAILY.reward.coins} 金幣，還有機會得到神秘小道具。每天都會重新開始。</p>
       <h4>累計登入</h4><p>已經累計登入 <b>${d.days}</b> 天${d.title?`　稱號：「${d.title}」`:''}</p><p class="small">${nx?`再登入 ${nx.days-d.days} 天（第 ${nx.days} 天）有獎勵：${nx.coins} 金幣${nx.items?'、'+Object.entries(nx.items).map(([k,n])=>CHAT_LUCK.items[k].name+' ×'+n).join('、'):''}${nx.title?`、稱號「${nx.title}」`:''}。中斷幾天也沒關係，天數不會歸零。`:'累計登入的獎勵都領完了！'}</p>`,buttons:[{label:'關閉',primary:true}]});}
   finally{busy=false;}}
-const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;if(f&&name in f)return !!f[name];if(/^(ch\d+|wild)$/.test(name)&&!(CONTROL&&CONTROL.class_id))return true;return !!def;};
+const flagOn=(name,def)=>{const f=CONTROL&&CONTROL.flags;if(f&&name in f)return !!f[name];if(/^(ch\d+|wild|sv)$/.test(name)&&!(CONTROL&&CONTROL.class_id))return true;return !!def;};
 async function pullControl(){if(!window.FACloud||!FACloud.refreshControl)return;try{CONTROL=await FACloud.refreshControl();}catch(e){}applyAnnouncement();}
 /* 老師發布的天災：每則公告每位學生只套用一次，排成「自己遊戲的明天」；套用時馬上告訴學生預報（等遊戲閒下來再顯示） */
 let wxNotice=null;
@@ -1537,7 +1537,7 @@ async function lines(p,arr){for(const x of arr)await say({p,html:`<p>${x}</p>`})
 let FA=null;
 try{FA={get S(){return S;},ITEMS,MATS,CARDS,WOUNDS,PACKS:C.balance.PACKS||[],A,RATIO,RM,STA_MAX,RATION_NEED,WATER_NEED,$,
   say,quiz,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,
-  SHOP_MED,SHOP_EXTRA,STAMINA_SHOP,RATION_LIFE,badge,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,RESCUE_FEE,petShopHtml,petAdopt,friendOn,stashDepart,chCall:(id,name,...a)=>{const h=chOpen(id)?CHH[id]:null;return h&&h[name]?h[name](...a):undefined;},stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
+  SHOP_MED,SHOP_EXTRA,STAMINA_SHOP,RATION_LIFE,badge,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,RESCUE_FEE,flagOn,petShopHtml,petAdopt,friendOn,stashDepart,chCall:(id,name,...a)=>{const h=chOpen(id)?CHH[id]:null;return h&&h[name]?h[name](...a):undefined;},stormy,wxToday,rescueFail,RESCUE_ABORT,starReward,staMax,chatLuck,luckyBonus,dailyDone,orderQuiz,checkpoint,curRegion,regionOf,hearts,
   setBusy:v=>{busy=v;},stopInput,save,setHeroLook:(f,onBaseChange)=>{heroLook=f;heroLookChanged=onBaseChange||null;},refreshHero:()=>{if(heroImg)heroImg.src=outfitSrc();},outfitBase};
 Object.entries(CH_MODS).forEach(([id,f])=>{try{CHH[id]=f(FA);}catch(err){console.error('章節程式初始化失敗，已略過：',id,err);}});
 /* 老師預覽：要等章節程式掛上去（上一行）才開始，場景裡章節的圖與互動點才會出現 */

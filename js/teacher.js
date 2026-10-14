@@ -80,8 +80,8 @@ async function makeApi(){
 
 /* ---------- 畫面 ---------- */
 let api=null,user=null,classes=[],rows=[],fails=[],cardTotal=0,names={},scenarioNames={};
-let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,ch3:false,ch4:false,ch5:false,wild:false,relief:false},wxNames={};
-const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['ch3','第三章（港口藍堡）','完成第二章後，從礦坑入口往南的漁港搭船前往'],['ch4','第四章（雪嶺）','完成第三章、集滿 3 片海圖碎片後，到藍堡港口找帕桑出發'],['ch5','第五章（筆試）','要登入、四關總星數達 18 顆的學生，才能在設定選單的「獎狀與筆試」作答；成績只供老師參考，不算正式成績'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
+let ctrl={flags:{},weather:null,error:null},defaults={ch2:true,ch3:false,ch4:false,ch5:false,sv:false,wild:false,relief:false},wxNames={};
+const FLAGS=[['ch2','第二章（熔岩鍛造鎮）','完成序章並收到爺爺的信後，學生才會看到'],['ch3','第三章（港口藍堡）','完成第二章後，從礦坑入口往南的漁港搭船前往'],['ch4','第四章（雪嶺）','完成第三章、集滿 3 片海圖碎片後，到藍堡港口找帕桑出發'],['ch5','第五章（筆試）','要登入、四關總星數達 18 顆的學生，才能在設定選單的「獎狀與筆試」作答；成績只供老師參考，不算正式成績'],['sv','雪嶺求生（抉擇與求生）','氣象預報、落石、白茫茫與指南針、山屋暴風雪求生；不屬於任何班的人（老師、訪客）預設看得到，班級學生要你開才看得到'],['wild','野外項目','營火露營、溺水救援、河谷裝溪水、阿鹿的高山症支線'],['relief','村長救災物資','地震、山洪災後當天與隔天，領乾糧與開水']];
 const say=(t,bad)=>{const e=$('status');e.hidden=false;e.textContent=t;e.style.borderColor=bad?'var(--bad)':'';};
 
 async function loadStatic(){

@@ -1,4 +1,4 @@
-"""雪嶺「抉擇與求生」擋門（老師 2026-10-14 決定）：最終題目文字審完之前，只有老師預覽（preview.html）和 #debug 看得到；其他人走原本的第四章流程。
+"""雪嶺「抉擇與求生」開關（老師 2026-10-14 決定）：不屬於任何班的人（老師、訪客）直接開放；有班級的學生預設關閉，要老師端打開「sv」開關；老師預覽與 #debug 一律開，?sv=0 強制關閉、?sv=flag 只照班級開關規則（測試用）。
 用法：`python3 -m http.server 8765` 之後 `python3 -u tools/survival_gate_test.py http://localhost:8765/index.html`"""
 import asyncio, json, pathlib, sys
 from playwright.async_api import async_playwright
@@ -102,6 +102,19 @@ async def main(url):
         await click(page, '出發', 500)
         check('#debug：出發前會看到氣象公告', '氣象公告' in await page.inner_text('#dWho') or '暴風雪' in await text(page) or '第 1 天' in await text(page), await text(page))
         await page.close()
+        # ---------- 班級開關規則（?sv=flag）：沒有班級＝開；有班級、沒開關＝關；有班級、開關打開＝開 ----------
+        async def stall_has_compass(setup_js):
+            global QSTR
+            QSTR = '?open=ch2,ch3,ch4&sv=flag#debug'
+            pg, er = await boot(ctx, url)
+            await pg.evaluate("(c) => { window.FACloud.refreshControl = async () => ({ class_id: c.class_id, flags: c.flags, weather: null }); return window.__fa.pullControl(); }", setup_js); await pg.wait_for_timeout(400)
+            await goto(pg, 'ch4_village', 880, 620)
+            await pg.evaluate("() => { window.__fa.S.pos = { x: 1330, y: 548 }; }"); await pg.wait_for_timeout(400)
+            await pg.evaluate("() => { document.getElementById('act').click(); }"); await pg.wait_for_timeout(600)
+            r = '指南針' in await text(pg); await pg.close(); return r
+        check('沒有班級（老師、訪客）：求生開放（裝備攤有指南針）', await stall_has_compass({'class_id': None, 'flags': {}}))
+        check('有班級的學生、老師沒開 sv：求生關閉', not await stall_has_compass({'class_id': 'c1', 'flags': {}}))
+        check('有班級的學生、老師打開 sv：求生開放', await stall_has_compass({'class_id': 'c1', 'flags': {'sv': True}}))
         # ---------- 老師預覽（?preview=）：求生開啟 ----------
         page = await ctx.new_page(); errs2 = []; page.on('pageerror', lambda e: errs2.append(str(e)))
         await page.goto(url + '?preview=ch4_village#debug')

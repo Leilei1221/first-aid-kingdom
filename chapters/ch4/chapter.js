@@ -127,10 +127,11 @@ const DL=dailyInit(FA,{S,st,ask,PREV});
 const giveCard=async k=>{const c=await cardOf(k);S.cards[k]=true;await say({p:'hero',html:`<div class="card"><b>${c.title}</b><p>${c.text}</p></div><p class="good">獲得知識卡</p>`});};
 let CD=null;const cardOf=async k=>{CD=CD||(await (await fetch(new URL('cards.json',import.meta.url))).json()).CARDS;return CD[k];};
 const failBy=(code,card,why)=>rescueFail({sev:{0:code},opts:[why],failCard:card,why},'sv',0);  /* 求生撐不下去：同樣的救援失敗（扣救援費、送回山腳村） */
-/* 「抉擇與求生」（survival.js）：老師還沒審完最終題目文字前，只有老師預覽（preview.html）和 #debug 看得到（老師 2026-10-14 決定）。
-   其他人一律走原本的第四章流程。審完後把 SVON 改成 true（或拿掉這段）才對所有人開放。#debug 可用 ?sv=0 強制關閉（測試用）。 */
-const SVON=PREV||(DEBUG&&QS.get('sv')!=='0');
-const SV=SVON?survivalInit(FA,{S,st,ask,PREV,have,warmLevel,fail:failBy,DL,innCost:INN_COST,cardOf}):{forecast:async()=>true,rockfall:async()=>{},whiteout:async()=>{},arrive:async()=>{},survive:async()=>{},compassRow:()=>({price:0,has:true})};
+/* 「抉擇與求生」（survival.js）：不屬於任何班的人（老師、訪客、沒登入）直接開放；有班級的學生預設關閉，要老師在老師端打開「sv」開關（老師 2026-10-14 決定）。
+   老師預覽與 #debug 一律開；#debug 可用 ?sv=0 強制關閉（測試用）。開關在執行時才判斷（班級設定是非同步讀進來的）。 */
+const svOn=()=>PREV||(DEBUG&&QS.get('sv')!=='0'&&QS.get('sv')!=='flag')||(QS.get('sv')!=='0'&&FA.flagOn('sv',false));  /* ?sv=flag（#debug）：只照班級開關的規則（測試用） */
+const SVR=survivalInit(FA,{S,st,ask,PREV,have,warmLevel,fail:failBy,DL,innCost:INN_COST,cardOf});
+const SV={forecast:(...a)=>svOn()?SVR.forecast(...a):Promise.resolve(true),rockfall:(...a)=>svOn()?SVR.rockfall(...a):Promise.resolve(),whiteout:(...a)=>svOn()?SVR.whiteout(...a):Promise.resolve(),arrive:(...a)=>svOn()?SVR.arrive(...a):Promise.resolve(),survive:(...a)=>svOn()?SVR.survive(...a):Promise.resolve(),compassRow:()=>svOn()?SVR.compassRow():({price:0,has:true}),plan:(...a)=>SVR.plan(...a)};
 if(location.hash==='#debug')window.__ch4Sv=SV;  /* #debug 測試用 */
 /* 裝備檢查：列出有／沒有，帕桑依保暖等級說一句話；不擋人，缺的可以去攤位補買 */
 async function gearCheck(){
@@ -314,11 +315,11 @@ async function stall(){
   let msg='';
   for(;;){
     const free=S.matCap-Object.values(S.mat).reduce((a,n)=>a+(n||0),0),n=S.mat.flint||0,dis=S.coins<FLINT_PRICE||free<=0,cp=SV.compassRow(),e=st();
-    const i=await say({p:'hero',who:'裝備攤',html:`${msg?`<p class="good">${msg}</p>`:''}<p>登山裝備之外，攤子上也有求生用的東西。</p><p class="small">金幣 ${S.coins}　素材袋剩 ${Math.max(0,free)} 格　打火石：${n} 個</p><p><b>打火石</b>　${FLINT_PRICE} 金幣　生火用，在山上遇到暴風雪時能救命。</p>${SVON?`<p><b>指南針</b>　${cp.price} 金幣　${cp.has?'你已經有了。':'白茫茫看不到路時，靠它確認方向。'}</p>`:''}`,
-      buttons:[{label:'看登山裝備',primary:true},{label:free<=0?'素材袋已滿':`買打火石（${FLINT_PRICE}）`,disabled:dis},...(SVON?[{label:cp.has?'指南針（已有）':`買指南針（${cp.price}）`,disabled:cp.has||S.coins<cp.price}]:[]),{label:'離開'}]});
+    const i=await say({p:'hero',who:'裝備攤',html:`${msg?`<p class="good">${msg}</p>`:''}<p>登山裝備之外，攤子上也有求生用的東西。</p><p class="small">金幣 ${S.coins}　素材袋剩 ${Math.max(0,free)} 格　打火石：${n} 個</p><p><b>打火石</b>　${FLINT_PRICE} 金幣　生火用，在山上遇到暴風雪時能救命。</p>${svOn()?`<p><b>指南針</b>　${cp.price} 金幣　${cp.has?'你已經有了。':'白茫茫看不到路時，靠它確認方向。'}</p>`:''}`,
+      buttons:[{label:'看登山裝備',primary:true},{label:free<=0?'素材袋已滿':`買打火石（${FLINT_PRICE}）`,disabled:dis},...(svOn()?[{label:cp.has?'指南針（已有）':`買指南針（${cp.price}）`,disabled:cp.has||S.coins<cp.price}]:[]),{label:'離開'}]});
     if(i===0){const r=await FA.chCall('ch3','gearShop');if(r===undefined)await say({p:'hero',html:'<p>攤位上沒有人。</p>'});return;}
     if(i===1){S.coins-=FLINT_PRICE;S.mat.flint=n+1;refresh();msg=`已買下：打火石 ×1（目前 ${S.mat.flint} 個）`;continue;}
-    if(SVON&&i===2){S.coins-=cp.price;e.compass=true;refresh();msg='已買下：指南針';continue;}
+    if(svOn()&&i===2){S.coins-=cp.price;e.compass=true;refresh();msg='已買下：指南針';continue;}
     return;}}
 async function guideTalk(){
   const e=st();
@@ -347,7 +348,7 @@ return {
     if(id==='ch4_elder'){if(st().s3a)return lines('ch4_elder',['頭痛好多了。山不會跑，慢慢來才是真本事。']);return lesson3();}
     if(id==='ch4_guide_up'){const e=st();if(S.scene.startsWith('ch4_lodge')){
         if(!e.s5)return lines('ch4_guide_up',['去跟管理員達瓦聊聊吧。']);
-        return (async()=>{for(;;){const bs=[{label:'章末演練',primary:!e.done}];if(DL.on())bs.push({label:'嚮導訓練',primary:true});if(SVON)bs.push({label:'求生練習（不扣錢）'});bs.push({label:'先不要'});
+        return (async()=>{for(;;){const bs=[{label:'章末演練',primary:!e.done}];if(DL.on())bs.push({label:'嚮導訓練',primary:true});if(svOn())bs.push({label:'求生練習（不扣錢）'});bs.push({label:'先不要'});
           const i=await say({p:'ch4_guide_up',html:`<p>${e.done?'想練習嗎？嚮導訓練每天第一次完成可以累積信譽。':'整趟路的課你都學完了。要不要來一次真正的考驗？沒有提示，就看你學到多少。'}</p>`,buttons:bs});
           if(i===0){await finale();return;}
           if(DL.on()&&i===1){await DL.train();continue;}
