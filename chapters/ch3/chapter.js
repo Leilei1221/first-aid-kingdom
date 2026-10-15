@@ -229,7 +229,7 @@ async function finaleRun(){
   const sc=R.scoreFinale({judgeWrong:rec.judgeWrong,d1Wrong:rec.d1Wrong,stats:st,breath:rec.breath,aedErrors:rec.aedErrors==null?1:rec.aedErrors,stopped:rec.stopped},T.pauseLimitMs);
   S.c=S.c||{};let box=false;
   const rw=completed?FA.starReward('ch3',sc.total):null;  /* 星級獎勵：每個新達成的星級只領一次（見 content/balance.json 的 STAR_REWARD） */
-  if(completed){S.c.ch3_done=true;S.c.ch3_stars=Math.max(S.c.ch3_stars||0,sc.total);if(!S.c.ch3_box){S.c.ch3_box=true;box=true;}}
+  if(completed){FA.firstStar('ch3',sc.total);S.c.ch3_done=true;S.c.ch3_stars=Math.max(S.c.ch3_stars||0,sc.total);if(!S.c.ch3_box){S.c.ch3_box=true;box=true;}}
   if(DEBUG)window.__ch3Finale={rec,stats:st,score:sc,completed};
   const mark=ok=>ok?'★':'☆',sec=ms=>(ms/1000).toFixed(1),br=rec.breath?rec.breath.attempts.slice(0,2).filter(x=>x.band==='ok'&&!x.noAirway).length:0;
   await say({p:'hero',who:'章末演練結果',html:`<p><b>${completed?'演練完成':'演練中途停止'}</b>　${'★'.repeat(sc.total)+'☆'.repeat(5-sc.total)}（${sc.total}/5）</p>

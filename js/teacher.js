@@ -40,11 +40,13 @@ const COIN_MIN=2000;
 function coinLimit(list){const v=list.filter(n=>n>0).sort((a,b)=>a-b);if(v.length<5)return COIN_MIN;const m=v[Math.floor(v.length/2)];return Math.max(COIN_MIN,m*3);}
 /* 第五章筆試（S.c.ch5）：沒考過是 null；只供老師參考，不算正式成績 */
 function examOf(s){const e=(s.c||{}).ch5;return e&&e.tries?{best:e.best||0,tries:e.tries}:null;}
+/* 第一次星數（S.c.first，2026-10-15 起才有記錄；更早完成的關卡是空白） */
+function firstOf(s){const f=(s.c||{}).first||{},g=k=>f[k]&&f[k].s!=null?f[k].s:'';return {castle:g('castle'),ch2:g('ch2'),ch3:g('ch3'),ch4:g('ch4')};}
 const tierLabel=n=>n>=20?'優等':n>=18?'結業':'';
 function summarize(state,cardTotal){
   const s=state||{},m=milestones(s),done=m.filter(Boolean).length;
   return {day:s.day||1,stage:stageLabel(s),pct:Math.round(done/m.length*100),stars:s.castleBest||0,castleDone:!!s.castleDone,
-    cards:Object.keys(s.cards||{}).length,cardTotal:cardTotal||0,coins:s.coins||0,hearts:s.hearts||{},ch2:ch2Of(s),ch3:ch3Of(s),ch4:ch4Of(s),total:window.FAStars?FAStars.total(s):0,exam:examOf(s)};}
+    cards:Object.keys(s.cards||{}).length,cardTotal:cardTotal||0,coins:s.coins||0,hearts:s.hearts||{},ch2:ch2Of(s),ch3:ch3Of(s),ch4:ch4Of(s),total:window.FAStars?FAStars.total(s):0,exam:examOf(s),first:firstOf(s)};}
 const pad=n=>String(n).padStart(2,'0');
 function fmtTime(iso){if(!iso)return '';const d=new Date(iso);if(isNaN(d))return '';return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
 function ago(iso){if(!iso)return '';const m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return '剛剛';if(m<60)return m+' 分鐘前';if(m<1440)return Math.round(m/60)+' 小時前';return Math.round(m/1440)+' 天前';}
@@ -164,9 +166,9 @@ function render(){
 
 function exportCsv(){
   const cls=classes.find(c=>c.id===$('cls').value)||{};
-  const head=['班級','座號','學號','姓名','email','最後遊玩','天數','主線進度%','主線階段','城堡最佳星數','知識卡','知識卡總數','金幣','第二章','第二章星數','第三章','第三章星數','第四章','第四章星數','總星數','筆試最高分','金幣偏高'];
+  const head=['班級','座號','學號','姓名','email','最後遊玩','天數','主線進度%','主線階段','城堡最佳星數','知識卡','知識卡總數','金幣','第二章','第二章星數','第三章','第三章星數','第四章','第四章星數','總星數','筆試最高分','金幣偏高','落石之城第一次星數','第二章第一次星數','第三章第一次星數','第四章第一次星數'];
   const limit=coinLimit(rows.filter(r=>r.sum).map(r=>r.sum.coins));
-  const body=rows.map(r=>{const x=r.sum;return [cls.name,r.seat,r.no,r.name,r.email,x?fmtTime(r.updated):'尚未開始',x?x.day:'',x?x.pct:'',x?x.stage:'',x?x.stars:'',x?x.cards:'',x?x.cardTotal:'',x?x.coins:'',x?x.ch2.label:'',x&&x.ch2.done?x.ch2.stars:'',x?x.ch3.label:'',x&&x.ch3.done?x.ch3.stars:'',x?x.ch4.label:'',x&&x.ch4.done?x.ch4.stars:'',x?x.total:'',x&&x.exam?x.exam.best:'',x&&x.coins>limit?'是':''];});
+  const body=rows.map(r=>{const x=r.sum;return [cls.name,r.seat,r.no,r.name,r.email,x?fmtTime(r.updated):'尚未開始',x?x.day:'',x?x.pct:'',x?x.stage:'',x?x.stars:'',x?x.cards:'',x?x.cardTotal:'',x?x.coins:'',x?x.ch2.label:'',x&&x.ch2.done?x.ch2.stars:'',x?x.ch3.label:'',x&&x.ch3.done?x.ch3.stars:'',x?x.ch4.label:'',x&&x.ch4.done?x.ch4.stars:'',x?x.total:'',x&&x.exam?x.exam.best:'',x&&x.coins>limit?'是':'',x?x.first.castle:'',x?x.first.ch2:'',x?x.first.ch3:'',x?x.first.ch4:''];});
   const blob=new Blob([csv([head,...body])],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`急救王國進度_${cls.name||'班級'}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
 }

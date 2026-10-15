@@ -175,7 +175,7 @@ async function talk2(id){
   return say({p:id,html:'<p>……</p>'});}
 async function fireReport(){
   const c=S.c;const items=[['r_119','撥打 119 報案'],['r_ext','用滅火器撲滅初期小火'],['r_clothes','阿焰衣服著火'],['r_smith','老鐵手臂燙傷'],['r_guest','旅館二樓受困的客人']];
-  const stars=items.filter(([k])=>c[k]==='ok').length;c.done=true;c.stars=Math.max(c.stars||0,stars);
+  const stars=items.filter(([k])=>c[k]==='ok').length;FA.firstStar('ch2',stars);c.done=true;c.stars=Math.max(c.stars||0,stars);
   await say({p:'ch2_cap',html:'<p>火終於撲滅了……多虧你，沒有人受重傷。迷霧商人已經逃走了，但他留下的油桶就是證據。</p>'});
   await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>`+items.map(([k,t])=>`<div class="row"><div class="info"><b>${t}</b><span style="color:${c[k]==='ok'?'var(--ok)':c[k]==='wrong'?'var(--warn)':'var(--bad)'}">${c[k]==='ok'?'處置正確':c[k]==='wrong'?'處置有誤':'缺少用品'}</span></div></div>`).join('')+'<p class="good">第二章「熔岩鍛造鎮」完成！</p>',buttons:[{label:'完成',primary:true}]});
   await go('ch2_town',[860,860]);}
