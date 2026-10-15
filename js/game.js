@@ -300,8 +300,11 @@ function speedMul(){const l=load_(),L=loadLim();return (l>L.heavy?.5:l>L.ok?.72:
 function badge(k,lg){const it=ITEMS[base(k)];return `<span class="badge ${lg?'lg':''}" style="--c:${it.color};--tc:${it.text||'#1b1b1b'}" aria-hidden="true">${it.ch}</span>`;}
 function hearts(id){const n=Math.min(5,S.hearts[id]||0);return '♥'.repeat(n)+'♡'.repeat(5-n);}
 const ensureHeart=id=>{if(PEOPLE[id]&&PEOPLE[id].heart&&S.hearts[id]==null)S.hearts[id]=0;};  /* 章節在遊戲進行中才開放時，角色的好感度欄位用到才補 */
+/* 第一次好感度增加時說明一次（老師 2026-10-15 同意；只說「越多越願意分享」，不提具體好處） */
+async function heartTip(){S.warned=S.warned||{};if(S.warned.heartTip)return;S.warned.heartTip=true;
+  await say({p:'hero',html:'<p>名字旁邊的愛心就是好感度。多聊聊天、送點小禮物、幫忙完成委託，愛心會慢慢增加。</p><p>愛心越多，村民越願意跟你分享心事和好東西。</p>'});}
 function addHeart(id,n){ensureHeart(id);if(id in S.hearts)S.hearts[id]=Math.min(5,S.hearts[id]+n);}
-function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
+function toast(m,ms){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),ms||1800);}
 async function useSta(n){
   if(S.sta<=0){S.pendingFaint='work';return false;}
   const before=S.sta;S.sta=Math.max(0,S.sta-n);refresh();
@@ -574,9 +577,12 @@ function interactables(){const s=sc(),L=[];
   if(petEl&&petPos&&!petHidden())L.push({kind:'pet',x:petPos.x,y:petPos.y,label:`摸摸${petRead().names[petCur().id]}`,pri:-.5,r:sc().heroH*.7});
   return L;}
 let near=null;
+/* 第一次靠近時的功能提示（老師 2026-10-15 同意；每個地點只出現一次，記在 S.warned.near_*；用 toast，不擋畫面） */
+const NEAR_HINT={'npc:shopkeeper':'雜貨店：賣素材、買急救用品、擴充背包。','board':'委託板：交付素材換金幣和好感度，睡一覺會換新工作。','bed':'床：睡覺恢復體力、進入下一天，作物也會長大。','stash':'防災包：存放乾糧和開水，出遠門前要記得帶上。'};
+function nearHint(it){if(busy||!it)return;S.warned=S.warned||{};const k=it.kind==='npc'?'npc:'+it.id:it.kind,t=NEAR_HINT[k];if(!t||S.warned['near_'+k])return;S.warned['near_'+k]=true;toast(t,4200);}
 function updateNear(){const H=sc().heroH;let best=null,bd=Infinity,bp=-1;
   for(const it of interactables()){const d=Math.hypot(it.x-S.pos.x,(it.y-S.pos.y)*1.3),pr=it.pri||0;if(d<(it.r||H*.95)&&(pr>bp||(pr===bp&&d<bd))){bd=d;bp=pr;best=it;}}  /* it.r：這個互動點自己的範圍；it.pri：優先順序，範圍內優先順序高的先選（都沒指定＝和以前一樣，只選最近的） */
-  near=best;const a=$('act');
+  near=best;nearHint(best);const a=$('act');
   if(best){a.classList.add('ready');a.textContent=best.label;ringEl.classList.add('on');ringEl.style.setProperty('--x',best.x);ringEl.style.setProperty('--y',best.y);ringEl.style.setProperty('--r',Math.round(H*.45));ringEl.style.zIndex=Math.round(best.y)-1;}
   else{a.classList.remove('ready');a.textContent='動作';ringEl.classList.remove('on');}}
 async function doAction(){
@@ -758,7 +764,7 @@ async function gift(id){
   S.mat[pick]--;S.gifted[id]=S.day;
   if(pick===L.love){addHeart(id,2);await say({p:id,html:`<p>${L.loveTxt}</p><p class="good">好感度大幅提升！</p>`});}
   else if(pick===L.hate){await say({p:id,html:`<p>${L.hateTxt}</p><p class="small">好像不太喜歡……</p>`});}
-  else{addHeart(id,1);await say({p:id,html:`<p>${L.normTxt||'謝謝你！'}</p>`});}
+  else{addHeart(id,1);await say({p:id,html:`<p>${L.normTxt||'謝謝你！'}</p>`});await heartTip();}
 }
 async function chatMenu(id,text){
   const st=storyOf(id);
@@ -949,7 +955,7 @@ async function board(){
     const r=await say({icon:'板',who:'委託板',html:`${rows}${S.step===3?`<p class="small">提示：累積賺到 ${ACC_EARN} 金幣後，南方森林的阿木會需要你幫忙。</p>`:''}<p class="small">素材袋：${matList()}</p>`,buttons:[{label:'離開',primary:true}],
       onRender:(root,fin)=>root.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{pick=+b.dataset.i;fin('pick');})});
     if(r!=='pick')break;
-    const q=REQUESTS[S.req[pick]];S.mat[q.item]-=q.n;S.coins+=q.pay;S.earned+=q.pay;addHeart(q.from,1);
+    const q=REQUESTS[S.req[pick]];S.mat[q.item]-=q.n;S.coins+=q.pay;S.earned+=q.pay;addHeart(q.from,1);await heartTip();
     S.req[pick]=nextReq();toast(`完成委託！獲得 ${q.pay} 金幣`);refresh();
   }
 }
@@ -1084,7 +1090,7 @@ async function talk(id){
     return chatMenu('grandpa',tip);
   }
   if(id==='wood'){
-    if(S.step===1){await play('wood.axe');S.axe=true;S.step=2;addHeart('wood',1);return;}
+    if(S.step===1){await play('wood.axe');S.axe=true;S.step=2;addHeart('wood',1);await heartTip();return;}
     if(S.step===5&&!S.flagWoodDone){
       const needs={glove:1,gauze:1,elastic:1};const miss=needCheck(needs);
       if(miss.length){await play('wood.missing',{need:needTxt(needs),missing:missTxt(miss)});return;}
@@ -1172,6 +1178,14 @@ async function worldMap(){
       else await say({p:'hero',html:`<p>${g.travelHint||'要依指示才能前往這個地區。'}</p>`});}
   }finally{busy=false;save();refresh();}}
 
+/* 任務清單（老師 2026-10-15 同意）：點畫面下方的「目標」列打開：目前主線＋委託板現有的工作，不另做常駐面板 */
+async function taskList(){
+  if(busy||$('game').hidden)return;busy=true;stopInput();
+  try{
+    const rows=S.step>=2?S.req.map(ri=>{const r=REQUESTS[ri],have=S.mat[r.item]||0,ok=have>=r.n;
+      return `<div class="row"><div class="info"><b>${ok?'✓ ':'□ '}${r.who}：${r.text}</b><span>${MATS[r.item].name} ${have}/${r.n}　報酬 ${r.pay} 金幣＋好感度</span></div></div>`;}).join(''):'';
+    await say({icon:'目',who:'任務清單',html:`<h4>目標</h4><p>${goalText()}</p>`+(rows?`<h4>委託板的工作</h4>${rows}<p class="small">委託板在村口，睡一覺會換新工作。</p>`:''),buttons:[{label:'關閉',primary:true}]});
+  }finally{busy=false;refresh();}}
 /* 背包 */
 async function bag(){if(busy)return;busy=true;stopInput();
   try{for(;;){let pick=-1,useKey=null;const l=load_(),LL=loadLim();const pct=Math.min(100,l/LL.heavy*100);
@@ -1390,7 +1404,7 @@ window.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase()
 window.addEventListener('blur',stopInput);
 $('act').addEventListener('click',doAction);
 $('btnWear').onclick=async()=>{if(busy)return;busy=true;stopInput();try{for(const h of Object.values(CHH))if(h&&h.wear){await h.wear();break;}}finally{busy=false;save();refresh();}};
-$('btnMap').onclick=worldMap;$('btnDaily').onclick=dailyWindow;$('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
+$('goal').onclick=taskList;$('btnMap').onclick=worldMap;$('btnDaily').onclick=dailyWindow;$('btnBag').onclick=bag;$('btnCards').onclick=cards;$('btnSettings').onclick=settings;
 
 /* ================= 雲端存檔與存檔點 ================= */
 const checkpoint=()=>{if(window.FACloud)try{FACloud.checkpoint(S);}catch(e){}};

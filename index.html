@@ -75,6 +75,7 @@ button.pill{cursor:pointer}
 .place{font-family:var(--serif);font-weight:900;font-size:19px;color:#FFF3D6;margin-right:auto}
 #goal{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:9;width:max-content;max-width:min(560px,calc(100% - 420px));padding:8px 14px;border-radius:12px;background:var(--panel);border:1.5px solid var(--gold-dim);font-size:15px;line-height:1.6}
 #goal b{color:var(--gold);margin-right:6px}
+#goal{cursor:pointer}#goal::after{content:' ▾';color:var(--gold)}
 #toast{position:fixed;left:50%;top:120px;transform:translateX(-50%);z-index:60;padding:8px 18px;border-radius:999px;background:var(--panel);border:1.5px solid var(--gold);font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 #toast.on{opacity:1}
 .ctrl{position:absolute;z-index:12;bottom:calc(18px + env(safe-area-inset-bottom,0px));touch-action:none}
