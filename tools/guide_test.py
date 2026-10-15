@@ -40,6 +40,15 @@ async def main(url):
         check('第一次增加好感度時說明一次', '愛心' in await page.inner_text('#dText'))
         st = await page.evaluate("() => !!window.__fa.S.warned.heartTip")
         check('好感度說明只記一次', st)
+        # 小芽的功能提示（背包與送禮，step>=7 第一次聊天）
+        await page.evaluate("() => { const S = window.__fa.S; S.step = 10; S.warned.kidTip = false; S.scene = 'village'; window.__fa.talk('kid'); }")
+        await page.wait_for_selector('#dialog:not([hidden])')
+        t = await page.inner_text('#dText')
+        check('小芽第一次聊天提示背包與送禮', '背包' in t and '送' in t, t)
+        await page.click('#dBtns button:first-child'); await page.wait_for_timeout(400)
+        check('提示只記一次', await page.evaluate("() => !!window.__fa.S.warned.kidTip"))
+        await page.evaluate("() => { window.__fa.talk('kid'); }"); await page.wait_for_selector('#dialog:not([hidden])')
+        check('第二次聊天不再重複', '背包' not in await page.inner_text('#dText'))
         check('沒有頁面錯誤', not errs, str(errs))
         await b.close()
     print('新手引導第二階段測試全過' if not fails else f'有 {fails} 項失敗'); return fails

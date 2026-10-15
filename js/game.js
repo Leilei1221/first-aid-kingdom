@@ -1112,6 +1112,8 @@ async function talk(id){
       await play('kid.thanks');
       if(S.flagWoodDone){S.step=6;await prologueDone();}
       return;}
+    if(S.step>=7){S.warned=S.warned||{};if(!S.warned.kidTip){S.warned.kidTip=true;   /* 小芽的功能提示（老師 2026-10-15 決定）：背包與送禮，只說一次 */
+      await say({p:'kid',html:'<p>大哥哥，要常常看一下上方的「背包」喔，裡面的急救用品夠不夠，一眼就知道。</p><p>還有，素材袋裡的野花、小麥、木材這些，都可以送給村裡的人。每個人每天可以收一次，送了他們會更喜歡你！</p>'});}}
     return chatMenu('kid',T(S.step>=6?'chat.kid6':'chat.kid'));
   }
 }
