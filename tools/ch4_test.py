@@ -12,7 +12,7 @@ CLOUD = "() => { window.FACloud = { checkpoint: () => {}, restore: async () => n
 async def boot(ctx, url, extra, setup=''):
     page = await ctx.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
     await page.add_init_script("if(!sessionStorage.getItem('fresh')){sessionStorage.setItem('fresh','1');localStorage.removeItem('fa-kingdom-p1-v1');}")
-    await page.goto(url + '?open=ch2,ch3' + extra + '#debug')
+    await page.goto(url + '?open=ch2,ch3&sv=0' + extra + '#debug')
     await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
     await page.evaluate("() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.f.final = true; S.c.letter = true; S.c.done = true; S.started = true; S.coins = 5000; S.sta = 60; S.day = 15; S.kitCap = 14; S.c.ch3_done = true; " + setup + " document.getElementById('btnStart').click(); }")
     await page.evaluate(CLOUD); await page.wait_for_timeout(500)
@@ -59,7 +59,7 @@ async def main(url):
         ctx2 = await b.new_context(viewport={'width': 1180, 'height': 820}); await ctx2.add_init_script("localStorage.setItem('fa-debug','1')")
         page = await ctx2.new_page(); errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
         await page.add_init_script("if(!sessionStorage.getItem('fresh')){sessionStorage.setItem('fresh','1');localStorage.removeItem('fa-kingdom-p1-v1');}")
-        await page.goto(url + '?open=ch2,ch3,ch4#debug')
+        await page.goto(url + '?open=ch2,ch3,ch4&sv=0#debug')
         await page.wait_for_function("window.__fa && !document.getElementById('btnStart').disabled", timeout=60000)
         await page.evaluate("() => { const S = window.__fa.S; S.step = 10; S.f.p3 = true; S.f.final = true; S.c.letter = true; S.c.done = true; S.started = true; S.coins = 5000; S.sta = 60; S.day = 15; S.kitCap = 14; S.c.ch3_done = true; S.c.ch3_e3 = { seen: { np: true }, frag: { jp: 1 }, own: {}, cnt: {}, wear: {} }; document.getElementById('btnStart').click(); }")
         await page.evaluate(CLOUD); await page.wait_for_timeout(500)

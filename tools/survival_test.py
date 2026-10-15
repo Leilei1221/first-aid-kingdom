@@ -89,6 +89,18 @@ async def main(url):
         fc = await ev(page, "S.c.ch4.fc")
         check('勉強出發：記下 fc（force），沒有給任何金幣獎勵', fc and fc.get('force') in (True, False) and await ev(page, "S.coins") <= c1, f'{fc} {await ev(page, "S.coins")}')
         await page.close()
+        # --- 已經上過山的存檔（c1 已做、有舊的 fc）：再從山腳村出發，仍然會看氣象公告；山腳村帕桑有「求生練習」
+        page, errs = await boot(ctx, url, "S.c.ch4.c1 = true; S.c.ch4.fcQ = true; S.c.ch4.fc = { d0: 1, rock: false, white: false, len: 1 };")
+        await goto(page, 'ch4_village', 880, 620)
+        await page.evaluate("() => { window.__fa.S.pos = { x: 400, y: 400 }; }"); await page.wait_for_timeout(400)
+        await page.evaluate("() => { document.getElementById('act').click(); }"); await page.wait_for_timeout(600)
+        await click(page, '出發', 600)
+        check('上過山的存檔再出發：重新看氣象公告（預報是這趟的，不是舊的）', '氣象公告' in await page.inner_text('#dWho') and '第 3 天' in await text(page), await text(page))
+        await page.close()
+        page, errs = await boot(ctx, url)
+        await goto(page, 'ch4_village', 880, 620)
+        await page.evaluate("() => { window.__fa.talk('ch4_guide'); }"); await page.wait_for_timeout(700)
+        check('山腳村帕桑的選單有「求生練習（不扣錢）」', any('求生練習' in x for x in await btns(page)), str(await btns(page))); await page.close()
         # --- 指南針：買一個（60），不能重複買；背包不佔格
         page, errs = await boot(ctx, url)
         await goto(page, 'ch4_village', 880, 620)

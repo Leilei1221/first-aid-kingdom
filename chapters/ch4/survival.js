@@ -24,7 +24,7 @@ async function forecastShow(p){
 /* 上山前：看預報、自己決定。回傳 true＝出發 */
 async function forecast(){
   const e=st();
-  if(e.fc||e.c1)return true;  /* 已經出發過（或舊存檔）：不再看 */
+  /* 每次從山腳村出發都重新看一次預報（日期算出來的，同一天結果一樣）；舊存檔沒有 fc 也一樣，會從這趟開始 */
   for(;;){
     const p=await plan(S.day),bad=p.storm.some(Boolean);
     if(!e.fcQ){e.fcQ=true;

@@ -298,7 +298,7 @@ async function finale(){
   const stars={};FINALE_GROUPS.forEach(([id,,keys])=>{stars[id]=keys.every(k=>wrong[k]===0)?1:0;});
   const total=Object.values(stars).reduce((a,b)=>a+b,0);
   const rw=FA.starReward('ch4',total);
-  e.done=true;e.stars=Math.max(e.stars||0,total);let box=false;if(!e.box){e.box=true;box=true;}
+  FA.firstStar('ch4',total);e.done=true;e.stars=Math.max(e.stars||0,total);let box=false;if(!e.box){e.box=true;box=true;}
   if(DEBUG)window.__ch4Finale={wrong,stars,total};
   const mark=ok=>ok?'★':'☆';
   await say({p:'hero',who:'章末演練結果',html:`<p><b>演練完成</b>　${'★'.repeat(total)+'☆'.repeat(5-total)}（${total}/5）</p><p>${FINALE_GROUPS.map(([id,name,keys])=>`${mark(stars[id])} ${name}：${keys.every(k=>wrong[k]===0)?'第一次就答對':'答錯 '+keys.reduce((a,k)=>a+wrong[k],0)+' 次'}`).join('<br>')}</p>${rw?(rw.gain?`<p class="good">星級獎勵：+${rw.gain} 金幣</p>`:'')+(rw.next?`<p class="small">下次達成 ${rw.next.tier} 顆星，可以再領 ${rw.next.coins} 金幣。</p>`:''):''}`});
@@ -324,9 +324,11 @@ async function stall(){
 async function guideTalk(){
   const e=st();
   for(;;){
-    const i=await say({p:'ch4_guide',html:`<p>${e.met?'有什麼事嗎？':'你好，我們又見面了。'}</p>`,buttons:[{label:'聊聊雪嶺'},{label:e.s1?'什麼時候上山？':'準備上山（第 1 節）'},{label:'先離開',primary:true}]});
+    const bs=[{label:'聊聊雪嶺'},{label:e.s1?'什麼時候上山？':'準備上山（第 1 節）'}];if(svOn())bs.push({label:'求生練習（不扣錢）'});bs.push({label:'先離開',primary:true});
+    const i=await say({p:'ch4_guide',html:`<p>${e.met?'有什麼事嗎？':'你好，我們又見面了。'}</p>`,buttons:bs});
     e.met=true;
     if(i===1&&!e.s1){await lesson1();continue;}
+    if(bs[i].label.startsWith('求生練習')){await SV.survive({practice:true,len:2});continue;}  /* 嚮導訓練的求生練習：山腳村也能練（不扣錢、不送回） */
     if(i===0)await lines('ch4_guide',['雪嶺的村子在山谷裡，冬天雪封了路，大家就待在屋子裡織毛線、煮熱茶。','Warm clothes 是保暖衣物。上山前，衣服要一層一層穿，濕了就要換。']);
     else if(i===1)await lines('ch4_guide',[e.s2?'營地 1 我們去過了，再往上的路還在整理，再給我一點時間。':'準備好了就從左上的石階上山，我們在營地 1 見。']);
     else return;}}
