@@ -12,12 +12,12 @@
  "MATS": {
   "ch2_iron": {
    "name": "鐵礦石",
-   "sell": 6,
+   "sell": 3,
    "icon": "ch2_iron"
   },
   "ch2_ingot": {
    "name": "鐵錠",
-   "sell": 25,
+   "sell": 10,
    "icon": "ch2_ingot"
   }
  }
