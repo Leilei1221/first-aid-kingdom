@@ -614,10 +614,16 @@ async function doAction(){
     else if(it.kind==='gatedoor')await gateDoor();
     else if(it.kind==='riverwater')await riverWater();
     else if(hookOf(S.scene)&&hookOf(S.scene).acts&&hookOf(S.scene).acts[it.kind])await hookOf(S.scene).acts[it.kind](it);
+    exhaustCheck();
     if(S.pendingFaint){const r=S.pendingFaint;S.pendingFaint=null;await faint(r);}
   }catch(e){if(!e||!e.rescueAbort)throw e;}  /* 救援失敗：整段流程到此結束 */
   finally{busy=false;save();refresh();updateNear();}
 }
+/* 體力耗盡（老師 2026-10-23：從藍堡起，章節裡體力掛零也要昏倒、送醫、扣醫療費）：章節地區的動作（釣魚、航行挨餓…）直接扣體力，不會走 useSta，
+ * 所以在動作結束與換場景時統一檢查。只在序章以外的地區（curRegion()!==BASE）生效，序章的行為不變（例如吃到野菇體力歸零是劇情，不昏倒）。 */
+function exhaustCheck(){
+  if(S.sta<0)S.sta=0;
+  if(S.sta<=0&&!S.pendingFaint&&S.started&&curRegion()!==BASE)S.pendingFaint='exhaust';}
 async function go(to,at){
   if(typeof to==='function')to=to();
   if(!SCENES[to]){console.error('找不到場景：'+to);to='village';at=SCENES.village.spawn;}
@@ -627,6 +633,7 @@ async function go(to,at){
   if(to==='forest'&&S.step===3&&(S.earned>=ACC_EARN||S.matLv+S.kitLv>0))S.step=4;
   if(to==='forest'&&S.step===4){await sleep(RM?0:300);await accident();}
   await wxEnter();
+  exhaustCheck();
   if(S.pendingFaint&&!go._f){const r=S.pendingFaint;S.pendingFaint=null;go._f=true;try{await faint(r);}finally{go._f=false;}}
 }
 function hit(e){e.classList.remove('hit');void e.offsetWidth;e.classList.add('hit');}
