@@ -402,7 +402,7 @@ function buildScene(){
     const tg=document.createElement('div');tg.className='tag';e.appendChild(tg);npcEls[n.id]=e;});
   (s.trees||[]).forEach(t=>{treeEls[t.id]=sprite('tree shadow','',t.x,t.y+6,Math.round(H*1.9),RATIO.tree);});
   if(S.scene==='home'){const b=sprite('','',270,700,290,RATIO.bed);b.querySelector('img').src=A.bed;b.style.zIndex=600;
-    const st=sprite('shadow','',1290,700,90,1);st.innerHTML='<span class="badge lg" style="--c:#2F7D4F;--tc:#fff;--s:84px">包</span>';}
+    sprite('shadow','assets/escape_bag.webp',1290,700,120,.81);}
   if(s.plots)PLOTS.forEach((p,i)=>{const e=sprite('plot','',p[0],p[1]+95,190,1);e.style.zIndex=Math.round(p[1]);e.hidden=true;plotEls.push(e);});
   if(s.plots){machineEl=sprite('','',300,560,Math.round(H*1.9),RATIO.machine);machineEl.querySelector('img').src=A.machine;}
   if(s.rocks)rocksOf(s).forEach(r=>rockEls.push(sprite('tree','',r[0],r[1]+20,Math.round(H*.95),RATIO.rock)));

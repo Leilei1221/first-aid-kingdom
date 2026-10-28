@@ -195,7 +195,7 @@ return {
     D2.build(sceneId,H,{sprite});X2.build(sceneId,H,{sprite});
     CHECKS.filter(c=>c.scene===sceneId&&!c.painted).forEach(c=>{const k=c.type==='ext'?'ch2_extinguisher':'ch2_alarm';const e=sprite('',A[k],c.x,c.y,c.type==='ext'?Math.round(H*.42):Math.round(H*.22),RATIO[k]);e.querySelector('img').src=A[k];});
     if(sceneId==='ch2_townfire'){FIRES.forEach((f,i)=>{if(i===0&&S.c.extOut)return;const e=sprite('',A.fire,f[0],f[1],Math.round(H*(i===0?.8:1.4)),RATIO.fire);e.querySelector('img').src=A.fire;const sm=sprite('',A.ch2_smoke,f[0]+30,f[1]-H*.8,Math.round(H*1.6),RATIO.ch2_smoke);sm.querySelector('img').src=A.ch2_smoke;sm.style.opacity=.85;});}
-    if(sceneId==='ch2_inn2'){const st=sprite('shadow','',430,790,90,1);st.innerHTML='<span class="badge lg" style="--c:#2F7D4F;--tc:#fff;--s:84px">包</span>';}
+    if(sceneId==='ch2_inn2'){sprite('shadow','assets/escape_bag.webp',430,790,120,.81);}
     if(sceneId==='ch2_inn2'&&S.c.fire&&!S.c.done){[[900,300],[1100,250],[700,500]].forEach(p=>{const sm=sprite('',A.ch2_smoke,p[0],p[1],Math.round(H*1.5),RATIO.ch2_smoke);sm.querySelector('img').src=A.ch2_smoke;sm.style.opacity=.7;sm.style.zIndex=2000;});
       if(!S.c.r_guest){const g=sprite('npc shadow',A.ch2_guest,1200,260,Math.round(H*.9),RATIO.ch2_guest);g.querySelector('img').src=A.ch2_guest;npcEls.ch2_guest=g;const tg=document.createElement('div');tg.className='tag';g.appendChild(tg);}}
   },
