@@ -26,7 +26,7 @@
 - **獎狀手寫字體（2026-10-29 老師決定，已推）**：標題、姓名、完成說明用「辰宇落雁體 2.0 Thin」（OFL 1.1，來源 https://github.com/Chenyu-otf/chenyuluoyan_thin ；老師同意後才下載），其餘（署名、日期、「不等同 BLS 證照」）維持宋體。專案裡只有裁成約 5,500 常用字（Big5 一級字＋標點數字）的 `assets/cert_hand.woff2`（2.7 MB）與授權檔 `assets/cert_hand_OFL.txt`，**原始 9.5 MB TTF 不放進 repo**；OFL 規定改作版不能用原名「辰宇落雁」「Chenyuluoyan」，所以內部字型名已改為 `CertHand`。只在打開獎狀時載入（`js/game.js` 的 `certFont()`，4 秒逾時），失敗退回 Noto Serif TC；列印頁自帶 `@font-face`。名字有常用字以外的罕見字會用備用字體。要重做字體檔：下載原始 TTF，用 fonttools 子集化（需 `pip install brotli`）並改名。**凌慧體老師先不考慮**（查不到來源與授權）。
 - **老師已完成**：Supabase 執行 `004_fa_class_flag_ch5.sql`、試過老師端 `ch5` 開關。**老師還沒做**：實際列印看 A4 橫式獎狀有沒有切到；試玩獎狀與筆試；審雪嶺求生最終題目文字（見下一條）。
 - 推送前 51 情境比對（基準 `ed1200f`，新版 `fd98637`）0 差異；已推到 `origin/main`（`fd98637`）。
-- **雪嶺求生擋門（老師 2026-10-14 決定）**：「抉擇與求生」（`chapters/ch4/survival.js`）最終題目文字老師還沒逐題審完，所以**只有老師預覽（preview.html）和 #debug 看得到**；其他人走原本的第四章流程（沒有氣象公告、落石、白茫茫、山屋暴風雪、指南針、求生練習）。開關是 `chapters/ch4/chapter.js` 的 `SVON`；審完後改成 `true`（或拿掉判斷）才對所有人開放。#debug 可用 `?sv=0` 強制關閉。測試 `tools/survival_gate_test.py`。
+- **雪嶺求生開放方式（以此為準，取代原本的 `SVON` 擋門）**：老師 2026-10-15 已審過 18 題與 4 張知識卡（`980aa60`）。現在由班級開關 `sv` 控制（`chapters/ch4/chapter.js` 的 `svOn()`）：不屬於任何班的人（老師、訪客、沒登入）預設開放，有班級的學生預設關閉，要老師在老師端打開「雪嶺求生」；預覽與 #debug 一律開，#debug 可用 `?sv=0` 關、`?sv=flag` 只照班級規則。Supabase 要先執行 `supabase/drafts/005_fa_class_flag_sv.sql`（確認老師是否已執行）。測試 `tools/survival_gate_test.py`、`tools/survival_test.py`。
 - **沒登入的玩家也能領獎狀**（老師 2026-10-29 問過）：獎狀不要求登入（筆試才要求）；沒登入的姓名欄是空的、要自己打（暱稱也可以），登入的人預填 Google 名稱但一樣會跳出確認、可改。沒登入的星數不在雲端，老師端看不到，換實體證書時要當場看遊戲畫面。
 - 注意：同時有另一個對話在改 `chapters/ch4/`（雪嶺求生：場景、對白、知識卡、`content/rescue.json`），提交前 `tools/control_test.py` 的第二章場景數預期（38）會因 ch4 新增場景變成 39，等對方提交後要更新該數字（不是獎狀／筆試造成）。
 
