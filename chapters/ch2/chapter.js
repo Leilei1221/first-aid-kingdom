@@ -10,8 +10,10 @@ const S=new Proxy({},{get:(_,k)=>FA.S[k],set:(_,k,v)=>{FA.S[k]=v;return true;},h
 const {ITEMS,MATS,CARDS,A,RATIO,RM,STA_MAX,$,say,quiz,orderQuiz,checkpoint,play,T,lines,chatMenu,gift,shopMenu,merchantMenu,go,toast,refresh,buildScene,nextDay,sleep,kitCount,takeKit,addHeart,needCheck,sprite,quakeFx,base,expired,stashDepart}=FA;
 const CHECKS=[{"id": "c_town", "scene": "ch2_town", "x": 900, "y": 430, "type": "ext", "ok": true, "where": "廣場消防隊門口（滅火器）"}, {"id": "c_smithy", "scene": "ch2_smithy", "x": 1200, "y": 470, "type": "ext", "ok": false, "where": "鐵匠鋪（滅火器）"}, {"id": "c_inn", "scene": "ch2_inn", "x": 420, "y": 450, "type": "alarm", "ok": true, "where": "旅館門口（警報器）"}, {"id": "c_inn2e", "scene": "ch2_inn2", "x": 347, "y": 627, "ix": 450, "iy": 720, "painted": true, "type": "ext", "ok": true, "where": "旅館二樓走廊（滅火器）"}, {"id": "c_inn2a", "scene": "ch2_inn2", "x": 331, "y": 407, "ix": 520, "iy": 580, "painted": true, "type": "alarm", "ok": false, "where": "旅館二樓走廊（警報器）"}];
 const FIRES=[[1250, 430], [1360, 520], [1160, 400]];
+/* 火場是否還在進行：第一次是 !c.done；完成後找消防隊長「火災演練」重打時 c.redo 為 true（老師 2026-10-29 同意，補星數用；星數只取最高、不給金幣） */
+const fireLive=()=>!!(S.c&&S.c.fire&&(!S.c.done||S.c.redo));
 function goal2(){const c=S.c;
-  if(c.done)return D2.goal()||'第二章完成！';
+  if(c.done&&!c.redo)return D2.goal()||'第二章完成！';
   if(c.fire){const left=['r_119','r_ext','r_clothes','r_smith','r_guest'].filter(k=>!c[k]).length;return `鍛造鎮大火！處理現場狀況（剩 ${left} 項）。旅館二樓可能還有人受困。`;}
   if(!c.smith)return '到鐵匠鋪找爺爺的老朋友：鐵匠老鐵。';
   if(!c.appr)return '看看學徒阿焰的燙傷。';
@@ -23,7 +25,7 @@ function goal2(){const c=S.c;
   if(!c.clue)return '廣場的倉庫最近常有人進出，去看看。';
   return '向消防隊長報告倉庫的事。';}
 function news2(id){const c=S.c;
-  if(c.fire&&!c.done){if(id==='ch2_appr')return !c.r_clothes;if(id==='ch2_smith')return !c.r_smith;if(id==='ch2_cap')return !c.r_ext||!c.r_119;if(id==='ch2_guest')return !c.r_guest;return false;}
+  if(fireLive()){if(id==='ch2_appr')return !c.r_clothes;if(id==='ch2_smith')return !c.r_smith;if(id==='ch2_cap')return !c.r_ext||!c.r_119;if(id==='ch2_guest')return !c.r_guest;return false;}
   if(id==='ch2_smith')return !c.smith;if(id==='ch2_appr')return (c.smith&&!c.appr)||(c.inn&&!c.elec);
   if(id==='ch2_cap')return (c.appr&&!c.cap)||(c.checking&&Object.keys(c.chk||{}).length>=CHECKS.length)||(c.clue&&!c.fire);
   if(id==='ch2_innk')return c.cap&&!c.checking&&!c.inn;return false;}
@@ -95,7 +97,7 @@ async function bigFire(){
   await say({p:'ch2_cap',html:'<p>做得好，那團小火熄了！不過倉庫裡面的火勢已經太大，滅火器沒辦法處理。<b>火勢擴大時就不要硬拚</b>，交給消防隊，你去幫忙救人！</p>'});}
 async function talk2(id){
   const c=S.c;
-  if(c.fire&&!c.done){
+  if(fireLive()){
     if(id==='ch2_cap'&&!c.r_119){const i=await say({p:'ch2_cap',html:'<p>倉庫起火了！你先打 119 報案，我去拿水帶！電話接通了，你要怎麼說？</p>'},
       );const j=await say({p:'hero',who:'撥打 119',html:'<p class="q">你要怎麼說？</p>',buttons:[{label:'「失火了！快來！」然後掛電話'},{label:'「鍛造鎮廣場旁的倉庫起火，裡面有油桶，可能有人受困。我的電話是……」並等對方掛電話'},{label:'先拍照傳給朋友，再打電話'}]});
       const ok=j===1;await say({p:'ch2_cap',html:`<p class="${ok?'good':'bad'}">${ok?'說得很清楚！':'這樣消防隊很難知道狀況。'}</p><p>${CARDS.ch2_call119.text}</p>`});
@@ -159,6 +161,8 @@ async function talk2(id){
       c.fire=true;quakeFx&&quakeFx();await go('ch2_townfire',[860,860]);
       await say({icon:'！',who:'',html:'<p class="bad">倉庫冒出熊熊大火，黑煙直衝天空！火星四處飛散！</p><p class="small">和消防隊長說話報案，並處理現場的每一個狀況。旅館二樓也可能有人受困。</p>'});return;}
     if(c.checking)return say({p:'ch2_cap',html:`<p>還有 ${CHECKS.length-Object.keys(c.chk||{}).length} 個地方沒檢查喔。</p>`});
+    if(c.done){const i=await say({p:'ch2_cap',html:'<p>想再練習一次火災現場的處置嗎？五個狀況會重新來過，星數只會變高、不會變低。</p>',buttons:[{label:'火災演練（重新挑戰）'},{label:'聊聊',primary:true}]});
+      if(i===0)return startDrill();}
     return chatMenu('ch2_cap','平時多一分準備，火場就多一分生機。');}
   if(id==='ch2_innk'){
     if(c.cap&&!c.checking&&!c.inn){
@@ -173,11 +177,19 @@ async function talk2(id){
     {const i=await say({p:'ch2_innk',html:'<p>泡個溫泉放鬆一下吧。旅館的小賣部也有急救用品，二樓的房間可以住宿喔。</p>',buttons:[{label:'購買用品',primary:true},{label:'送禮'},{label:'再見'}]});if(i===0)return shopMenu();if(i===1)return gift('ch2_innk');return;}}
   if(id==='ch2_guest')return say({p:'ch2_guest',html:'<p>這裡的溫泉真舒服！不過要小心熱水喔。</p>'});
   return say({p:id,html:'<p>……</p>'});}
+async function startDrill(){
+  const c=S.c;
+  const i=await say({p:'ch2_cap',who:'火災演練',html:'<p>演練和上次的火災一樣：打 119、用滅火器、阿焰、老鐵、旅館二樓的客人，五個狀況重新處理。</p><p class="small">老鐵的手臂需要無菌紗布，背包裡沒有就先去買。演練沒有金幣獎勵，最高星數會記下來。</p>',buttons:[{label:'開始演練',primary:true},{label:'先不要'}]});
+  if(i!==0)return;
+  ['r_119','r_ext','r_clothes','r_smith','r_guest','extOut'].forEach(k=>{delete c[k];});c.redo=true;
+  if(kitCount('ch2_extinguisher')<1){if(S.kit.length>=S.kitCap){c.redo=false;await say({p:'ch2_cap',html:'<p>你的急救背包滿了，先騰出一格，我再給你滅火器。</p>'});return;}S.kit.push('ch2_extinguisher');}
+  quakeFx&&quakeFx();await go('ch2_townfire',[860,860]);
+  await say({icon:'！',who:'',html:'<p class="bad">倉庫冒出熊熊大火，黑煙直衝天空！</p><p class="small">演練開始：處理現場的每一個狀況，旅館二樓也有人受困。</p>'});}
 async function fireReport(){
   const c=S.c;const items=[['r_119','撥打 119 報案'],['r_ext','用滅火器撲滅初期小火'],['r_clothes','阿焰衣服著火'],['r_smith','老鐵手臂燙傷'],['r_guest','旅館二樓受困的客人']];
-  const stars=items.filter(([k])=>c[k]==='ok').length;FA.firstStar('ch2',stars);c.done=true;c.stars=Math.max(c.stars||0,stars);
+  const stars=items.filter(([k])=>c[k]==='ok').length;FA.firstStar('ch2',stars);const drill=!!c.redo;c.redo=false;c.done=true;c.stars=Math.max(c.stars||0,stars);
   await say({p:'ch2_cap',html:'<p>火終於撲滅了……多虧你，沒有人受重傷。迷霧商人已經逃走了，但他留下的油桶就是證據。</p>'});
-  await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>`+items.map(([k,t])=>`<div class="row"><div class="info"><b>${t}</b><span style="color:${c[k]==='ok'?'var(--ok)':c[k]==='wrong'?'var(--warn)':'var(--bad)'}">${c[k]==='ok'?'處置正確':c[k]==='wrong'?'處置有誤':'缺少用品'}</span></div></div>`).join('')+'<p class="good">第二章「熔岩鍛造鎮」完成！</p>',buttons:[{label:'完成',primary:true}]});
+  await say({p:'hero',who:'救援報告',html:`<div style="font-size:40px;color:var(--gold);letter-spacing:.1em">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>`+items.map(([k,t])=>`<div class="row"><div class="info"><b>${t}</b><span style="color:${c[k]==='ok'?'var(--ok)':c[k]==='wrong'?'var(--warn)':'var(--bad)'}">${c[k]==='ok'?'處置正確':c[k]==='wrong'?'處置有誤':'缺少用品'}</span></div></div>`).join('')+(drill?`<p class="good">火災演練完成！第二章目前最高 ${c.stars} 顆星。</p>`:'<p class="good">第二章「熔岩鍛造鎮」完成！</p>'),buttons:[{label:'完成',primary:true}]});
   await go('ch2_town',[860,860]);}
 const stormy=()=>FA.stormy();  /* 颱風、豪雨（今天或明天）船長拒絕出航 */
 const {captTalk,sleepAtSea:voyageSleep}=makeVoyage(FA,S,{capt:'ch2_capt',onShip:()=>S.scene==='ch2_deck',
@@ -196,12 +208,12 @@ return {
     CHECKS.filter(c=>c.scene===sceneId&&!c.painted).forEach(c=>{const k=c.type==='ext'?'ch2_extinguisher':'ch2_alarm';const e=sprite('',A[k],c.x,c.y,c.type==='ext'?Math.round(H*.42):Math.round(H*.22),RATIO[k]);e.querySelector('img').src=A[k];});
     if(sceneId==='ch2_townfire'){FIRES.forEach((f,i)=>{if(i===0&&S.c.extOut)return;const e=sprite('',A.fire,f[0],f[1],Math.round(H*(i===0?.8:1.4)),RATIO.fire);e.querySelector('img').src=A.fire;const sm=sprite('',A.ch2_smoke,f[0]+30,f[1]-H*.8,Math.round(H*1.6),RATIO.ch2_smoke);sm.querySelector('img').src=A.ch2_smoke;sm.style.opacity=.85;});}
     if(sceneId==='ch2_inn2'){sprite('shadow','assets/escape_bag.webp',430,790,120,.81);}
-    if(sceneId==='ch2_inn2'&&S.c.fire&&!S.c.done){[[900,300],[1100,250],[700,500]].forEach(p=>{const sm=sprite('',A.ch2_smoke,p[0],p[1],Math.round(H*1.5),RATIO.ch2_smoke);sm.querySelector('img').src=A.ch2_smoke;sm.style.opacity=.7;sm.style.zIndex=2000;});
+    if(sceneId==='ch2_inn2'&&fireLive()){[[900,300],[1100,250],[700,500]].forEach(p=>{const sm=sprite('',A.ch2_smoke,p[0],p[1],Math.round(H*1.5),RATIO.ch2_smoke);sm.querySelector('img').src=A.ch2_smoke;sm.style.opacity=.7;sm.style.zIndex=2000;});
       if(!S.c.r_guest){const g=sprite('npc shadow',A.ch2_guest,1200,260,Math.round(H*.9),RATIO.ch2_guest);g.querySelector('img').src=A.ch2_guest;npcEls.ch2_guest=g;const tg=document.createElement('div');tg.className='tag';g.appendChild(tg);}}
   },
   things(sceneId){const L=[];
     CHECKS.filter(c=>c.scene===sceneId).forEach(c=>{if(S.c.checking&&!(S.c.chk||{})[c.id])L.push({kind:'ch2_check',x:c.ix||c.x,y:c.iy||c.y+40,label:c.type==='ext'?'檢查滅火器':'測試警報器',c});});
-    if(sceneId==='ch2_inn2'&&S.c.fire&&!S.c.done&&!S.c.r_guest)L.push({kind:'npc',x:1200,y:260,label:'救援',id:'ch2_guest'});
+    if(sceneId==='ch2_inn2'&&fireLive()&&!S.c.r_guest)L.push({kind:'npc',x:1200,y:260,label:'救援',id:'ch2_guest'});
     if(sceneId==='ch2_town'&&S.c.done)L.push({kind:'ch2_store',x:STORE_AT.x,y:STORE_AT.y,label:'鍛造鎮小店'});  /* 第二章完成後才有（老師 2026-10-10 同意加玩法，不影響還在進行第二章的人） */
     return L.concat(D2.things(sceneId),X2.things(sceneId));},
   acts:Object.assign({},X2.acts,{ch2_hbboard:D2.acts.ch2_hbboard,ch2_hbhelp:D2.acts.ch2_hbhelp,ch2_store:openStore(FA,S,{who:'鍛造鎮小店',intro:'這是鍛造鎮的小店，工匠和旅人出門在外用得上的東西都有。'}),ch2_check:it=>check(it.c),ch2_warehouse:warehouse,ch2_fountain:fountain,ch2_forge:forge,ch2_grinder:grinder,ch2_bigfire:bigFire,ch2_room:innRoom,ch2_board:captTalk,ch2_hatch:voyageSleep}),

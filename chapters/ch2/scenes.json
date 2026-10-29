@@ -276,7 +276,7 @@
     "block": null,
     "test": "(x,y)=>x<25",
     "need": null,
-    "toFn": "()=>S.c&&S.c.fire&&!S.c.done?'ch2_townfire':'ch2_town'"
+    "toFn": "()=>S.c&&S.c.fire&&(!S.c.done||S.c.redo)?'ch2_townfire':'ch2_town'"
    }
   ],
   "outdoor": true
