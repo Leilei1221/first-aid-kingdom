@@ -5,51 +5,67 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>急救王國：老師端進度</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0F1720;--panel:#18232F;--panel2:#223142;--text:#F5EFE2;--muted:#9FB0BC;--gold:#E3B95B;--ok:#86E0A4;--bad:#FF9A9A;--warn:#FFD68A;--line:rgba(255,255,255,.12);
-  --sans:"Noto Sans TC","PingFang TC","Heiti TC","Microsoft JhengHei",sans-serif}
+/* 清松手寫體 1（SIL OFL 1.1，見 assets/teacher_hand_OFL.txt）：約 4.3 MB，只有這個老師端頁面會載入，之後由瀏覽器快取 */
+@font-face{font-family:'TeacherHand';src:url(assets/teacher_hand.woff2) format('woff2');font-weight:400;font-style:normal;font-display:swap}
+:root{color-scheme:light;--ink:#3A3535;--muted:#6B6360;--cream:#FDF8EC;--butter:#FFF3C4;--yellow:#F8D768;--green:#BFE3A8;--blue:#A9D6EE;--pink:#F4B5AE;--lav:#CFC1EA;--peach:#F9C79B;--sand:#F3EAD0;--brown:#7A4F00;--bad:#9A3834;--line:rgba(58,53,53,.25);
+  --sans:"TeacherHand","Huninn","Noto Sans TC","PingFang TC","Heiti TC","Microsoft JhengHei",sans-serif}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6}
-main{max-width:980px;margin:0 auto;padding:16px 16px 60px}
-h1{font-size:22px;margin:6px 0 2px}
+html,body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+main{max-width:980px;margin:0 auto;padding:18px 16px calc(60px + env(safe-area-inset-bottom))}
+.hd{display:flex;align-items:center;gap:12px}
+.hd svg{flex:none}
+h1{font-size:24px;line-height:1.3;margin:6px 0 2px}
 .sub{color:var(--muted);font-size:14px;margin:0 0 14px}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
-button,select{font:inherit;color:var(--text);background:var(--panel2);border:1.5px solid var(--line);border-radius:10px;padding:8px 14px;min-height:42px}
-button{cursor:pointer;font-weight:700}
-button.primary{background:var(--gold);color:#2A1D08;border-color:#F3D48A}
-.sum{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 14px}
-.sum div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px;min-width:110px}
-.sum b{display:block;font-size:22px;color:var(--gold)}
-.sum span{font-size:13px;color:var(--muted)}
-details.st{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:8px 0}
-details.st[open]{border-color:var(--gold)}
-summary{list-style:none;cursor:pointer;padding:10px 14px;display:grid;grid-template-columns:44px 1fr;gap:4px 10px;align-items:center}
+button,select{font:inherit;font-weight:700;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;min-height:44px;box-shadow:2px 3px 0 var(--ink)}
+select{padding-right:14px}
+button{position:relative;cursor:pointer;transition:transform .08s}
+button:active{transform:translate(1px,2px);box-shadow:1px 1px 0 var(--ink)}
+button:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button.primary{background:var(--yellow);border-width:2.5px;box-shadow:3px 4px 0 var(--ink)}
+button.primary::after{content:'';position:absolute;inset:3px;border:1.5px dashed rgba(58,53,53,.45);border-radius:inherit;pointer-events:none}
+.sum{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 16px}
+.sum div{background:var(--yellow);border:2.5px solid var(--ink);border-radius:20px;box-shadow:3px 4px 0 var(--ink);padding:8px 16px;min-width:120px}
+.sum div:nth-child(5n+2){background:var(--green)}.sum div:nth-child(5n+3){background:var(--blue)}.sum div:nth-child(5n+4){background:var(--pink)}.sum div:nth-child(5n){background:var(--lav)}
+.sum b{display:block;font-size:24px;color:var(--ink)}
+.sum span{font-size:13px;color:var(--ink)}
+details.st{background:#fff;border:2.5px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink);margin:12px 0}
+details.st[open]{background:#FFFDF6}
+summary{list-style:none;cursor:pointer;padding:10px 14px;display:grid;grid-template-columns:44px 1fr;gap:4px 10px;align-items:center;border-radius:20px}
 summary::-webkit-details-marker{display:none}
-.seat{font-weight:900;color:var(--gold);text-align:center}
+.seat{font-weight:900;color:var(--ink);text-align:center;width:38px;height:38px;line-height:34px;border:2px solid var(--ink);border-radius:50%;background:var(--yellow)}
 .nm{font-weight:700}
 .nm small{color:var(--muted);font-weight:400;margin-left:8px}
 .chips{grid-column:2;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted)}
-.chips b{color:var(--text)}
+.chips b{color:var(--ink)}
 .prog{grid-column:2;display:flex;align-items:center;gap:10px;font-size:14px}
-.prog i{flex:1;height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;display:block}
-.prog i em{display:block;height:100%;background:var(--ok)}
-.none{opacity:.6}
+.prog i{flex:1;height:12px;border-radius:99px;background:var(--sand);border:2px solid var(--ink);overflow:hidden;display:block}
+.prog i em{display:block;height:100%;background:var(--green);border-right:2px solid var(--ink)}
+.prog i em[style*="width:0%"]{border-right:0}
+.none{background:var(--sand)!important;border-style:dashed!important;box-shadow:none!important}
+.none .seat{background:#fff}
 .body{padding:2px 14px 14px;font-size:14px;color:var(--muted)}
-.body b{color:var(--text)}
+.body b{color:var(--ink)}
 .hearts{display:flex;flex-wrap:wrap;gap:4px 16px;margin:6px 0}
 .debt{color:var(--bad)}
-.msg{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:18px 0}
+.msg{background:#fff;border:2.5px solid var(--ink);border-radius:22px;box-shadow:3px 4px 0 var(--ink);padding:18px;margin:18px 0}
 .small{font-size:13px;color:var(--muted)}
-a{color:var(--gold)}
+a{color:var(--ink);font-weight:700}
 [hidden]{display:none!important}
-#ctrl h3,#fails h3{margin:14px 0 6px;font-size:15px}#ctrl .fl,#fails .fl{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 10px;margin:4px 0;border:1px solid var(--line,#3a4a5a);border-radius:10px}#ctrl .fl span,#fails .fl span{color:var(--gold,#E3B95B);font-weight:700}#ctrl .fl small,#fails .fl small{flex-basis:100%;opacity:.8}
-#ctrl .fl button{min-height:34px}#ctrl .wxbtns{display:flex;flex-wrap:wrap;gap:6px}
+#ctrl h3,#fails h3{margin:16px 0 8px;font-size:17px}
+#ctrl .fl,#fails .fl{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:10px 14px;margin:8px 0;background:#FFFDF6;border:2px solid var(--ink);border-radius:18px;box-shadow:2px 3px 0 var(--ink)}
+#ctrl .fl span,#fails .fl span{color:var(--brown);font-weight:700}
+#ctrl .fl small,#fails .fl small{flex-basis:100%;color:var(--muted)}
+#ctrl .fl button{min-height:36px;padding:4px 16px}#ctrl .wxbtns{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:640px){.sum div{flex:1 1 calc(50% - 6px);min-width:0}}
+@media (prefers-reduced-motion:reduce){button{transition:none}}
 </style>
 </head>
 <body>
 <main>
-  <h1>急救王國：老師端進度</h1>
+  <div class="hd"><svg width="52" height="52" viewBox="0 0 56 56" fill="none" stroke="#3A3535" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 25L8.5 8.5Q8.5 6.5 10.5 7.5L21.5 14Q28 12.5 34.5 14L45.5 7.5Q47.5 6.5 47.5 8.5L46 25Q50.5 31 48.5 39Q44.5 50 28 50Q11.5 50 7.5 39Q5.5 31 10 25Z" fill="#fff"/><path d="M12 12.5L18.5 16 12.5 21z" fill="#F4B5AE" stroke="none"/><path d="M44 12.5L37.5 16 43.5 21z" fill="#F4B5AE" stroke="none"/><path d="M26.5 17h3v3.5H33v3h-3.5V27h-3v-3.5H23v-3h3.5z" fill="#F4B5AE" stroke="none"/><circle cx="20.5" cy="32" r="1.9" fill="#3A3535" stroke="none"/><circle cx="35.5" cy="32" r="1.9" fill="#3A3535" stroke="none"/><circle cx="20.5" cy="32" r="6" stroke-width="1.8"/><circle cx="35.5" cy="32" r="6" stroke-width="1.8"/><path d="M26.5 31.5h3" stroke-width="1.8"/><path d="M26.5 36h3L28 38z" fill="#3A3535" stroke-width="1.5"/><path d="M24.5 40q3.5 3 3.5 0 0 3 3.5 0" stroke-width="2"/><circle cx="15" cy="38" r="3" fill="#F4B5AE" stroke="none"/><circle cx="41" cy="38" r="3" fill="#F4B5AE" stroke="none"/></svg><h1>急救王國：老師端進度</h1></div>
   <p class="sub">進度頁只讀：只顯示您自己班上學生的遊戲進度，不會修改任何學生的存檔。「班級控制」可以設定本班的功能開關與發布天災。</p>
   <div id="status" class="msg">載入中…</div>
   <div id="app" hidden>
